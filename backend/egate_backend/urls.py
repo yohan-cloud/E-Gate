@@ -67,7 +67,7 @@ def health_check(request):
 # ✅ Core API routes
 urlpatterns = [
     # Django Admin
-    path("admin/", admin.site.urls),
+    path("django-admin/", admin.site.urls),
 
     # Modular API apps
     path("api/accounts/", include("accounts.urls")),

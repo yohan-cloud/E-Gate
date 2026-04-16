@@ -270,8 +270,8 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.AnonRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'user': '10/min',
-        'anon': '5/min',
+        'user': os.getenv('DRF_USER_THROTTLE_RATE', '120/min'),
+        'anon': os.getenv('DRF_ANON_THROTTLE_RATE', '60/min'),
     }
 }
 
@@ -280,8 +280,8 @@ if DEBUG:
     REST_FRAMEWORK.update({
         'DEFAULT_THROTTLE_CLASSES': [],
         'DEFAULT_THROTTLE_RATES': {
-            'user': '10000/min',
-            'anon': '10000/min',
+            'user': os.getenv('DRF_DEBUG_USER_THROTTLE_RATE', '10000/min'),
+            'anon': os.getenv('DRF_DEBUG_ANON_THROTTLE_RATE', '10000/min'),
         }
     })
 
