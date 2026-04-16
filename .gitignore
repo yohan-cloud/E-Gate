@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+
+# Django
+backend/db.sqlite3
+*.sqlite3
+*.sqlite3-journal
+backend/*.sqlite3.backup
+backend/*.sqlite3.backup-*
+backend/media/
+backend/qr_codes/
+backend/backend_logs/
+backend/archive_exports/
+backend/static/
+backend/staticfiles/
+*.log
+
+# Virtual environments
+.venv/
+venv/
+backend/venv/
+.conda/
+
+# Node / Vite
+node_modules/
+frontend/node_modules/
+frontend/dist/
+*.tsbuildinfo
+*.pem
+*.key
+*.crt
+
+# Env files
+.env
+.env.*
+frontend/.env
+
+# Local tools / scratch files
+mkcert.exe
+analytics_backup.*
+temp_*
+__tmp_*
+-
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

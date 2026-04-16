@@ -1,0 +1,165 @@
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: transparent;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body {
+  min-height: 100%;
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(245, 247, 251, 0.78), rgba(245, 247, 251, 0.78)),
+    url("/bg.jpg") center / cover no-repeat fixed;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.app-wrapper {
+  background: transparent;
+  box-shadow: none;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff00; /* transparent to let bg image show */
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+/* Print-only rules for PVC ID cards */
+@media print {
+  @page {
+    size: auto;
+    margin: 0;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #fff !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .pvc-print, .pvc-print * {
+    visibility: visible;
+  }
+
+  .pvc-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .id-card,
+  .pvc-card-face {
+    width: 85.6mm !important;
+    height: 54mm !important;
+    min-width: 85.6mm !important;
+    max-width: 85.6mm !important;
+    min-height: 54mm !important;
+    max-height: 54mm !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    margin: 0 0 0 10mm !important;
+    border-radius: 0 !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    overflow: hidden !important;
+  }
+
+  .pvc-card-front,
+  .pvc-card-back {
+    display: block !important;
+  }
+
+  .page-break {
+    display: block;
+    height: 0;
+    margin: 0;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  button,
+  input,
+  select,
+  textarea,
+  nav,
+  aside,
+  header,
+  footer {
+    display: none !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

@@ -1,0 +1,16 @@
+[Unit]
+Description=E-Gate Django backend
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=www-data
+WorkingDirectory=/opt/egate
+EnvironmentFile=/opt/egate/.env
+ExecStart=/opt/egate/deploy/ec2/start_backend.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

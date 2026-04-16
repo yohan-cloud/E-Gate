@@ -1,0 +1,31 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListArchiveBucket",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": "arn:aws:s3:::egate-barangay663a-guest-archive",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "guest_appointments/*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ReadWriteArchiveObjects",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:PutObjectTagging",
+        "s3:GetObjectTagging"
+      ],
+      "Resource": "arn:aws:s3:::egate-barangay663a-guest-archive/guest_appointments/*"
+    }
+  ]
+}
