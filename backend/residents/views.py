@@ -55,6 +55,10 @@ def _resident_label(profile):
     return full_name or user.username or str(getattr(profile, "barangay_id", "resident"))
 
 
+def _profile_is_expired(profile):
+    return bool(profile and getattr(profile, "expiry_date", None) and profile.expiry_date < timezone.localdate())
+
+
 DEACTIVATION_REASON_OPTIONS = {
     "Moved out of barangay",
     "Duplicate resident record",
@@ -220,19 +224,37 @@ def resident_verification_request(request):
     """
     user = request.user
     latest = VerificationRequest.objects.filter(user=user).order_by("-created_at").first()
+    profile = getattr(user, "profile", None)
+    is_expired = _profile_is_expired(profile)
+    request_kind = "reverification" if is_expired else "verification"
 
     if request.method == 'GET':
         if not latest:
-            return Response({"status": "none"}, status=status.HTTP_200_OK)
+            return Response(
+                {
+                    "status": "none",
+                    "request_kind": request_kind,
+                    "is_expired": is_expired,
+                    "is_verified": bool(getattr(profile, "is_verified", False)) if profile else False,
+                    "expiry_date": profile.expiry_date.isoformat() if profile and getattr(profile, "expiry_date", None) else None,
+                },
+                status=status.HTTP_200_OK,
+            )
         serializer = VerificationRequestSerializer(latest, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    # POST: create a new request if none pending
+    # POST: create a new request if none pending and if the resident actually needs a review.
     has_pending = VerificationRequest.objects.filter(
         user=user, status=VerificationRequest.Status.PENDING
     ).exists()
     if has_pending:
-        return Response({"error": "You already have a pending verification request."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": f"You already have a pending {request_kind} request."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if profile and profile.is_verified and not is_expired:
+        return Response(
+            {"error": "Your resident ID is still active. Reverification is only needed after expiry."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     file = request.FILES.get('document') or request.FILES.get('id_image') or request.FILES.get('file')
     if not file:
@@ -249,7 +271,7 @@ def resident_verification_request(request):
         "verification.changed",
         "residents.VerificationRequest",
         vr.id,
-        {"verification_id": vr.id, "status": vr.status, "user_id": user.id},
+        {"verification_id": vr.id, "status": vr.status, "user_id": user.id, "request_kind": request_kind},
     )
     serializer = VerificationRequestSerializer(vr, context={'request': request})
     return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -875,25 +897,34 @@ def admin_review_verification_request(request, request_id):
     if vr.status == action:
         return Response({"error": f"Request is already marked as {action}."}, status=status.HTTP_400_BAD_REQUEST)
 
+    profile = getattr(vr.user, 'profile', None)
+    was_expired = _profile_is_expired(profile)
+
     vr.status = action
     admin_note = (request.data.get('admin_note') or '').strip()
     if not admin_note and action == VerificationRequest.Status.REJECTED:
-        admin_note = "Please contact the admin and upload a new ID document for verification."
+        admin_note = "Please upload a clearer and updated ID document for review."
     vr.admin_note = admin_note
     vr.reviewed_by = request.user
     vr.reviewed_at = timezone.now()
     vr.save(update_fields=['status', 'admin_note', 'reviewed_by', 'reviewed_at'])
 
     # Sync profile verification flag
-    prof = getattr(vr.user, 'profile', None)
-    if prof:
+    if profile:
         if action == VerificationRequest.Status.APPROVED:
-            prof.is_verified = True
-            prof.verified_at = vr.reviewed_at
+            profile.is_verified = True
+            profile.verified_at = vr.reviewed_at
+            if was_expired:
+                today = timezone.localdate()
+                profile.date_registered = today
+                profile.expiry_date = today + timedelta(days=365)
         else:
-            prof.is_verified = False
-            prof.verified_at = None
-        prof.save(update_fields=['is_verified', 'verified_at'])
+            profile.is_verified = False
+            profile.verified_at = None
+        update_fields = ['is_verified', 'verified_at']
+        if action == VerificationRequest.Status.APPROVED and was_expired:
+            update_fields.extend(['date_registered', 'expiry_date'])
+        profile.save(update_fields=update_fields)
 
     serializer = VerificationRequestSerializer(vr, context={'request': request})
     _emit(
@@ -906,6 +937,7 @@ def admin_review_verification_request(request, request_id):
             "reviewed_by_id": getattr(request.user, "id", None),
             "reviewed_at": vr.reviewed_at.isoformat() if vr.reviewed_at else None,
             "admin_note": vr.admin_note,
+            "request_kind": "reverification" if was_expired else "verification",
         },
     )
     audit_log(
@@ -919,6 +951,8 @@ def admin_review_verification_request(request, request_id):
             "resident_name": getattr(vr.user, "username", f"verification-{vr.id}"),
             "status": vr.status,
             "admin_note": vr.admin_note,
+            "request_kind": "reverification" if was_expired else "verification",
+            "expiry_renewed": bool(action == VerificationRequest.Status.APPROVED and was_expired),
         },
     )
     return Response(serializer.data, status=status.HTTP_200_OK)

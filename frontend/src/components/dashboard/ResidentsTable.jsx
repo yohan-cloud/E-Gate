@@ -56,7 +56,7 @@ function calcAge(birthdate) {
   }
 }
 
-function getResidentAudiencePills(age, voterStatus) {
+function getResidentAudiencePills(age, residentCategory, voterStatus) {
   const pills = [];
 
   if (age !== null) {
@@ -81,11 +81,37 @@ function getResidentAudiencePills(age, voterStatus) {
     }
   }
 
+  if (residentCategory === "employee") {
+    pills.push({
+      label: "employee",
+      background: "#e0f2fe",
+      color: "#075985",
+    });
+  } else if (residentCategory === "client") {
+    pills.push({
+      label: "client",
+      background: "#fae8ff",
+      color: "#86198f",
+    });
+  } else if (residentCategory === "resident") {
+    pills.push({
+      label: "resident",
+      background: "#f1f5f9",
+      color: "#475569",
+    });
+  }
+
   if (voterStatus === "registered_voter") {
     pills.push({
       label: "registered voter",
       background: "#dcfce7",
       color: "#166534",
+    });
+  } else if (voterStatus === "not_yet_voter") {
+    pills.push({
+      label: "not yet voter",
+      background: "#fef3c7",
+      color: "#92400e",
     });
   } else if (voterStatus === "other_area_voter") {
     pills.push({
@@ -432,7 +458,7 @@ export default function ResidentsTable() {
             const revealed = revealedById[r.user?.id];
             const displayRow = revealed || r;
             const age = calcAge(r.birthdate);
-            const residentAudiencePills = getResidentAudiencePills(age, r.voter_status);
+            const residentAudiencePills = getResidentAudiencePills(age, r.resident_category, r.voter_status);
             const isVerified = Boolean(r.is_verified);
             const isDeactivated = Boolean(r.is_deactivated);
             const statusBadge = r.is_archived

@@ -219,7 +219,7 @@ export default function BrowseEvents({ isVerified = false, onRequestVerification
           }}
         >
           <div>
-            Verify your resident account first before registering for barangay events.
+            Your resident ID needs reverification before you can register for barangay events.
           </div>
           <button
             type="button"
@@ -234,7 +234,7 @@ export default function BrowseEvents({ isVerified = false, onRequestVerification
               cursor: "pointer",
             }}
           >
-            Go to Verification
+            Go to Reverification
           </button>
         </div>
       )}
@@ -380,7 +380,7 @@ export default function BrowseEvents({ isVerified = false, onRequestVerification
                   onClick={() => {
                     if (registrationLocked) {
                       onRequestVerification?.();
-                      toast.error("Verify your account first before registering for an event.");
+                      toast.error("Complete your resident ID reverification before registering for an event.");
                       return;
                     }
                     if (audienceLocked) {

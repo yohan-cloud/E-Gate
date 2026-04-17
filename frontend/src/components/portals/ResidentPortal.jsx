@@ -9,7 +9,7 @@ import VerificationTab from "../resident/VerificationTab";
 const RESIDENT_NAV_ITEMS = [
   { key: "browse", label: "Browse Events", eyebrow: "Explore" },
   { key: "mine", label: "My Registrations", eyebrow: "Activity" },
-  { key: "verification", label: "Verify Account", eyebrow: "Identity" },
+  { key: "verification", label: "ID Reverification", eyebrow: "Identity" },
   { key: "profile", label: "Profile", eyebrow: "Account" },
 ];
 
@@ -93,7 +93,9 @@ export default function ResidentPortal({ onLogout }) {
   }, [refreshProfile]);
 
   const name = user?.profile?.user?.username || user?.username || user?.user?.username || "Resident";
-  const isVerified = !!user?.profile?.is_verified;
+  const expiryDate = user?.profile?.expiry_date ? new Date(`${user.profile.expiry_date}T00:00:00`) : null;
+  const isExpired = !!(expiryDate && !Number.isNaN(expiryDate.getTime()) && expiryDate < new Date(new Date().setHours(0, 0, 0, 0)));
+  const isVerified = !!user?.profile?.is_verified && !isExpired;
   const mustChangePassword = Boolean(user?.must_change_password || user?.profile?.user?.must_change_password);
 
   useEffect(() => {
@@ -288,7 +290,12 @@ export default function ResidentPortal({ onLogout }) {
         )}
         {!mustChangePassword && viewMode === "mine" && <MyRegistrations />}
         {!mustChangePassword && viewMode === "profile" && <ProfileCard />}
-        {!mustChangePassword && viewMode === "verification" && <VerificationTab onStatusChange={refreshProfile} />}
+        {!mustChangePassword && viewMode === "verification" && (
+          <VerificationTab
+            onStatusChange={refreshProfile}
+            residentProfile={user?.profile || null}
+          />
+        )}
         </div>
       </section>
     </div>

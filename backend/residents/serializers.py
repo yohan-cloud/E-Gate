@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import ResidentProfile, User, VerificationRequest
 import re
 from django.contrib.auth.password_validation import validate_password
+from django.utils import timezone
 
 class UserSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField()
@@ -265,6 +266,10 @@ class VerificationRequestSerializer(serializers.ModelSerializer):
     document_url = serializers.SerializerMethodField()
     phone_number = serializers.SerializerMethodField()
     full_name = serializers.SerializerMethodField()
+    expiry_date = serializers.SerializerMethodField()
+    is_verified = serializers.SerializerMethodField()
+    is_expired = serializers.SerializerMethodField()
+    request_kind = serializers.SerializerMethodField()
 
     class Meta:
         model = VerificationRequest
@@ -278,6 +283,10 @@ class VerificationRequestSerializer(serializers.ModelSerializer):
             "admin_note",
             "document",
             "document_url",
+            "expiry_date",
+            "is_verified",
+            "is_expired",
+            "request_kind",
             "created_at",
             "reviewed_at",
             "reviewed_by",
@@ -309,3 +318,27 @@ class VerificationRequestSerializer(serializers.ModelSerializer):
             return name or obj.user.username
         except Exception:
             return None
+
+    def get_expiry_date(self, obj):
+        try:
+            prof = getattr(obj.user, "profile", None)
+            return prof.expiry_date.isoformat() if prof and prof.expiry_date else None
+        except Exception:
+            return None
+
+    def get_is_verified(self, obj):
+        try:
+            prof = getattr(obj.user, "profile", None)
+            return bool(prof.is_verified) if prof else False
+        except Exception:
+            return False
+
+    def get_is_expired(self, obj):
+        try:
+            prof = getattr(obj.user, "profile", None)
+            return bool(prof and prof.expiry_date and prof.expiry_date < timezone.localdate())
+        except Exception:
+            return False
+
+    def get_request_kind(self, obj):
+        return "reverification" if self.get_is_expired(obj) else "verification"

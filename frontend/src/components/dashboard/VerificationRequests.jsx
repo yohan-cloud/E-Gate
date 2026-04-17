@@ -95,7 +95,7 @@ export default function VerificationRequests() {
     try {
       const admin_note =
         action === "rejected"
-          ? "Please contact the admin and upload a new ID document for verification."
+          ? "Please upload a clearer and updated ID document for review."
           : "";
       await api.post(`/residents/verification/admin/${id}/`, { action, admin_note });
       await fetchData();
@@ -111,8 +111,8 @@ export default function VerificationRequests() {
     <div className="card" style={{ marginTop: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <div>
-          <h3 style={{ margin: 0 }}>Verification Requests</h3>
-          <div style={{ color: "#475569" }}>Review and approve resident ID verification requests</div>
+          <h3 style={{ margin: 0 }}>ID Review Requests</h3>
+          <div style={{ color: "#475569" }}>Review resident verification and reverification submissions</div>
         </div>
       <div style={{ color: "#475569" }}>Total Requests: <b>{totalRequests}</b></div>
       </div>
@@ -175,7 +175,7 @@ export default function VerificationRequests() {
         <p>Loading...</p>
       ) : items.length === 0 ? (
         <p>
-          No {tab === "all" ? "" : `${tab} `}verification requests.
+          No {tab === "all" ? "" : `${tab} `}ID review requests.
         </p>
       ) : (
         <div style={{ display: "grid", gap: 12 }}>
@@ -196,7 +196,9 @@ export default function VerificationRequests() {
                   <div className="verification-request-info-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 8, marginTop: 10 }}>
                     <Info label="Email" value={req?.user?.email || "N/A"} />
                     <Info label="Contact" value={req.phone_number || "N/A"} />
+                    <Info label="Review Type" value={req.request_kind === "reverification" ? "Reverification" : "Verification"} />
                     <Info label="Submitted" value={req.created_at ? new Date(req.created_at).toLocaleDateString() : "N/A"} />
+                    <Info label="Expiry" value={req.expiry_date ? new Date(`${req.expiry_date}T00:00:00`).toLocaleDateString() : "N/A"} />
                     <Info label="Status" value={(STATUSES.find((s) => s.key === req.status)?.label) || req.status} />
                   </div>
                   {req.admin_note && (

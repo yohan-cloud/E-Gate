@@ -36,7 +36,6 @@ export default function ProfileCard() {
     return combined || profile?.user?.username || "";
   }, [profile]);
 
-  const payload = `Barangay ID: ${profile?.barangay_id || ""}\nName: ${displayName}`;
   const photoSource = previewUrl || profile?.photo_thumb || profile?.photo || "";
   const genderLabel = useMemo(() => {
     const value = String(profile?.gender || "").trim().toLowerCase();
@@ -47,6 +46,30 @@ export default function ProfileCard() {
   const formattedExpiryDate = useMemo(() => formatDisplayDate(profile?.expiry_date), [profile?.expiry_date]);
   const residentCategoryLabel = useMemo(() => formatEnumLabel(profile?.resident_category, "Resident"), [profile?.resident_category]);
   const voterStatusLabel = useMemo(() => formatVoterStatusLabel(profile?.voter_status), [profile?.voter_status]);
+  const payload = useMemo(() => {
+    const lines = [
+      `Barangay ID: ${profile?.barangay_id || ""}`,
+      `Name: ${displayName}`,
+      `Birthdate: ${formattedBirthdate}`,
+      `Gender: ${genderLabel}`,
+      `Phone: ${profile?.phone_number || "N/A"}`,
+      `Address: ${profile?.address || "N/A"}`,
+      `Resident Type: ${residentCategoryLabel}`,
+      `Voter Status: ${voterStatusLabel}`,
+      `Expiry: ${formattedExpiryDate}`,
+    ];
+    return lines.join("\n");
+  }, [
+    displayName,
+    formattedBirthdate,
+    formattedExpiryDate,
+    genderLabel,
+    profile?.address,
+    profile?.barangay_id,
+    profile?.phone_number,
+    residentCategoryLabel,
+    voterStatusLabel,
+  ]);
 
   const daysToExpiry = useMemo(() => {
     if (!profile?.expiry_date) return null;

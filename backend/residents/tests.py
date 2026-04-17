@@ -4,6 +4,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch as mock_patch
 
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework import status
@@ -12,6 +13,10 @@ from rest_framework.test import APIClient
 from common.models import AuditLog
 from events.models import Event, EventRegistration
 from residents.models import ResidentProfile, VerificationRequest
+
+
+def make_verification_upload(name="verification.jpg"):
+    return SimpleUploadedFile(name, b"fake-image-content", content_type="image/jpeg")
 
 
 @override_settings(
@@ -247,3 +252,92 @@ class ResidentSecurityAuditTests(TestCase):
         actions = list(AuditLog.objects.values_list("action", flat=True))
         self.assertIn("resident_password_reset", actions)
         self.assertIn("resident_password_change", actions)
+
+
+@override_settings(
+    REST_FRAMEWORK={
+        "DEFAULT_AUTHENTICATION_CLASSES": (
+            "rest_framework_simplejwt.authentication.JWTAuthentication",
+        ),
+        "DEFAULT_THROTTLE_CLASSES": [],
+        "DEFAULT_THROTTLE_RATES": {"user": "10000/min", "anon": "10000/min"},
+    }
+)
+class ResidentReverificationFlowTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        User = get_user_model()
+        self.admin = User.objects.create_user(
+            username="admin_reverify",
+            password="pass1234",
+            is_admin=True,
+            is_staff=True,
+        )
+        self.resident = User.objects.create_user(
+            username="resident_reverify",
+            password="pass1234",
+            is_resident=True,
+            email="resident_reverify@example.com",
+        )
+        self.profile = ResidentProfile.objects.create(
+            user=self.resident,
+            address="Ermita, Manila",
+            birthdate="2000-01-01",
+            phone_number="09120000000",
+            is_verified=True,
+            verified_at=timezone.now() - timedelta(days=400),
+            date_registered=timezone.localdate() - timedelta(days=400),
+            expiry_date=timezone.localdate() - timedelta(days=1),
+        )
+
+    def test_expired_verified_resident_can_submit_reverification_request(self):
+        self.client.force_authenticate(user=self.resident)
+
+        res = self.client.post(
+            "/api/residents/verification/",
+            {"document": make_verification_upload(), "note": "Renewing expired ID."},
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data["status"], "pending")
+        self.assertEqual(res.data["request_kind"], "reverification")
+        self.assertTrue(res.data["is_expired"])
+
+    def test_active_verified_resident_cannot_submit_reverification_request_early(self):
+        self.profile.expiry_date = timezone.localdate() + timedelta(days=30)
+        self.profile.save(update_fields=["expiry_date"])
+        self.client.force_authenticate(user=self.resident)
+
+        res = self.client.post(
+            "/api/residents/verification/",
+            {"document": make_verification_upload()},
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("still active", res.data["error"])
+
+    def test_admin_approval_of_expired_reverification_renews_expiry(self):
+        verification = VerificationRequest.objects.create(
+            user=self.resident,
+            document=make_verification_upload("expired-renew.jpg"),
+        )
+        old_expiry = self.profile.expiry_date
+        self.client.force_authenticate(user=self.admin)
+
+        res = self.client.post(
+            f"/api/residents/verification/admin/{verification.id}/",
+            {"action": "approved", "admin_note": "Expired ID renewed."},
+            format="json",
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.profile.refresh_from_db()
+        verification.refresh_from_db()
+        self.assertTrue(self.profile.is_verified)
+        self.assertEqual(verification.status, VerificationRequest.Status.APPROVED)
+        self.assertGreater(self.profile.expiry_date, old_expiry)
+        self.assertEqual(self.profile.expiry_date, timezone.localdate() + timedelta(days=365))
+
+        review_log = AuditLog.objects.filter(action="verification_review").latest("id")
+        self.assertEqual(review_log.metadata["request_kind"], "reverification")
+        self.assertTrue(review_log.metadata["expiry_renewed"])

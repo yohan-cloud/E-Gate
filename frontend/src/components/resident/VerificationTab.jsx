@@ -2,15 +2,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 
 const statusColors = {
-  pending: { bg: "#fef9c3", color: "#854d0e", icon: "⏳", title: "Pending Review" },
-  approved: { bg: "#dcfce7", color: "#166534", icon: "✅", title: "Verified" },
-  rejected: { bg: "#fef3c7", color: "#92400e", icon: "📄", title: "New Upload Requested" },
+  pending: { bg: "#fef9c3", color: "#854d0e", icon: "Pending", title: "Pending Review" },
+  approved: { bg: "#dcfce7", color: "#166534", icon: "Approved", title: "Verified" },
+  rejected: { bg: "#fef3c7", color: "#92400e", icon: "Retry", title: "New Upload Requested" },
 };
 
 const allowedFileTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const maxFileSize = 5 * 1024 * 1024;
 
-export default function VerificationTab({ onStatusChange }) {
+export default function VerificationTab({ onStatusChange, residentProfile = null }) {
   const [current, setCurrent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -20,12 +20,28 @@ export default function VerificationTab({ onStatusChange }) {
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
+  const expiryDate = useMemo(() => {
+    if (!residentProfile?.expiry_date) return null;
+    const parsed = new Date(`${residentProfile.expiry_date}T00:00:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }, [residentProfile?.expiry_date]);
+
+  const isExpired = useMemo(() => {
+    if (!expiryDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return expiryDate < today;
+  }, [expiryDate]);
+
+  const isCurrentlyVerified = Boolean(residentProfile?.is_verified) && !isExpired;
+  const requestKind = isExpired ? "reverification" : "verification";
+
   const canSubmit = useMemo(() => {
     if (!file) return false;
     if (current?.status === "pending") return false;
-    if (current?.status === "approved") return false;
+    if (current?.status === "approved" && !isExpired) return false;
     return true;
-  }, [file, current?.status]);
+  }, [file, current?.status, isExpired]);
 
   const fetchStatus = useCallback(async () => {
     setLoading(true);
@@ -35,7 +51,7 @@ export default function VerificationTab({ onStatusChange }) {
       setCurrent(res?.data || null);
       await onStatusChange?.();
     } catch (e) {
-      setError(e?.response?.data?.error || "Failed to load verification status.");
+      setError(e?.response?.data?.error || "Failed to load ID review status.");
     } finally {
       setLoading(false);
     }
@@ -55,18 +71,18 @@ export default function VerificationTab({ onStatusChange }) {
     if (!allowedFileTypes.includes(f.type)) {
       setError("Use JPG, PNG, WEBP, or PDF.");
       setFile(null);
-      setFileFeedback({ tone: "#b91c1c", text: "❌ Unsupported format. Use JPG, PNG, WEBP, or PDF." });
+      setFileFeedback({ tone: "#b91c1c", text: "Unsupported format. Use JPG, PNG, WEBP, or PDF." });
       return;
     }
     if (f.size > maxFileSize) {
       setError("Max file size is 5MB.");
       setFile(null);
-      setFileFeedback({ tone: "#b91c1c", text: "❌ File too large. Maximum size is 5MB." });
+      setFileFeedback({ tone: "#b91c1c", text: "File too large. Maximum size is 5MB." });
       return;
     }
     setError("");
     setFile(f);
-    setFileFeedback({ tone: "#15803d", text: `✅ Ready to upload: ${f.name}` });
+    setFileFeedback({ tone: "#15803d", text: `Ready to upload: ${f.name}` });
   };
 
   const submit = async () => {
@@ -82,10 +98,10 @@ export default function VerificationTab({ onStatusChange }) {
       setCurrent(res?.data || null);
       setFile(null);
       setNote("");
-      setSuccessMsg("Verification request sent.");
+      setSuccessMsg(isExpired ? "Reverification request sent." : "Verification request sent.");
       await onStatusChange?.();
     } catch (e) {
-      setError(e?.response?.data?.error || "Failed to submit verification.");
+      setError(e?.response?.data?.error || `Failed to submit ${requestKind}.`);
     } finally {
       setSubmitting(false);
     }
@@ -93,13 +109,31 @@ export default function VerificationTab({ onStatusChange }) {
 
   const statusInfo = useMemo(() => {
     const status = current?.status;
-    if (!status) {
+    if (!status || status === "none") {
+      if (isCurrentlyVerified) {
+        return {
+          bg: "#dcfce7",
+          color: "#166534",
+          icon: "OK",
+          title: "ID Active",
+          message: "Your resident ID is active. Reverification will only be needed after it expires.",
+        };
+      }
+      if (residentProfile?.is_verified && isExpired) {
+        return {
+          bg: "#fef3c7",
+          color: "#92400e",
+          icon: "!",
+          title: "Reverification Required",
+          message: "Your resident ID has expired. Upload a new ID document so the admin can review and renew it.",
+        };
+      }
       return {
         bg: "#e2e8f0",
         color: "#334155",
-        icon: "🪪",
-        title: "Not Yet Verified",
-        message: "Upload a clear copy of your Barangay ID so the admin can review your account.",
+        icon: "ID",
+        title: "Verification Available",
+        message: "Upload a clear copy of your Barangay ID if the admin asks you to complete identity review.",
       };
     }
 
@@ -114,30 +148,35 @@ export default function VerificationTab({ onStatusChange }) {
         : null;
       return {
         ...meta,
+        title: isExpired ? "Reverification Approved" : meta.title,
         message: reviewedOn
-          ? `Your account has been successfully verified on ${reviewedOn}.`
-          : "Your account has been successfully verified.",
+          ? `${isExpired ? "Your reverification request was approved" : "Your account was verified"} on ${reviewedOn}.`
+          : isExpired
+            ? "Your reverification request was approved."
+            : "Your account has been successfully verified.",
       };
     }
     if (status === "pending") {
       return {
         ...meta,
-        message: "Your verification request is under review. You do not need to upload again right now.",
+        title: isExpired ? "Reverification Pending" : meta.title,
+        message: `Your ${requestKind} request is under review. You do not need to upload again right now.`,
       };
     }
     return {
       ...meta,
-      message: "Please review the guidance below and submit a clearer document.",
+      title: isExpired ? "New Reverification Upload Needed" : meta.title,
+      message: `Please review the guidance below and submit a clearer document for ${requestKind}.`,
     };
-  }, [current]);
+  }, [current, isCurrentlyVerified, isExpired, requestKind, residentProfile?.is_verified]);
 
-  if (loading) return <p>Loading verification status...</p>;
+  if (loading) return <p>Loading ID review status...</p>;
 
   return (
     <div className="card">
-      <h3 style={{ marginTop: 0, marginBottom: 8 }}>Government ID Verification</h3>
+      <h3 style={{ marginTop: 0, marginBottom: 8 }}>Resident ID Reverification</h3>
       <p style={{ marginTop: 0, color: "#475569" }}>
-        Upload your government-issued Barangay ID. Admins will review and mark your account as verified.
+        Upload your current Barangay ID when your resident ID has expired or when the admin asks for a new review.
       </p>
 
       {error && <div style={{ color: "#b91c1c", marginBottom: 8 }}>{error}</div>}
@@ -156,12 +195,17 @@ export default function VerificationTab({ onStatusChange }) {
         }}
       >
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-          <div style={{ fontSize: 22, lineHeight: 1 }}>{statusInfo.icon}</div>
+          <div style={{ fontSize: 18, lineHeight: 1, fontWeight: 700, minWidth: 64 }}>{statusInfo.icon}</div>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 18, fontWeight: 700 }}>{statusInfo.title}</div>
             <div style={{ fontSize: 14 }}>{statusInfo.message}</div>
           </div>
         </div>
+        {residentProfile?.expiry_date && (
+          <span style={{ fontSize: 12, color: statusInfo.color }}>
+            Current expiry: {new Date(`${residentProfile.expiry_date}T00:00:00`).toLocaleDateString()}
+          </span>
+        )}
         {current?.reviewed_at && (
           <span style={{ fontSize: 12, color: statusInfo.color }}>
             Reviewed at: {new Date(current.reviewed_at).toLocaleString()}
@@ -184,7 +228,7 @@ export default function VerificationTab({ onStatusChange }) {
         </div>
       )}
 
-      {current?.status === "approved" && (
+      {current?.status === "approved" && !isExpired && (
         <div
           style={{
             marginTop: 12,
@@ -195,11 +239,11 @@ export default function VerificationTab({ onStatusChange }) {
             color: "#166534",
           }}
         >
-          You are already verified. If you need to update your verification, please contact the admin for assistance.
+          Your resident ID is still active. Come back here when it expires and needs reverification.
         </div>
       )}
 
-      {current?.status !== "approved" && (
+      {(current?.status !== "approved" || isExpired) && (
         <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
           <div
             style={{
@@ -212,6 +256,7 @@ export default function VerificationTab({ onStatusChange }) {
             <div style={{ fontWeight: 700, marginBottom: 8 }}>Before you upload</div>
             <div style={{ color: "#475569", fontSize: 14 }}>
               <div>• Upload a clear photo of your Barangay ID</div>
+              <div>• Make sure the ID is updated and readable</div>
               <div>• Ensure your name and photo are visible</div>
               <div>• Avoid blurry, dark, or cropped images</div>
             </div>
@@ -219,7 +264,7 @@ export default function VerificationTab({ onStatusChange }) {
 
           <div>
             <label style={{ fontWeight: 600, display: "block", marginBottom: 4 }}>
-              {current?.status === "rejected" ? "Upload a new ID" : "Upload ID"}
+              {current?.status === "rejected" ? "Upload a new ID" : isExpired ? "Upload updated ID for reverification" : "Upload ID"}
             </label>
             <input type="file" accept="image/*,.pdf" onChange={onFileChange} />
             <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
@@ -248,7 +293,7 @@ export default function VerificationTab({ onStatusChange }) {
               disabled={!canSubmit || submitting}
               style={{ padding: "8px 14px" }}
             >
-              {submitting ? "Submitting..." : "Submit for Verification"}
+              {submitting ? "Submitting..." : isExpired ? "Submit for Reverification" : "Submit for Verification"}
             </button>
             {current?.status === "pending" && (
               <span style={{ marginLeft: 8, color: "#6b7280", fontSize: 12 }}>
