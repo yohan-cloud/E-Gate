@@ -70,17 +70,40 @@ def _validate_event_audience(event, profile):
     audiences = set(audience.split(","))
 
     age = _calculate_age(getattr(profile, "birthdate", None))
-    if age is None:
-        return Response(
-            {"error": "Resident birthdate is required for this event.", "result_code": "birthdate_required"},
-            status=status.HTTP_403_FORBIDDEN,
-        )
-    if "kids_only" in audiences and age <= KIDS_MAX_AGE:
+    resident_category = (getattr(profile, "resident_category", "") or "").strip().lower()
+    voter_status = (getattr(profile, "voter_status", "") or "").strip().lower()
+
+    age_based_audiences = {"kids_only", "adult_only", "senior_only"}
+    resident_type_audiences = {"employee_only", "resident_only", "client_only"}
+    voter_audiences = {"registered_voter_only", "not_yet_voter_only", "other_area_voter_only"}
+
+    if audiences & age_based_audiences:
+        if age is None:
+            return Response(
+                {"error": "Resident birthdate is required for this event.", "result_code": "birthdate_required"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if "kids_only" in audiences and age <= KIDS_MAX_AGE:
+            return None
+        if "adult_only" in audiences and ADULT_MIN_AGE <= age <= ADULT_MAX_AGE:
+            return None
+        if "senior_only" in audiences and age >= SENIOR_MIN_AGE:
+            return None
+
+    if "employee_only" in audiences and resident_category == "employee":
         return None
-    if "adult_only" in audiences and ADULT_MIN_AGE <= age <= ADULT_MAX_AGE:
+    if "resident_only" in audiences and resident_category == "resident":
         return None
-    if "senior_only" in audiences and age >= SENIOR_MIN_AGE:
+    if "client_only" in audiences and resident_category == "client":
         return None
+
+    if "registered_voter_only" in audiences and voter_status == "registered_voter":
+        return None
+    if "not_yet_voter_only" in audiences and voter_status == "not_yet_voter":
+        return None
+    if "other_area_voter_only" in audiences and voter_status == "other_area_voter":
+        return None
+
     if audiences == {"kids_only"} and age > KIDS_MAX_AGE:
         return Response(
             {"error": "This event is for kids/teens only.", "result_code": "audience_kids_only"},
@@ -96,8 +119,38 @@ def _validate_event_audience(event, profile):
             {"error": "This event is for senior residents only.", "result_code": "audience_senior_only"},
             status=status.HTTP_403_FORBIDDEN,
         )
+    if audiences == {"employee_only"} and resident_category != "employee":
+        return Response(
+            {"error": "This event is for employees only.", "result_code": "audience_employee_only"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    if audiences == {"resident_only"} and resident_category != "resident":
+        return Response(
+            {"error": "This event is for residents only.", "result_code": "audience_resident_only"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    if audiences == {"client_only"} and resident_category != "client":
+        return Response(
+            {"error": "This event is for clients only.", "result_code": "audience_client_only"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    if audiences == {"registered_voter_only"} and voter_status != "registered_voter":
+        return Response(
+            {"error": "This event is for registered voters only.", "result_code": "audience_registered_voter_only"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    if audiences == {"not_yet_voter_only"} and voter_status != "not_yet_voter":
+        return Response(
+            {"error": "This event is for residents who are not yet voters.", "result_code": "audience_not_yet_voter_only"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    if audiences == {"other_area_voter_only"} and voter_status != "other_area_voter":
+        return Response(
+            {"error": "This event is for voters registered in another barangay or area.", "result_code": "audience_other_area_voter_only"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
     return Response(
-        {"error": "This event is only for selected age-based audiences.", "result_code": "audience_restricted"},
+        {"error": "This event is only for selected audiences.", "result_code": "audience_restricted"},
         status=status.HTTP_403_FORBIDDEN,
     )
 

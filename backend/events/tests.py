@@ -142,7 +142,7 @@ class EventsFlowTests(TestCase):
         self.auth(self.res_token)
         reg = self.client.post(f"/api/events/{event_id}/register/")
         self.assertEqual(reg.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(reg.data.get("error"), "This event is for kids only.")
+        self.assertEqual(reg.data.get("error"), "This event is for kids/teens only.")
         self.assertEqual(reg.data.get("result_code"), "audience_kids_only")
 
     def test_non_senior_resident_cannot_register_for_senior_only_event(self):
@@ -202,6 +202,40 @@ class EventsFlowTests(TestCase):
         reg = self.client.post(f"/api/events/{event_id}/register/")
         self.assertEqual(reg.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(reg.data.get("result_code"), "audience_restricted")
+
+    def test_registered_voter_can_register_for_registered_voter_only_event(self):
+        event_id = self.create_open_event(title="Ayuda Distribution", capacity=20)
+        ResidentProfile.objects.filter(user=self.resident).update(
+            voter_status=ResidentProfile.VoterStatus.REGISTERED_VOTER,
+        )
+        Event.objects.filter(id=event_id).update(audience_type="registered_voter_only")
+
+        self.auth(self.res_token)
+        reg = self.client.post(f"/api/events/{event_id}/register/")
+        self.assertIn(reg.status_code, (status.HTTP_201_CREATED, status.HTTP_200_OK))
+
+    def test_non_registered_voter_cannot_register_for_registered_voter_only_event(self):
+        event_id = self.create_open_event(title="Voter Only Ayuda", capacity=20)
+        ResidentProfile.objects.filter(user=self.resident).update(
+            voter_status=ResidentProfile.VoterStatus.NOT_YET_VOTER,
+        )
+        Event.objects.filter(id=event_id).update(audience_type="registered_voter_only")
+
+        self.auth(self.res_token)
+        reg = self.client.post(f"/api/events/{event_id}/register/")
+        self.assertEqual(reg.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(reg.data.get("result_code"), "audience_registered_voter_only")
+
+    def test_employee_can_register_for_employee_only_event(self):
+        event_id = self.create_open_event(title="Staff Briefing", capacity=20)
+        ResidentProfile.objects.filter(user=self.resident).update(
+            resident_category=ResidentProfile.ResidentCategory.EMPLOYEE,
+        )
+        Event.objects.filter(id=event_id).update(audience_type="employee_only")
+
+        self.auth(self.res_token)
+        reg = self.client.post(f"/api/events/{event_id}/register/")
+        self.assertIn(reg.status_code, (status.HTTP_201_CREATED, status.HTTP_200_OK))
 
     def test_my_registrations_paginated_endpoint(self):
         # Admin creates an event that is open for registration now

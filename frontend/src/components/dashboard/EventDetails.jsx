@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api";
 import toast, { formatApiError } from "../../lib/toast";
+import AudienceSelector from "./AudienceSelector";
+import { AUDIENCE_LABELS, parseAudienceValue } from "./audienceOptions";
 import { DateTimeField } from "./PickerField";
 
 const EVENT_TYPE_OPTIONS = [
@@ -11,28 +13,6 @@ const EVENT_TYPE_OPTIONS = [
 ];
 
 const EVENT_TYPE_LABELS = Object.fromEntries(EVENT_TYPE_OPTIONS.map((option) => [option.value, option.label]));
-const AUDIENCE_OPTIONS = [
-  { value: "all", label: "All Residents" },
-  { value: "kids_only", label: "Kids/Teens" },
-  { value: "adult_only", label: "Adults" },
-  { value: "senior_only", label: "Senior Citizens" },
-];
-const AUDIENCE_LABELS = Object.fromEntries(AUDIENCE_OPTIONS.map((option) => [option.value, option.label]));
-
-function parseAudienceValue(value) {
-  if (!value || value === "all") return ["all"];
-  const parsed = String(value)
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-  return parsed.length ? parsed : ["all"];
-}
-
-function stringifyAudienceValue(values) {
-  const unique = [...new Set(values.filter(Boolean))];
-  if (unique.length === 0 || unique.includes("all")) return "all";
-  return unique.join(",");
-}
 
 function toLocalInput(dt) {
   if (!dt) return "";
@@ -60,7 +40,6 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
   const [event, setEvent] = useState(initialEvent);
   const [editing, setEditing] = useState(mode === "edit");
   const [form, setForm] = useState({});
-  const selectedAudiences = parseAudienceValue(form.audience_type);
 
   const toOffsetIso = (val) => {
     if (!val) return null;
@@ -115,25 +94,6 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
   };
 
   const updateField = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
-  const toggleAudience = (value) => {
-    const current = parseAudienceValue(form.audience_type);
-
-    if (value === "all") {
-      setForm({ ...form, audience_type: "all" });
-      return;
-    }
-
-    const withoutAll = current.filter((item) => item !== "all");
-    const nextValues = withoutAll.includes(value)
-      ? withoutAll.filter((item) => item !== value)
-      : [...withoutAll, value];
-
-    setForm({
-      ...form,
-      audience_type: stringifyAudienceValue(nextValues),
-    });
-  };
 
   const save = async () => {
     try {
@@ -211,40 +171,11 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
             </div>
             <div className="form-group">
               <label htmlFor="edit-audience">Audience</label>
-              <div id="edit-audience" className="audience-picker" role="group" aria-label="Audience selection">
-                <div className="audience-chip-list">
-                  {selectedAudiences.map((value) => {
-                    const option = AUDIENCE_OPTIONS.find((item) => item.value === value);
-                    if (!option) return null;
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        className="audience-chip active"
-                        onClick={() => toggleAudience(value)}
-                      >
-                        <span>{option.label}</span>
-                        <span className="audience-chip-close" aria-hidden="true">x</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="audience-option-row">
-                  {AUDIENCE_OPTIONS.map((option) => {
-                    const isSelected = selectedAudiences.includes(option.value);
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={`audience-option ${isSelected ? "selected" : ""}`}
-                        onClick={() => toggleAudience(option.value)}
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <AudienceSelector
+                id="edit-audience"
+                value={form.audience_type}
+                onChange={(nextValue) => setForm({ ...form, audience_type: nextValue })}
+              />
             </div>
             <DateTimeField
               id="edit-date"

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api } from "../../api";
 import toast, { formatApiError } from "../../lib/toast";
+import AudienceSelector from "./AudienceSelector";
 import { DateTimeField } from "./PickerField";
 import { VENUE_DEFAULT_CAPACITIES, VENUE_OPTIONS } from "../../constants/venues";
 
@@ -10,28 +11,6 @@ const EVENT_TYPE_OPTIONS = [
   { value: "community_events", label: "Community Events" },
   { value: "operations_and_compliance", label: "Operations and Compliance" },
 ];
-
-const AUDIENCE_OPTIONS = [
-  { value: "all", label: "All Residents" },
-  { value: "kids_only", label: "Kids/Teens" },
-  { value: "adult_only", label: "Adults" },
-  { value: "senior_only", label: "Senior Citizens" },
-];
-
-function parseAudienceValue(value) {
-  if (!value || value === "all") return ["all"];
-  const parsed = String(value)
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-  return parsed.length ? parsed : ["all"];
-}
-
-function stringifyAudienceValue(values) {
-  const unique = [...new Set(values.filter(Boolean))];
-  if (unique.length === 0 || unique.includes("all")) return "all";
-  return unique.join(",");
-}
 
 const DEFAULTS = {
   title: "",
@@ -50,7 +29,6 @@ export default function CreateEventForm({ onCreated }) {
   const [form, setForm] = useState(DEFAULTS);
   const [busy, setBusy] = useState(false);
   const hasAutoCapacity = VENUE_DEFAULT_CAPACITIES[form.venue] !== undefined;
-  const selectedAudiences = parseAudienceValue(form.audience_type);
 
   const update = (e) => {
     const { name, value } = e.target;
@@ -111,25 +89,6 @@ export default function CreateEventForm({ onCreated }) {
     }
   };
 
-  const toggleAudience = (value) => {
-    const current = parseAudienceValue(form.audience_type);
-
-    if (value === "all") {
-      setForm({ ...form, audience_type: "all" });
-      return;
-    }
-
-    const withoutAll = current.filter((item) => item !== "all");
-    const nextValues = withoutAll.includes(value)
-      ? withoutAll.filter((item) => item !== value)
-      : [...withoutAll, value];
-
-    setForm({
-      ...form,
-      audience_type: stringifyAudienceValue(nextValues),
-    });
-  };
-
   return (
     <div className="event-create-shell" style={{ marginBottom: 12 }}>
       <div className="event-create-card">
@@ -163,41 +122,12 @@ export default function CreateEventForm({ onCreated }) {
         </div>
         <div className="form-group">
           <label htmlFor="event-audience">Audience</label>
-          <div id="event-audience" className="audience-picker" role="group" aria-label="Audience selection">
-            <div className="audience-chip-list">
-              {selectedAudiences.map((value) => {
-                const option = AUDIENCE_OPTIONS.find((item) => item.value === value);
-                if (!option) return null;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    className="audience-chip active"
-                    onClick={() => toggleAudience(value)}
-                  >
-                    <span>{option.label}</span>
-                    <span className="audience-chip-close" aria-hidden="true">x</span>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="audience-option-row">
-              {AUDIENCE_OPTIONS.map((option) => {
-                const isSelected = selectedAudiences.includes(option.value);
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`audience-option ${isSelected ? "selected" : ""}`}
-                    onClick={() => toggleAudience(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <small>Select one or more audiences. Choosing All Residents clears the age filters.</small>
+          <AudienceSelector
+            id="event-audience"
+            value={form.audience_type}
+            onChange={(nextValue) => setForm({ ...form, audience_type: nextValue })}
+          />
+          <small>Select one or more audiences. Choosing All Audience clears the other filters.</small>
         </div>
         <DateTimeField
           id="event-date"
