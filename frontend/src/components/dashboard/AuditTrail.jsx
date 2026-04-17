@@ -5,6 +5,9 @@ import { fetchJson } from "../../api";
 const ACTION_OPTIONS = [
   { value: "", label: "All actions" },
   { value: "resident_update", label: "Resident Edit" },
+  { value: "resident_deactivate", label: "Resident Deactivation" },
+  { value: "resident_reactivate", label: "Resident Reactivation" },
+  { value: "resident_archive", label: "Resident Archive" },
   { value: "attendance_mark", label: "Attendance Approval" },
   { value: "verification_review", label: "Verification Approval" },
 ];
@@ -12,6 +15,9 @@ const ACTION_OPTIONS = [
 function isRelevantAuditRow(row) {
   if (!row) return false;
   if (row.action === "resident_update") return true;
+  if (row.action === "resident_deactivate") return true;
+  if (row.action === "resident_reactivate") return true;
+  if (row.action === "resident_archive") return true;
   if (row.action === "attendance_mark") return true;
   if (row.action === "verification_review") {
     return (row.metadata?.status || "").toLowerCase() === "approved";
@@ -65,7 +71,7 @@ export default function AuditTrail() {
       <div className="section-head">
         <div>
           <h3 style={{ margin: 0 }}>Audit Trail</h3>
-          <div className="muted">Show only who edited residents, approved attendance, and approved verification.</div>
+          <div className="muted">Show resident edits, deactivations, reactivations, archives, attendance approvals, and approved verification reviews.</div>
         </div>
         <div className="stack-row audit-summary-row">
           <div className="pill-light audit-summary-pill">Records: <b>{summary.total}</b></div>
@@ -190,6 +196,9 @@ function AuditField({ label, value }) {
 function formatAction(row) {
   if (!row) return "Unknown";
   if (row.action === "resident_update") return "Resident Edited";
+  if (row.action === "resident_deactivate") return "Resident Deactivated";
+  if (row.action === "resident_reactivate") return "Resident Reactivated";
+  if (row.action === "resident_archive") return "Resident Archived";
   if (row.action === "attendance_mark") return "Attendance Approved";
   if (row.action === "verification_review") return "Verification Approved";
   return (row.action || "unknown")
@@ -201,6 +210,9 @@ function formatAction(row) {
 function formatStatus(row) {
   if (!row) return "N/A";
   if (row.action === "resident_update") return "Edited";
+  if (row.action === "resident_deactivate") return row.metadata?.reason || "Deactivated";
+  if (row.action === "resident_reactivate") return "Reactivated";
+  if (row.action === "resident_archive") return row.metadata?.archive_storage ? `Archived (${row.metadata.archive_storage})` : "Archived";
   if (row.action === "attendance_mark") {
     return row.metadata?.direction === "time_out" ? "Time Out Approved" : "Time In Approved";
   }
