@@ -56,23 +56,46 @@ function calcAge(birthdate) {
   }
 }
 
-function getAgeGroup(age) {
-  if (age === null) return null;
-  if (age >= 60) {
-    return {
-      label: "senior",
-      background: "#fef3c7",
-      color: "#92400e",
-    };
+function getResidentAudiencePills(age, voterStatus) {
+  const pills = [];
+
+  if (age !== null) {
+    if (age < 18) {
+      pills.push({
+        label: "kid/teen",
+        background: "#dbeafe",
+        color: "#1d4ed8",
+      });
+    } else if (age >= 60) {
+      pills.push({
+        label: "senior",
+        background: "#fef3c7",
+        color: "#92400e",
+      });
+    } else {
+      pills.push({
+        label: "adult",
+        background: "#e2e8f0",
+        color: "#334155",
+      });
+    }
   }
-  if (age < 18) {
-    return {
-      label: "kid",
-      background: "#dbeafe",
-      color: "#1d4ed8",
-    };
+
+  if (voterStatus === "registered_voter") {
+    pills.push({
+      label: "registered voter",
+      background: "#dcfce7",
+      color: "#166534",
+    });
+  } else if (voterStatus === "other_area_voter") {
+    pills.push({
+      label: "other area voter",
+      background: "#ede9fe",
+      color: "#6d28d9",
+    });
   }
-  return null;
+
+  return pills;
 }
 
 export default function ResidentsTable() {
@@ -409,7 +432,7 @@ export default function ResidentsTable() {
             const revealed = revealedById[r.user?.id];
             const displayRow = revealed || r;
             const age = calcAge(r.birthdate);
-            const ageGroup = getAgeGroup(age);
+            const residentAudiencePills = getResidentAudiencePills(age, r.voter_status);
             const isVerified = Boolean(r.is_verified);
             const isDeactivated = Boolean(r.is_deactivated);
             const statusBadge = r.is_archived
@@ -447,11 +470,11 @@ export default function ResidentsTable() {
                       <span style={badgeStyle(isVerified ? "#dcfce7" : "#fee2e2", isVerified ? "#166534" : "#991b1b")}>
                         {isVerified ? "verified" : "not verified"}
                       </span>
-                      {ageGroup ? (
-                        <span style={badgeStyle(ageGroup.background, ageGroup.color)}>
-                          {ageGroup.label}
+                      {residentAudiencePills.map((pill) => (
+                        <span key={pill.label} style={badgeStyle(pill.background, pill.color)}>
+                          {pill.label}
                         </span>
-                      ) : null}
+                      ))}
                     </div>
                     <div style={{ color: "#6b7280", fontSize: 13, marginTop: 2 }}>
                       ID: {r.barangay_id}

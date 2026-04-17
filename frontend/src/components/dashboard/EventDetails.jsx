@@ -15,8 +15,6 @@ const AUDIENCE_OPTIONS = [
   { value: "all", label: "All Residents" },
   { value: "kids_only", label: "Kids/Teens" },
   { value: "adult_only", label: "Adults" },
-  { value: "pwd", label: "PWD" },
-  { value: "pregnant_mothers", label: "Pregnant Women / Mothers" },
   { value: "senior_only", label: "Senior Citizens" },
 ];
 const AUDIENCE_LABELS = Object.fromEntries(AUDIENCE_OPTIONS.map((option) => [option.value, option.label]));
