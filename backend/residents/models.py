@@ -24,6 +24,17 @@ class ResidentProfile(models.Model):
         OTHER = "other", "Other"
         UNSPECIFIED = "unspecified", "Unspecified"
 
+    class ResidentCategory(models.TextChoices):
+        EMPLOYEE = "employee", "Employee"
+        RESIDENT = "resident", "Resident"
+        CLIENT = "client", "Client"
+
+    class VoterStatus(models.TextChoices):
+        REGISTERED_VOTER = "registered_voter", "Registered Voter"
+        NOT_YET_VOTER = "not_yet_voter", "Not Yet Voter"
+        OTHER_AREA_VOTER = "other_area_voter", "Voter in Other Barangay / Other Area"
+        UNSPECIFIED = "unspecified", "Unspecified"
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     barangay_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     address = models.CharField(max_length=255)
@@ -34,6 +45,16 @@ class ResidentProfile(models.Model):
     date_registered = models.DateField(default=date.today)
     expiry_date = models.DateField(default=default_expiry_date)
     gender = models.CharField(max_length=20, choices=Gender.choices, default=Gender.UNSPECIFIED)
+    resident_category = models.CharField(
+        max_length=20,
+        choices=ResidentCategory.choices,
+        default=ResidentCategory.RESIDENT,
+    )
+    voter_status = models.CharField(
+        max_length=20,
+        choices=VoterStatus.choices,
+        default=VoterStatus.UNSPECIFIED,
+    )
     # Face recognition data (optional)
     face_image = models.ImageField(upload_to='faces/', null=True, blank=True)
     face_embedding = models.JSONField(null=True, blank=True)

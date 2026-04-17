@@ -44,6 +44,10 @@ frontend/.env
 # Local tools / scratch files
 mkcert.exe
 analytics_backup.*
+data.json
+data_nobom.json
+*.sql
+*_backup.sql
 temp_*
 __tmp_*
 -

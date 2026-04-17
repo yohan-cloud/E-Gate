@@ -25,6 +25,8 @@ def _serialize_resident(profile):
         "date_registered": profile.date_registered.isoformat() if profile.date_registered else None,
         "expiry_date": profile.expiry_date.isoformat() if profile.expiry_date else None,
         "gender": profile.gender,
+        "resident_category": profile.resident_category,
+        "voter_status": profile.voter_status,
         "is_verified": profile.is_verified,
         "verified_at": profile.verified_at.isoformat() if profile.verified_at else None,
         "has_profile_photo": bool(profile.photo),

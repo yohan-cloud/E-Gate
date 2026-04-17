@@ -12,6 +12,7 @@ from .serializers import (
     EventAttendanceSerializer,
     EntryLogSerializer,
     ResidentGateLogSerializer,
+    normalize_audience_type,
 )
 from accounts.permissions import IsAdminUserRole, IsResidentUserRole, IsAdminOrGateOperatorRole, IsGateAccessAllowed
 from django.db.models import Q, Count
@@ -47,6 +48,8 @@ from .archive import archive_event
 
 logger = logging.getLogger("events")
 KIDS_MAX_AGE = 17
+ADULT_MIN_AGE = 18
+ADULT_MAX_AGE = 59
 SENIOR_MIN_AGE = 60
 
 
@@ -60,9 +63,11 @@ def _calculate_age(birthdate, today=None):
 
 
 def _validate_event_audience(event, profile):
-    audience = getattr(event, "audience_type", "all") or "all"
+    audience = normalize_audience_type(getattr(event, "audience_type", "all") or "all")
     if audience == "all":
         return None
+
+    audiences = set(audience.split(","))
 
     age = _calculate_age(getattr(profile, "birthdate", None))
     if age is None:
@@ -70,17 +75,31 @@ def _validate_event_audience(event, profile):
             {"error": "Resident birthdate is required for this event.", "result_code": "birthdate_required"},
             status=status.HTTP_403_FORBIDDEN,
         )
-    if audience == "kids_only" and age > KIDS_MAX_AGE:
+    if "kids_only" in audiences and age <= KIDS_MAX_AGE:
+        return None
+    if "adult_only" in audiences and ADULT_MIN_AGE <= age <= ADULT_MAX_AGE:
+        return None
+    if "senior_only" in audiences and age >= SENIOR_MIN_AGE:
+        return None
+    if audiences == {"kids_only"} and age > KIDS_MAX_AGE:
         return Response(
-            {"error": "This event is for kids only.", "result_code": "audience_kids_only"},
+            {"error": "This event is for kids/teens only.", "result_code": "audience_kids_only"},
             status=status.HTTP_403_FORBIDDEN,
         )
-    if audience == "senior_only" and age < SENIOR_MIN_AGE:
+    if audiences == {"adult_only"} and not (ADULT_MIN_AGE <= age <= ADULT_MAX_AGE):
+        return Response(
+            {"error": "This event is for adult residents only.", "result_code": "audience_adult_only"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    if audiences == {"senior_only"} and age < SENIOR_MIN_AGE:
         return Response(
             {"error": "This event is for senior residents only.", "result_code": "audience_senior_only"},
             status=status.HTTP_403_FORBIDDEN,
         )
-    return None
+    return Response(
+        {"error": "This event is only for selected age-based audiences.", "result_code": "audience_restricted"},
+        status=status.HTTP_403_FORBIDDEN,
+    )
 
 
 def _emit(event_type: str, aggregate: str, aggregate_id, payload):

@@ -98,7 +98,7 @@ export default function AdminLogin({
                 type="text"
                 id="admin-username"
                 name="username"
-                placeholder="USERNAME OR EMAIL"
+                placeholder="USERNAME"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 autoComplete="username"

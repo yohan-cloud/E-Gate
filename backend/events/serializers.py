@@ -13,6 +13,35 @@ EVENT_TYPE_LABELS = dict(Event.EVENT_TYPES)
 AUDIENCE_VALUES = {value for value, _label in Event.AUDIENCE_CHOICES}
 
 
+def normalize_audience_type(value):
+    if value is None:
+        return "all"
+
+    if isinstance(value, str):
+        raw_items = [item.strip().lower() for item in value.split(",") if item.strip()]
+    elif isinstance(value, (list, tuple, set)):
+        raw_items = [str(item).strip().lower() for item in value if str(item).strip()]
+    else:
+        raise serializers.ValidationError("Invalid audience type.")
+
+    if not raw_items:
+        return "all"
+
+    invalid = [item for item in raw_items if item not in AUDIENCE_VALUES]
+    if invalid:
+        raise serializers.ValidationError("Invalid audience type.")
+
+    unique_items = []
+    for item in raw_items:
+        if item not in unique_items:
+            unique_items.append(item)
+
+    if "all" in unique_items:
+        return "all"
+
+    return ",".join(unique_items)
+
+
 # 🧩 Event Serializer
 class EventSerializer(serializers.ModelSerializer):
     # Show username instead of raw user id
@@ -77,10 +106,7 @@ class EventSerializer(serializers.ModelSerializer):
         return normalized
 
     def validate_audience_type(self, value):
-        normalized = (value or "").strip().lower()
-        if normalized not in AUDIENCE_VALUES:
-            raise serializers.ValidationError("Invalid audience type.")
-        return normalized
+        return normalize_audience_type(value)
 
     def validate(self, attrs):
         # Normalize naive datetimes to a configured local timezone to avoid unexpected shifts

@@ -2,7 +2,20 @@ import { useState } from "react";
 import { api } from "../../api";
 import toast from "../../lib/toast";
 import FaceCaptureField from "../common/FaceCaptureField";
+import SegmentedPillSelect from "../common/SegmentedPillSelect";
 import { DateField } from "./PickerField";
+
+const RESIDENT_CATEGORY_OPTIONS = [
+  { value: "employee", label: "Employee" },
+  { value: "resident", label: "Resident" },
+  { value: "client", label: "Client" },
+];
+
+const VOTER_STATUS_OPTIONS = [
+  { value: "registered_voter", label: "Registered Voter" },
+  { value: "not_yet_voter", label: "Not Yet Voter" },
+  { value: "other_area_voter", label: "Voter in Other Barangay / Other Area" },
+];
 
 const INITIAL = {
   username: "",
@@ -13,6 +26,8 @@ const INITIAL = {
   birthdate: "",
   phone_number: "",
   gender: "unspecified",
+  resident_category: "resident",
+  voter_status: "not_yet_voter",
   photo: null,
   face_image: null,
   face_samples: [],
@@ -64,8 +79,10 @@ export default function CreateResidentForm({ onCreated }) {
       fd.append("email", form.email);
       fd.append("address", form.address);
       fd.append("birthdate", form.birthdate);
-       fd.append("phone_number", form.phone_number);
+      fd.append("phone_number", form.phone_number);
       if (form.gender) fd.append("gender", form.gender);
+      if (form.resident_category) fd.append("resident_category", form.resident_category);
+      if (form.voter_status) fd.append("voter_status", form.voter_status);
       if (form.photo) fd.append("photo", form.photo);
       if (form.face_samples.length) {
         form.face_samples.forEach((sample, index) => {
@@ -134,6 +151,28 @@ export default function CreateResidentForm({ onCreated }) {
             <option value="other">Other</option>
             <option value="unspecified">Prefer not to say</option>
           </select>
+        </div>
+        <div className="form-group">
+          <label htmlFor="res-category">Resident Type / Status</label>
+          <SegmentedPillSelect
+            id="res-category"
+            name="resident_category"
+            value={form.resident_category}
+            options={RESIDENT_CATEGORY_OPTIONS}
+            onChange={update}
+          />
+          <small>Classify whether this profile is an employee, resident, or client.</small>
+        </div>
+        <div className="form-group">
+          <label htmlFor="res-voter-status">Voter Status</label>
+          <SegmentedPillSelect
+            id="res-voter-status"
+            name="voter_status"
+            value={form.voter_status}
+            options={VOTER_STATUS_OPTIONS}
+            onChange={update}
+          />
+          <small>Select whether the resident is not yet a voter, registered here, or registered in another area.</small>
         </div>
         <div className="form-group">
           <label htmlFor="res-address">Address</label>

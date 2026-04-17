@@ -369,6 +369,11 @@ body {
   min-width: 0;
 }
 
+.guest-form-grid .picker-field-datetime,
+.guest-inline-grid .picker-field-datetime {
+  grid-column: span 2;
+}
+
 .guest-form-input,
 .guest-form-grid .picker-trigger,
 .guest-form-grid select,
@@ -455,6 +460,94 @@ body {
   color: #4f6b5d;
 }
 
+.segmented-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.segmented-pill {
+  width: auto !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(146, 181, 157, 0.72);
+  background: rgba(248, 255, 249, 0.94);
+  color: #355745;
+  font-weight: 600;
+  font-size: 0.84rem;
+  line-height: 1.1;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.segmented-pill.selected {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18);
+}
+
+.audience-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.audience-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 22px;
+}
+
+.audience-chip,
+.audience-option {
+  width: auto !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(52, 168, 83, 0.3);
+  background: rgba(240, 253, 244, 0.95);
+  color: #166534;
+  font-weight: 600;
+  font-size: 0.92rem;
+  line-height: 1.1;
+  cursor: pointer;
+}
+
+.audience-chip.active {
+  background: #dcfce7;
+  border-color: #4ade80;
+}
+
+.audience-chip-close {
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.audience-option-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.audience-option {
+  background: rgba(248, 255, 249, 0.92);
+  border-color: rgba(146, 181, 157, 0.72);
+  color: #355745;
+}
+
+.audience-option.selected {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
 .datetime-field {
   display: grid;
   gap: 8px;
@@ -471,6 +564,11 @@ body {
   right: auto;
   width: 100%;
   margin-top: 8px;
+}
+
+.picker-field-flow.picker-field-datetime .picker-panel {
+  width: min(100%, 620px);
+  min-width: min(100%, 520px);
 }
 
 .picker-trigger {
@@ -529,6 +627,11 @@ body {
   display: grid;
   gap: 12px;
   min-width: 0;
+  align-content: start;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(232, 247, 236, 0.68);
+  border: 1px solid rgba(146, 181, 157, 0.42);
 }
 
 .picker-calendar-header {
@@ -629,18 +732,17 @@ body {
 }
 
 .time-entry {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
   gap: 8px;
-  flex-wrap: nowrap;
   width: 100%;
 }
 
 .time-entry.simple select {
-  width: 74px;
-  min-width: 74px;
+  width: 100%;
+  min-width: 0;
   height: 42px;
-  flex: 1 1 74px;
   padding: 9px 12px;
   border-radius: 8px;
   background: rgba(248, 255, 249, 0.92);
@@ -654,9 +756,6 @@ body {
 }
 
 .time-entry.simple select:last-child {
-  width: 64px;
-  min-width: 64px;
-  flex-basis: 64px;
   text-align: center;
   text-align-last: center;
 }
@@ -671,6 +770,53 @@ body {
   width: 100%;
   box-sizing: border-box;
   overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .picker-panel {
+    padding: 12px;
+  }
+
+  .picker-calendar-header {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) 36px;
+    align-items: center;
+  }
+
+  .picker-calendar-selects {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .picker-calendar-selects select {
+    flex: 1 1 100%;
+    max-width: none;
+    width: 100%;
+  }
+
+  .picker-panel-datetime {
+    width: min(100vw - 24px, 100%);
+    grid-template-columns: 1fr;
+  }
+
+  .time-entry {
+    grid-template-columns: 1fr;
+  }
+
+  .time-entry.simple select,
+  .time-entry.simple select:last-child {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .picker-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .picker-actions button {
+    flex: 1 1 0;
+  }
 }
 
 /* Event list tidy */
@@ -925,14 +1071,13 @@ tr:hover {
   }
 
   .time-entry.simple select {
-    flex: 1 1 74px;
-    min-width: 74px;
-    width: auto;
+    width: 100%;
+    min-width: 0;
   }
 
   .time-entry.simple select:last-child {
-    flex: 1 1 64px;
-    min-width: 64px;
+    width: 100%;
+    min-width: 0;
   }
 
   .picker-panel {
@@ -1362,6 +1507,11 @@ tr:hover {
   .guest-form-grid .form-group,
   .guest-form-textarea,
   .guest-form-actions {
+    grid-column: 1 / -1;
+  }
+
+  .guest-form-grid .picker-field-datetime,
+  .guest-inline-grid .picker-field-datetime {
     grid-column: 1 / -1;
   }
 

@@ -12,11 +12,25 @@ const EVENT_TYPE_OPTIONS = [
 const EVENT_TYPE_LABELS = Object.fromEntries(EVENT_TYPE_OPTIONS.map((option) => [option.value, option.label]));
 const AUDIENCE_LABELS = {
   all: "All Residents",
-  kids_only: "Kids Only",
-  senior_only: "Senior Only",
+  kids_only: "Kids/Teens",
+  adult_only: "Adults",
+  pwd: "PWD",
+  pregnant_mothers: "Pregnant Women / Mothers",
+  senior_only: "Senior Citizens",
 };
 const KIDS_MAX_AGE = 17;
+const ADULT_MIN_AGE = 18;
+const ADULT_MAX_AGE = 59;
 const SENIOR_MIN_AGE = 60;
+
+function parseAudienceValue(value) {
+  if (!value || value === "all") return ["all"];
+  const parsed = String(value)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return parsed.length ? parsed : ["all"];
+}
 
 function calculateAge(birthdate) {
   if (!birthdate) return null;
@@ -32,15 +46,25 @@ function calculateAge(birthdate) {
 }
 
 function audienceMessage(audienceType) {
-  if (audienceType === "kids_only") return "This event is for kids only.";
-  if (audienceType === "senior_only") return "This event is for senior residents only.";
-  return "";
+  const audiences = parseAudienceValue(audienceType);
+  if (audiences.includes("all")) return "";
+  if (audiences.length === 1 && audiences[0] === "kids_only") return "This event is for kids/teens only.";
+  if (audiences.length === 1 && audiences[0] === "adult_only") return "This event is for adult residents only.";
+  if (audiences.length === 1 && audiences[0] === "pwd") return "This event is for PWD residents only.";
+  if (audiences.length === 1 && audiences[0] === "pregnant_mothers") return "This event is for pregnant women / mothers only.";
+  if (audiences.length === 1 && audiences[0] === "senior_only") return "This event is for senior residents only.";
+  return "This event is only for selected audiences.";
 }
 
 function isEligibleForAudience(audienceType, age) {
-  if (audienceType === "kids_only") return age !== null && age <= KIDS_MAX_AGE;
-  if (audienceType === "senior_only") return age !== null && age >= SENIOR_MIN_AGE;
-  return true;
+  const audiences = parseAudienceValue(audienceType);
+  if (audiences.includes("all")) return true;
+  if (age === null) return false;
+  return (
+    (audiences.includes("kids_only") && age <= KIDS_MAX_AGE) ||
+    (audiences.includes("adult_only") && age >= ADULT_MIN_AGE && age <= ADULT_MAX_AGE) ||
+    (audiences.includes("senior_only") && age >= SENIOR_MIN_AGE)
+  );
 }
 
 export default function BrowseEvents({ isVerified = false, onRequestVerification }) {
@@ -288,6 +312,7 @@ export default function BrowseEvents({ isVerified = false, onRequestVerification
           const pct = capacity ? Math.min(100, Math.round((registeredCount / capacity) * 100)) : 0;
           const spotsLeft = capacity ? Math.max(0, capacity - registeredCount) : "∞";
           const audienceType = e.audience_type || "all";
+          const audienceValues = parseAudienceValue(audienceType);
           const eligibilityMessage = audienceMessage(audienceType);
           const audienceLocked = !registered && !isEligibleForAudience(audienceType, residentAge);
           const registrationLocked = !registered && !isVerified;
@@ -307,11 +332,11 @@ export default function BrowseEvents({ isVerified = false, onRequestVerification
                   <span className="resident-event-chip" style={{ background: "#eef2ff", color: "#3730a3", padding: "2px 8px", borderRadius: 999, fontSize: 12 }}>
                     {EVENT_TYPE_LABELS[e.event_type] || e.event_type}
                   </span>
-                  {audienceType !== "all" && (
-                    <span className="resident-event-chip" style={{ background: audienceType === "kids_only" ? "#ecfeff" : "#fef3c7", color: audienceType === "kids_only" ? "#0f766e" : "#92400e", padding: "2px 8px", borderRadius: 999, fontSize: 12 }}>
-                      {AUDIENCE_LABELS[audienceType] || audienceType}
+                  {audienceValues.filter((value) => value !== "all").map((value) => (
+                    <span key={value} className="resident-event-chip" style={{ background: value === "kids_only" ? "#ecfeff" : value === "adult_only" ? "#eff6ff" : value === "pwd" ? "#f5f3ff" : value === "pregnant_mothers" ? "#fff1f2" : "#fef3c7", color: value === "kids_only" ? "#0f766e" : value === "adult_only" ? "#1d4ed8" : value === "pwd" ? "#6d28d9" : value === "pregnant_mothers" ? "#be123c" : "#92400e", padding: "2px 8px", borderRadius: 999, fontSize: 12 }}>
+                      {AUDIENCE_LABELS[value] || value}
                     </span>
-                  )}
+                  ))}
                   {registered && (
                     <span className="resident-event-chip" style={{ background: "#dbeafe", color: "#1d4ed8", padding: "2px 8px", borderRadius: 999, fontSize: 12 }}>Registered</span>
                   )}

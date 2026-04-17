@@ -1,12 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, fetchJson } from "../../api";
 import toast from "../../lib/toast";
+import SegmentedPillSelect from "../common/SegmentedPillSelect";
 
 const GENDER_LABEL = {
   male: "Male",
   female: "Female",
   other: "Other",
   unspecified: "Unspecified",
+};
+
+const RESIDENT_CATEGORY_LABEL = {
+  employee: "Employee",
+  resident: "Resident",
+  client: "Client",
+};
+
+const VOTER_STATUS_LABEL = {
+  registered_voter: "Registered Voter",
+  not_yet_voter: "Not Yet Voter",
+  other_area_voter: "Voter in Other Barangay / Other Area",
+  unspecified: "Not Set",
 };
 
 const DEACTIVATION_REASONS = [
@@ -128,6 +142,8 @@ export default function ResidentsTable() {
         expiry_date: detail.expiry_date || "",
         phone_number: detail.phone_number || "",
         gender: detail.gender || "unspecified",
+        resident_category: detail.resident_category || "resident",
+        voter_status: detail.voter_status || "not_yet_voter",
       });
     } catch (e) {
       const msg = e?.response?.data?.error || "Failed to load resident details";
@@ -471,6 +487,40 @@ export default function ResidentsTable() {
                             <input value={form.address || ""} onChange={(e) => setForm({ ...form, address: e.target.value })} />
                           ) : (
                             displayRow.address
+                          )
+                        }
+                      />
+                      <Info
+                        label="Resident Type"
+                        value={
+                          isEditing ? (
+                            <SegmentedPillSelect
+                              value={form.resident_category || "resident"}
+                              name="resident_category"
+                              options={Object.entries(RESIDENT_CATEGORY_LABEL).map(([k, v]) => ({ value: k, label: v }))}
+                              onChange={(e) => setForm({ ...form, resident_category: e.target.value })}
+                            />
+                          ) : (
+                            RESIDENT_CATEGORY_LABEL[r.resident_category] || "Resident"
+                          )
+                        }
+                      />
+                      <Info
+                        label="Voter Status"
+                        value={
+                          isEditing ? (
+                            <SegmentedPillSelect
+                              value={form.voter_status || "not_yet_voter"}
+                              name="voter_status"
+                              options={[
+                                { value: "registered_voter", label: "Registered Voter" },
+                                { value: "not_yet_voter", label: "Not Yet Voter" },
+                                { value: "other_area_voter", label: "Voter in Other Barangay / Other Area" },
+                              ]}
+                              onChange={(e) => setForm({ ...form, voter_status: e.target.value })}
+                            />
+                          ) : (
+                            VOTER_STATUS_LABEL[r.voter_status] || "Not Set"
                           )
                         }
                       />

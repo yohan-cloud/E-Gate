@@ -38,6 +38,8 @@ class ResidentProfileSerializer(serializers.ModelSerializer):
     has_face = serializers.SerializerMethodField(read_only=True)
     phone_number = serializers.CharField(read_only=True)
     gender = serializers.CharField(read_only=True)
+    resident_category = serializers.CharField(read_only=True)
+    voter_status = serializers.CharField(read_only=True)
     is_verified = serializers.BooleanField(read_only=True)
     verified_at = serializers.DateTimeField(read_only=True)
     sensitive_revealed = serializers.SerializerMethodField(read_only=True)
@@ -63,6 +65,8 @@ class ResidentProfileSerializer(serializers.ModelSerializer):
             'expiry_date',
             'phone_number',
             'gender',
+            'resident_category',
+            'voter_status',
             'photo',
             'photo_thumb',
             'has_face',
@@ -176,6 +180,16 @@ class AdminResidentUpdateSerializer(serializers.Serializer):
             ("unspecified", "Unspecified"),
         ],
     )
+    resident_category = serializers.ChoiceField(
+        required=False,
+        allow_blank=True,
+        choices=ResidentProfile.ResidentCategory.choices,
+    )
+    voter_status = serializers.ChoiceField(
+        required=False,
+        allow_blank=True,
+        choices=ResidentProfile.VoterStatus.choices,
+    )
 
     def validate_address(self, value):
         if value and len(value.strip()) < 5:
@@ -227,6 +241,20 @@ class AdminResidentUpdateSerializer(serializers.Serializer):
         if "gender" in validated_data:
             g = validated_data.get("gender") or ResidentProfile.Gender.UNSPECIFIED
             instance.gender = g if g in dict(ResidentProfile.Gender.choices) else ResidentProfile.Gender.UNSPECIFIED
+        if "resident_category" in validated_data:
+            category = validated_data.get("resident_category") or ResidentProfile.ResidentCategory.RESIDENT
+            instance.resident_category = (
+                category
+                if category in dict(ResidentProfile.ResidentCategory.choices)
+                else ResidentProfile.ResidentCategory.RESIDENT
+            )
+        if "voter_status" in validated_data:
+            voter_status = validated_data.get("voter_status") or ResidentProfile.VoterStatus.UNSPECIFIED
+            instance.voter_status = (
+                voter_status
+                if voter_status in dict(ResidentProfile.VoterStatus.choices)
+                else ResidentProfile.VoterStatus.UNSPECIFIED
+            )
         instance.save()
         return instance
 

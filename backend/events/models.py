@@ -12,7 +12,10 @@ class Event(models.Model):
 
     AUDIENCE_CHOICES = [
         ("all", "All Residents"),
-        ("kids_only", "Kids Only"),
+        ("kids_only", "Kids/Teens"),
+        ("adult_only", "Adults Only"),
+        ("pwd", "PWD (Persons with Disabilities)"),
+        ("pregnant_mothers", "Pregnant Women / Mothers"),
         ("senior_only", "Senior Citizens Only"),
     ]
 
@@ -26,7 +29,7 @@ class Event(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     event_type = models.CharField(max_length=40, choices=EVENT_TYPES)
-    audience_type = models.CharField(max_length=20, choices=AUDIENCE_CHOICES, default="all")
+    audience_type = models.CharField(max_length=128, default="all")
     date = models.DateTimeField()
     end_date = models.DateTimeField(null=True, blank=True)
     capacity = models.PositiveIntegerField(null=True, blank=True)

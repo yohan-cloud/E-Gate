@@ -50,6 +50,8 @@ class ResidentSecurityAuditTests(TestCase):
             birthdate="2000-01-01",
             phone_number="09123456789",
             gender=ResidentProfile.Gender.FEMALE,
+            resident_category=ResidentProfile.ResidentCategory.RESIDENT,
+            voter_status=ResidentProfile.VoterStatus.UNSPECIFIED,
             is_verified=True,
             verified_at=timezone.now(),
         )
@@ -89,6 +91,8 @@ class ResidentSecurityAuditTests(TestCase):
         self.assertEqual(detail_res.status_code, status.HTTP_200_OK)
         self.assertEqual(detail_res.data["user"]["email"], "resident@example.com")
         self.assertEqual(detail_res.data["phone_number"], "09123456789")
+        self.assertEqual(detail_res.data["resident_category"], ResidentProfile.ResidentCategory.RESIDENT)
+        self.assertEqual(detail_res.data["voter_status"], ResidentProfile.VoterStatus.UNSPECIFIED)
         self.assertTrue(detail_res.data["sensitive_revealed"])
 
     def test_resident_actions_create_audit_logs(self):
@@ -98,7 +102,12 @@ class ResidentSecurityAuditTests(TestCase):
         self.client.get(f"/api/residents/admin/{self.resident.id}/", {"reason": "reveal_sensitive"})
         update_res = self.client.patch(
             f"/api/residents/admin/{self.resident.id}/",
-            {"phone_number": "09999888777", "address": "Ermita, Manila"},
+            {
+                "phone_number": "09999888777",
+                "address": "Ermita, Manila",
+                "resident_category": ResidentProfile.ResidentCategory.CLIENT,
+                "voter_status": ResidentProfile.VoterStatus.REGISTERED_VOTER,
+            },
             format="json",
         )
         self.assertEqual(update_res.status_code, status.HTTP_200_OK)
@@ -112,6 +121,8 @@ class ResidentSecurityAuditTests(TestCase):
         self.assertEqual(update_log.target_id, str(self.resident.id))
         self.assertEqual(update_log.metadata["barangay_id"], str(self.profile.barangay_id))
         self.assertIn("phone_number", update_log.metadata["changed_fields"])
+        self.assertIn("resident_category", update_log.metadata["changed_fields"])
+        self.assertIn("voter_status", update_log.metadata["changed_fields"])
 
     def test_login_attendance_and_verification_review_are_audited(self):
         login_client = APIClient()

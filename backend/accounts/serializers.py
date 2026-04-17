@@ -43,13 +43,36 @@ class ResidentRegisterSerializer(serializers.ModelSerializer):
         required=False,
         allow_blank=True,
     )
+    resident_category = serializers.ChoiceField(
+        choices=ResidentProfile.ResidentCategory.choices,
+        required=False,
+        allow_blank=True,
+    )
+    voter_status = serializers.ChoiceField(
+        choices=ResidentProfile.VoterStatus.choices,
+        required=False,
+        allow_blank=True,
+    )
     photo = serializers.ImageField(required=False, allow_null=True, write_only=True)
     # Optional: face image at registration time (multipart)
     face_image = serializers.ImageField(required=False, allow_null=True, write_only=True)
 
     class Meta:
         model = User
-        fields = ["username", "full_name", "password", "email", "address", "birthdate", "phone_number", "gender", "photo", "face_image"]
+        fields = [
+            "username",
+            "full_name",
+            "password",
+            "email",
+            "address",
+            "birthdate",
+            "phone_number",
+            "gender",
+            "resident_category",
+            "voter_status",
+            "photo",
+            "face_image",
+        ]
         extra_kwargs = {
             "password": {"write_only": True},
             "username": {"required": False, "allow_blank": True},
@@ -110,6 +133,16 @@ class ResidentRegisterSerializer(serializers.ModelSerializer):
         birthdate = validated_data.pop("birthdate")
         phone_number = validated_data.pop("phone_number")
         gender = (validated_data.pop("gender", "") or "unspecified").strip().lower() or "unspecified"
+        resident_category = (
+            (validated_data.pop("resident_category", "") or ResidentProfile.ResidentCategory.RESIDENT)
+            .strip()
+            .lower()
+        )
+        voter_status = (
+            (validated_data.pop("voter_status", "") or ResidentProfile.VoterStatus.UNSPECIFIED)
+            .strip()
+            .lower()
+        )
         full_name = validated_data.pop("full_name", "").strip()
         photo_file = self.context.get('request').FILES.get('photo') if self.context.get('request') else None
         request = self.context.get('request')
@@ -162,6 +195,16 @@ class ResidentRegisterSerializer(serializers.ModelSerializer):
                 birthdate=birthdate,
                 phone_number=phone_number,
                 gender=gender if gender in dict(ResidentProfile.Gender.choices) else ResidentProfile.Gender.UNSPECIFIED,
+                resident_category=(
+                    resident_category
+                    if resident_category in dict(ResidentProfile.ResidentCategory.choices)
+                    else ResidentProfile.ResidentCategory.RESIDENT
+                ),
+                voter_status=(
+                    voter_status
+                    if voter_status in dict(ResidentProfile.VoterStatus.choices)
+                    else ResidentProfile.VoterStatus.UNSPECIFIED
+                ),
                 date_registered=date.today(),
                 expiry_date=date.today() + timedelta(days=365),
                 is_verified=True,

@@ -155,6 +155,14 @@ class EventsFlowTests(TestCase):
         self.assertEqual(reg.data.get("error"), "This event is for senior residents only.")
         self.assertEqual(reg.data.get("result_code"), "audience_senior_only")
 
+    def test_adult_resident_can_register_for_adult_only_event(self):
+        event_id = self.create_open_event(title="Adult Assembly", capacity=20)
+        Event.objects.filter(id=event_id).update(audience_type="adult_only")
+
+        self.auth(self.res_token)
+        reg = self.client.post(f"/api/events/{event_id}/register/")
+        self.assertIn(reg.status_code, (status.HTTP_201_CREATED, status.HTTP_200_OK))
+
     def test_kid_resident_can_register_for_kids_only_event(self):
         User = get_user_model()
         child = User.objects.create_user(
@@ -185,6 +193,15 @@ class EventsFlowTests(TestCase):
         self.auth(kid_token)
         reg = self.client.post(f"/api/events/{event_id}/register/")
         self.assertIn(reg.status_code, (status.HTTP_201_CREATED, status.HTTP_200_OK))
+
+    def test_non_matching_adult_cannot_register_for_kids_and_senior_event(self):
+        event_id = self.create_open_event(title="Generations Day", capacity=20)
+        Event.objects.filter(id=event_id).update(audience_type="kids_only,senior_only")
+
+        self.auth(self.res_token)
+        reg = self.client.post(f"/api/events/{event_id}/register/")
+        self.assertEqual(reg.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(reg.data.get("result_code"), "audience_restricted")
 
     def test_my_registrations_paginated_endpoint(self):
         # Admin creates an event that is open for registration now

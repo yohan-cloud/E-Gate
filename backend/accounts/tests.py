@@ -83,6 +83,8 @@ class AccountsFlowTests(TestCase):
                 "address": "Block 1 Lot 2",
                 "birthdate": "2000-01-01",
                 "phone_number": "09171234567",
+                "resident_category": "employee",
+                "voter_status": "registered_voter",
             },
             format="json",
         )
@@ -90,6 +92,8 @@ class AccountsFlowTests(TestCase):
         profile = ResidentProfile.objects.select_related("user").get(user__username="res_test")
         self.assertTrue(profile.is_verified)
         self.assertIsNotNone(profile.verified_at)
+        self.assertEqual(profile.resident_category, ResidentProfile.ResidentCategory.EMPLOYEE)
+        self.assertEqual(profile.voter_status, ResidentProfile.VoterStatus.REGISTERED_VOTER)
         self.assertTrue(res.data["user"]["is_verified"])
         # Clear admin auth before resident login
         self.client.force_authenticate(user=None)

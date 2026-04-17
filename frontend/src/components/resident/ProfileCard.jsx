@@ -45,6 +45,8 @@ export default function ProfileCard() {
   }, [profile?.gender]);
   const formattedBirthdate = useMemo(() => formatDisplayDate(profile?.birthdate), [profile?.birthdate]);
   const formattedExpiryDate = useMemo(() => formatDisplayDate(profile?.expiry_date), [profile?.expiry_date]);
+  const residentCategoryLabel = useMemo(() => formatEnumLabel(profile?.resident_category, "Resident"), [profile?.resident_category]);
+  const voterStatusLabel = useMemo(() => formatVoterStatusLabel(profile?.voter_status), [profile?.voter_status]);
 
   const daysToExpiry = useMemo(() => {
     if (!profile?.expiry_date) return null;
@@ -234,6 +236,8 @@ export default function ProfileCard() {
             <InfoRow label="Phone" value={profile.phone_number || "—"} />
             <InfoRow label="Address" value={profile.address || "—"} />
             <InfoRow label="Gender" value={genderLabel} />
+            <InfoRow label="Resident Type" value={residentCategoryLabel} />
+            <InfoRow label="Voter Status" value={voterStatusLabel} />
             <InfoRow label="Birthdate" value={formattedBirthdate} />
             <InfoRow label="Expiry" value={formattedExpiryDate} />
           </div>
@@ -414,6 +418,20 @@ function formatDisplayDate(value) {
   } catch {
     return value;
   }
+}
+
+function formatEnumLabel(value, fallback) {
+  if (!value) return fallback;
+  return String(value)
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function formatVoterStatusLabel(value) {
+  if (!value || value === "unspecified") return "Not Set";
+  if (value === "other_area_voter") return "Voter in Other Barangay / Other Area";
+  return formatEnumLabel(value, "Not Set");
 }
 
 const governmentFrontStyle = {

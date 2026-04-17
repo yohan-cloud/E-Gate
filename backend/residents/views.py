@@ -119,6 +119,8 @@ def login_resident(request):
             'birthdate': str(p.birthdate),
             'date_registered': str(p.date_registered),
             'expiry_date': str(p.expiry_date),
+            'resident_category': p.resident_category,
+            'voter_status': p.voter_status,
         }
 
     resp = generate_token_response(
@@ -567,6 +569,8 @@ def admin_update_resident(request, user_id):
         "expiry_date": str(getattr(profile, "expiry_date", "") or ""),
         "phone_number": getattr(profile, "phone_number", "") or "",
         "gender": getattr(profile, "gender", "") or "",
+        "resident_category": getattr(profile, "resident_category", "") or "",
+        "voter_status": getattr(profile, "voter_status", "") or "",
     }
     try:
         serializer.update(profile, serializer.validated_data)

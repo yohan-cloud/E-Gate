@@ -99,7 +99,19 @@ function buildYearOptions() {
   return Array.from({ length: endYear - startYear + 1 }, (_, index) => startYear + index);
 }
 
-function PickerShell({ id, label, value, displayValue, open, setOpen, children, helpText, required, panelInFlow = false }) {
+function PickerShell({
+  id,
+  label,
+  value,
+  displayValue,
+  open,
+  setOpen,
+  children,
+  helpText,
+  required,
+  panelInFlow = false,
+  panelType = "date",
+}) {
   const rootRef = useRef(null);
 
   useEffect(() => {
@@ -114,7 +126,10 @@ function PickerShell({ id, label, value, displayValue, open, setOpen, children, 
   }, [open, setOpen]);
 
   return (
-    <div className={`form-group picker-field ${panelInFlow ? "picker-field-flow" : ""}`} ref={rootRef}>
+    <div
+      className={`form-group picker-field ${panelInFlow ? "picker-field-flow" : ""} ${panelType === "datetime" ? "picker-field-datetime" : ""}`}
+      ref={rootRef}
+    >
       {label ? <label htmlFor={`${id}-trigger`}>{label}</label> : null}
       <button
         id={`${id}-trigger`}
@@ -156,6 +171,7 @@ export function DateField({ id, label, name, value, onChange, required = false, 
       helpText={helpText}
       required={required}
       panelInFlow={panelInFlow}
+      panelType="date"
     >
       <div className="picker-panel">
         <div className="picker-calendar-header">
@@ -251,6 +267,7 @@ export function DateTimeField({
       helpText={helpText}
       required={required}
       panelInFlow={panelInFlow}
+      panelType="datetime"
     >
       <div className="picker-panel picker-panel-datetime">
         <div className="picker-calendar-block">
