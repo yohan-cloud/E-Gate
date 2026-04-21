@@ -14,7 +14,7 @@ from types import SimpleNamespace
 from accounts.face_utils import HAS_FACE_LIB, get_image_match_threshold, match_embedding
 from accounts.models import PasswordResetCode
 from accounts.serializers import ResidentRegisterSerializer
-from residents.models import ResidentProfile
+from residents.models import ResidentProfile, VerificationRequest
 
 
 def make_test_image(name="sample.jpg", color=(120, 120, 120)):
@@ -83,7 +83,7 @@ class AccountsFlowTests(TestCase):
                 "address": "Block 1 Lot 2",
                 "birthdate": "2000-01-01",
                 "phone_number": "09171234567",
-                "resident_category": "employee",
+                "resident_category": "client",
                 "voter_status": "registered_voter",
             },
             format="json",
@@ -92,7 +92,7 @@ class AccountsFlowTests(TestCase):
         profile = ResidentProfile.objects.select_related("user").get(user__username="res_test")
         self.assertTrue(profile.is_verified)
         self.assertIsNotNone(profile.verified_at)
-        self.assertEqual(profile.resident_category, ResidentProfile.ResidentCategory.EMPLOYEE)
+        self.assertEqual(profile.resident_category, ResidentProfile.ResidentCategory.CLIENT)
         self.assertEqual(profile.voter_status, ResidentProfile.VoterStatus.REGISTERED_VOTER)
         self.assertTrue(res.data["user"]["is_verified"])
         # Clear admin auth before resident login
@@ -186,6 +186,31 @@ class AccountsFlowTests(TestCase):
         profile = ResidentProfile.objects.select_related("user").get(user__username="res_auto_verified")
         self.assertTrue(profile.is_verified)
         self.assertIsNotNone(profile.verified_at)
+
+    def test_resident_register_collects_id_document_as_approved_verification(self):
+        self.client.force_authenticate(user=self.admin)
+        id_document = make_test_image("resident-id.jpg", color=(10, 90, 160))
+        res = self.client.post(
+            "/api/accounts/register/resident/",
+            {
+                "username": "res_with_id_doc",
+                "password": "ResidentFlow!234",
+                "email": "res_with_id_doc@example.com",
+                "address": "Block 9 Lot 1",
+                "birthdate": "2001-02-03",
+                "phone_number": "09171234563",
+                "id_document": id_document,
+            },
+            format="multipart",
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        verification = VerificationRequest.objects.select_related("user", "reviewed_by").get(
+            user__username="res_with_id_doc"
+        )
+        self.assertEqual(verification.status, VerificationRequest.Status.APPROVED)
+        self.assertEqual(verification.reviewed_by, self.admin)
+        self.assertTrue(verification.document.name)
 
     def test_resident_register_requires_email(self):
         self.client.force_authenticate(user=self.admin)

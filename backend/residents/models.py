@@ -25,14 +25,12 @@ class ResidentProfile(models.Model):
         UNSPECIFIED = "unspecified", "Unspecified"
 
     class ResidentCategory(models.TextChoices):
-        EMPLOYEE = "employee", "Employee"
         RESIDENT = "resident", "Resident"
         CLIENT = "client", "Client"
 
     class VoterStatus(models.TextChoices):
         REGISTERED_VOTER = "registered_voter", "Registered Voter"
         NOT_YET_VOTER = "not_yet_voter", "Not Yet Voter"
-        OTHER_AREA_VOTER = "other_area_voter", "Voter in Other Barangay / Other Area"
         UNSPECIFIED = "unspecified", "Unspecified"
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")

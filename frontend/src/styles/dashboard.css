@@ -450,13 +450,9 @@ body {
   width: fit-content;
 }
 
-.required-marker,
-.required-text {
-  color: #b91c1c;
-}
-
 .required-marker {
   font-weight: 800;
+  color: #64748b;
 }
 
 .required-text {
@@ -464,6 +460,16 @@ body {
   font-size: 0.72rem;
   font-style: italic;
   font-weight: 700;
+  color: #64748b;
+}
+
+.form-group:has(:is(input, select, textarea):required:user-invalid) .required-marker,
+.form-group:has(:is(input, select, textarea):required:user-invalid) .required-text,
+.form-group:has(:is(input, select, textarea):required:invalid:not(:focus):not(:placeholder-shown)) .required-marker,
+.form-group:has(:is(input, select, textarea):required:invalid:not(:focus):not(:placeholder-shown)) .required-text,
+.required-field-label.invalid .required-marker,
+.required-field-label.invalid .required-text {
+  color: #b91c1c;
 }
 
 .card input,

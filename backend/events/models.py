@@ -37,12 +37,10 @@ class Event(models.Model):
         ("pwd", "PWD (Persons with Disabilities)"),
         ("pregnant_mothers", "Pregnant Women / Mothers"),
         ("senior_only", "Senior Citizens Only"),
-        ("employee_only", "Employees Only"),
         ("resident_only", "Residents Only"),
         ("client_only", "Clients Only"),
         ("registered_voter_only", "Registered Voters Only"),
         ("not_yet_voter_only", "Not Yet Voters Only"),
-        ("other_area_voter_only", "Other Area Voters Only"),
     ]
 
     STATUS_CHOICES = [

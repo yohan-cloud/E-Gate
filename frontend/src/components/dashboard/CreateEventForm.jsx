@@ -26,9 +26,9 @@ const DEFAULTS = {
   description: "",
 };
 
-function RequiredLabel({ htmlFor, children }) {
+function RequiredLabel({ htmlFor, children, invalid = false }) {
   return (
-    <label htmlFor={htmlFor} className="required-field-label">
+    <label htmlFor={htmlFor} className={`required-field-label ${invalid ? "invalid" : ""}`}>
       <span className="required-marker">*</span>
       <span>{children}</span>
       <span className="required-text">Required</span>
@@ -40,6 +40,7 @@ export default function CreateEventForm({ onCreated }) {
   const [form, setForm] = useState(DEFAULTS);
   const [venues, setVenues] = useState(FALLBACK_VENUES);
   const [busy, setBusy] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const venueCapacityMap = useMemo(() => buildVenueCapacityMap(venues), [venues]);
   const hasAutoCapacity = venueCapacityMap[form.venue] !== undefined;
 
@@ -96,6 +97,7 @@ export default function CreateEventForm({ onCreated }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    setSubmitted(true);
     if (form.date && form.end_date && new Date(form.end_date) <= new Date(form.date)) {
       toast.error("Event end date/time must be after the start date/time.");
       return;
@@ -118,6 +120,7 @@ export default function CreateEventForm({ onCreated }) {
       const res = await api.post("/events/create/", payload);
       toast.success("Event created");
       setForm(DEFAULTS);
+      setSubmitted(false);
       onCreated?.(res.data);
     } catch (e) {
       const msg = formatApiError(e, "Failed to create event");
@@ -136,11 +139,12 @@ export default function CreateEventForm({ onCreated }) {
         </div>
       <form
         onSubmit={submit}
+        onInvalid={() => setSubmitted(true)}
         className="form-grid"
         style={{ gridTemplateColumns: "1fr", maxWidth: 520, margin: "0 auto" }}
       >
         <div className="form-group">
-          <RequiredLabel htmlFor="event-title">Title</RequiredLabel>
+          <RequiredLabel htmlFor="event-title" invalid={submitted && !form.title}>Title</RequiredLabel>
           <input
             id="event-title"
             name="title"
@@ -151,7 +155,7 @@ export default function CreateEventForm({ onCreated }) {
           />
         </div>
         <div className="form-group">
-          <RequiredLabel htmlFor="event-type">Event Type</RequiredLabel>
+          <RequiredLabel htmlFor="event-type" invalid={submitted && !form.event_type}>Event Type</RequiredLabel>
           <select id="event-type" name="event_type" value={form.event_type} onChange={update}>
             {EVENT_TYPE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
@@ -159,7 +163,7 @@ export default function CreateEventForm({ onCreated }) {
           </select>
         </div>
         <div className="form-group">
-          <RequiredLabel htmlFor="event-audience">Audience</RequiredLabel>
+          <RequiredLabel htmlFor="event-audience" invalid={submitted && !form.audience_type}>Audience</RequiredLabel>
           <AudienceSelector
             id="event-audience"
             value={form.audience_type}
@@ -174,6 +178,7 @@ export default function CreateEventForm({ onCreated }) {
           value={form.date}
           onChange={update}
           required
+          requiredInvalid={submitted && !form.date}
           placeholder="Select event date and time"
           helpText="The actual start date/time of the event."
           panelInFlow

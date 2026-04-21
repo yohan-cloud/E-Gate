@@ -109,6 +109,7 @@ function PickerShell({
   children,
   helpText,
   required,
+  requiredInvalid = false,
   panelInFlow = false,
   panelType = "date",
 }) {
@@ -131,7 +132,7 @@ function PickerShell({
       ref={rootRef}
     >
       {label ? (
-        <label htmlFor={`${id}-trigger`} className={required ? "required-field-label" : undefined}>
+        <label htmlFor={`${id}-trigger`} className={required ? `required-field-label ${requiredInvalid ? "invalid" : ""}` : undefined}>
           {required ? <span className="required-marker">*</span> : null}
           <span>{label}</span>
           {required ? <span className="required-text">Required</span> : null}
@@ -153,7 +154,7 @@ function PickerShell({
   );
 }
 
-export function DateField({ id, label, name, value, onChange, required = false, helpText = "", placeholder = "Select date", panelInFlow = false }) {
+export function DateField({ id, label, name, value, onChange, required = false, requiredInvalid = false, helpText = "", placeholder = "Select date", panelInFlow = false }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value || "");
   const [view, setView] = useState(() => toMonthKey(value));
@@ -176,6 +177,7 @@ export function DateField({ id, label, name, value, onChange, required = false, 
       setOpen={setOpen}
       helpText={helpText}
       required={required}
+      requiredInvalid={requiredInvalid}
       panelInFlow={panelInFlow}
       panelType="date"
     >
@@ -243,6 +245,7 @@ export function DateTimeField({
   value,
   onChange,
   required = false,
+  requiredInvalid = false,
   helpText = "",
   placeholder = "Select date and time",
   panelInFlow = false,
@@ -272,6 +275,7 @@ export function DateTimeField({
       setOpen={setOpen}
       helpText={helpText}
       required={required}
+      requiredInvalid={requiredInvalid}
       panelInFlow={panelInFlow}
       panelType="datetime"
     >

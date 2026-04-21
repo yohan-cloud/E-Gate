@@ -15,7 +15,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.utils import timezone
 import re
-from residents.models import ResidentProfile
+from residents.models import ResidentProfile, VerificationRequest
 from accounts.face_utils import extract_embedding, average_embeddings, validate_face_image, FaceLibNotAvailable
 from django.core.validators import RegexValidator
 
@@ -54,6 +54,7 @@ class ResidentRegisterSerializer(serializers.ModelSerializer):
         allow_blank=True,
     )
     photo = serializers.ImageField(required=False, allow_null=True, write_only=True)
+    id_document = serializers.FileField(required=False, allow_null=True, write_only=True)
     # Optional: face image at registration time (multipart)
     face_image = serializers.ImageField(required=False, allow_null=True, write_only=True)
 
@@ -71,6 +72,7 @@ class ResidentRegisterSerializer(serializers.ModelSerializer):
             "resident_category",
             "voter_status",
             "photo",
+            "id_document",
             "face_image",
         ]
         extra_kwargs = {
@@ -99,6 +101,17 @@ class ResidentRegisterSerializer(serializers.ModelSerializer):
         if not normalized:
             raise serializers.ValidationError("Email is required.")
         return normalized
+
+    def validate_id_document(self, value):
+        if not value:
+            return value
+        allowed_types = {'image/jpeg', 'image/png', 'image/webp', 'application/pdf'}
+        content_type = getattr(value, 'content_type', None)
+        if content_type not in allowed_types:
+            raise serializers.ValidationError("Unsupported file type. Use JPG, PNG, WEBP, or PDF.")
+        if getattr(value, 'size', None) and value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError("File too large. Max 5MB.")
+        return value
 
     def validate(self, attrs):
         # Run Django's password validators for consistency with AUTH_PASSWORD_VALIDATORS
@@ -144,8 +157,9 @@ class ResidentRegisterSerializer(serializers.ModelSerializer):
             .lower()
         )
         full_name = validated_data.pop("full_name", "").strip()
-        photo_file = self.context.get('request').FILES.get('photo') if self.context.get('request') else None
         request = self.context.get('request')
+        photo_file = request.FILES.get('photo') if request else None
+        id_document = request.FILES.get('id_document') if request else None
         face_files = request.FILES.getlist('face_images') if request else []
         if not face_files and request:
             single_face_file = request.FILES.get('face_image')
@@ -214,6 +228,17 @@ class ResidentRegisterSerializer(serializers.ModelSerializer):
             if photo_file:
                 profile.photo = photo_file
                 profile.save(update_fields=['photo'])
+
+            if id_document:
+                VerificationRequest.objects.create(
+                    user=user,
+                    document=id_document,
+                    note="ID document collected during admin resident registration.",
+                    admin_note="Resident auto-verified during admin registration.",
+                    status=VerificationRequest.Status.APPROVED,
+                    reviewed_by=getattr(request, "user", None) if request else None,
+                    reviewed_at=timezone.now(),
+                )
 
             # If a face image was provided and face library is available, enroll embedding
             if face_files:

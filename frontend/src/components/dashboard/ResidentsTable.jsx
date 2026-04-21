@@ -12,7 +12,6 @@ const GENDER_LABEL = {
 };
 
 const RESIDENT_CATEGORY_LABEL = {
-  employee: "Employee",
   resident: "Resident",
   client: "Client",
 };
@@ -20,7 +19,6 @@ const RESIDENT_CATEGORY_LABEL = {
 const VOTER_STATUS_LABEL = {
   registered_voter: "Registered Voter",
   not_yet_voter: "Not Yet Voter",
-  other_area_voter: "Voter in Other Barangay / Other Area",
   unspecified: "Not Set",
 };
 
@@ -82,13 +80,7 @@ function getResidentAudiencePills(age, residentCategory, voterStatus) {
     }
   }
 
-  if (residentCategory === "employee") {
-    pills.push({
-      label: "employee",
-      background: "#e0f2fe",
-      color: "#075985",
-    });
-  } else if (residentCategory === "client") {
+  if (residentCategory === "client") {
     pills.push({
       label: "client",
       background: "#fae8ff",
@@ -113,12 +105,6 @@ function getResidentAudiencePills(age, residentCategory, voterStatus) {
       label: "not yet voter",
       background: "#fef3c7",
       color: "#92400e",
-    });
-  } else if (voterStatus === "other_area_voter") {
-    pills.push({
-      label: "other area voter",
-      background: "#ede9fe",
-      color: "#6d28d9",
     });
   }
 
@@ -542,7 +528,7 @@ export default function ResidentsTable() {
                         }
                       />
                       <Info
-                        label="Resident Type"
+                        label="Status"
                         value={
                           isEditing ? (
                             <SegmentedPillSelect
@@ -566,7 +552,6 @@ export default function ResidentsTable() {
                               options={[
                                 { value: "registered_voter", label: "Registered Voter" },
                                 { value: "not_yet_voter", label: "Not Yet Voter" },
-                                { value: "other_area_voter", label: "Voter in Other Barangay / Other Area" },
                               ]}
                               onChange={(e) => setForm({ ...form, voter_status: e.target.value })}
                             />

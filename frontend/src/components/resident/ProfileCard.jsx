@@ -54,7 +54,7 @@ export default function ProfileCard() {
       `Gender: ${genderLabel}`,
       `Phone: ${profile?.phone_number || "N/A"}`,
       `Address: ${profile?.address || "N/A"}`,
-      `Resident Type: ${residentCategoryLabel}`,
+      `Status: ${residentCategoryLabel}`,
       `Voter Status: ${voterStatusLabel}`,
       `Expiry: ${formattedExpiryDate}`,
     ];
@@ -259,7 +259,7 @@ export default function ProfileCard() {
             <InfoRow label="Phone" value={profile.phone_number || "—"} />
             <InfoRow label="Address" value={profile.address || "—"} />
             <InfoRow label="Gender" value={genderLabel} />
-            <InfoRow label="Resident Type" value={residentCategoryLabel} />
+            <InfoRow label="Status" value={residentCategoryLabel} />
             <InfoRow label="Voter Status" value={voterStatusLabel} />
             <InfoRow label="Birthdate" value={formattedBirthdate} />
             <InfoRow label="Expiry" value={formattedExpiryDate} />
@@ -453,7 +453,7 @@ function formatEnumLabel(value, fallback) {
 
 function formatVoterStatusLabel(value) {
   if (!value || value === "unspecified") return "Not Set";
-  if (value === "other_area_voter") return "Voter in Other Barangay / Other Area";
+  if (!["registered_voter", "not_yet_voter"].includes(value)) return "Not Set";
   return formatEnumLabel(value, "Not Set");
 }
 

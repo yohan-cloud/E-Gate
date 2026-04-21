@@ -303,12 +303,12 @@ class EventsFlowTests(TestCase):
         self.assertEqual(reg.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(reg.data.get("result_code"), "audience_registered_voter_only")
 
-    def test_employee_can_register_for_employee_only_event(self):
-        event_id = self.create_open_event(title="Staff Briefing", capacity=20)
+    def test_client_can_register_for_client_only_event(self):
+        event_id = self.create_open_event(title="Client Briefing", capacity=20)
         ResidentProfile.objects.filter(user=self.resident).update(
-            resident_category=ResidentProfile.ResidentCategory.EMPLOYEE,
+            resident_category=ResidentProfile.ResidentCategory.CLIENT,
         )
-        Event.objects.filter(id=event_id).update(audience_type="employee_only")
+        Event.objects.filter(id=event_id).update(audience_type="client_only")
 
         self.auth(self.res_token)
         reg = self.client.post(f"/api/events/{event_id}/register/")

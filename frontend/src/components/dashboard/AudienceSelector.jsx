@@ -106,7 +106,7 @@ export default function AudienceSelector({ id, value, onChange }) {
                 <div className="audience-modal-eyebrow">Event Audience</div>
                 <h3 id={`${id}-title`} className="audience-modal-title">Select Audience</h3>
                 <p className="audience-modal-copy">
-                  Group the event audience by age, role, or voter status. Choosing All Audience resets the custom filters.
+                  Group the event audience by age, status, or voter status. Choosing All Audience resets the custom filters.
                 </p>
               </div>
               <button type="button" className="audience-modal-close" onClick={closeModal} aria-label="Close audience selector">
@@ -138,8 +138,8 @@ export default function AudienceSelector({ id, value, onChange }) {
             />
 
             <AudienceSection
-              title="Role / Type"
-              options={AUDIENCE_OPTIONS.filter((option) => option.group === "Role / Type")}
+              title="Status"
+              options={AUDIENCE_OPTIONS.filter((option) => option.group === "Status")}
               draftSelection={draftSelection}
               onToggleAudience={toggleAudience}
             />

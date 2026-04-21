@@ -6,7 +6,6 @@ import SegmentedPillSelect from "../common/SegmentedPillSelect";
 import { DateField } from "./PickerField";
 
 const RESIDENT_CATEGORY_OPTIONS = [
-  { value: "employee", label: "Employee" },
   { value: "resident", label: "Resident" },
   { value: "client", label: "Client" },
 ];
@@ -14,7 +13,6 @@ const RESIDENT_CATEGORY_OPTIONS = [
 const VOTER_STATUS_OPTIONS = [
   { value: "registered_voter", label: "Registered Voter" },
   { value: "not_yet_voter", label: "Not Yet Voter" },
-  { value: "other_area_voter", label: "Voter in Other Barangay / Other Area" },
 ];
 
 const INITIAL = {
@@ -28,14 +26,15 @@ const INITIAL = {
   gender: "unspecified",
   resident_category: "resident",
   voter_status: "not_yet_voter",
+  id_document: null,
   photo: null,
   face_image: null,
   face_samples: [],
 };
 
-function RequiredLabel({ htmlFor, children }) {
+function RequiredLabel({ htmlFor, children, invalid = false }) {
   return (
-    <label htmlFor={htmlFor} className="required-field-label">
+    <label htmlFor={htmlFor} className={`required-field-label ${invalid ? "invalid" : ""}`}>
       <span className="required-marker">*</span>
       <span>{children}</span>
       <span className="required-text">Required</span>
@@ -47,6 +46,7 @@ export default function CreateResidentForm({ onCreated }) {
   const [form, setForm] = useState(INITIAL);
   const [busy, setBusy] = useState(false);
   const [captureLabel, setCaptureLabel] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
   const update = (e) => {
     const { name, value, files } = e.target;
@@ -80,6 +80,7 @@ export default function CreateResidentForm({ onCreated }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    setSubmitted(true);
     setBusy(true);
     try {
       const fd = new FormData();
@@ -93,6 +94,7 @@ export default function CreateResidentForm({ onCreated }) {
       if (form.gender) fd.append("gender", form.gender);
       if (form.resident_category) fd.append("resident_category", form.resident_category);
       if (form.voter_status) fd.append("voter_status", form.voter_status);
+      if (form.id_document) fd.append("id_document", form.id_document);
       if (form.photo) fd.append("photo", form.photo);
       if (form.face_samples.length) {
         form.face_samples.forEach((sample, index) => {
@@ -108,6 +110,7 @@ export default function CreateResidentForm({ onCreated }) {
       toast.success("Resident account created");
       setForm(INITIAL);
       setCaptureLabel("");
+      setSubmitted(false);
       onCreated?.(res.data?.user);
     } catch (err) {
       const msg =
@@ -130,6 +133,7 @@ export default function CreateResidentForm({ onCreated }) {
         </div>
       <form
         onSubmit={submit}
+        onInvalid={() => setSubmitted(true)}
         className="form-grid"
         style={{ gridTemplateColumns: "1fr", maxWidth: 520, margin: "0 auto" }}
       >
@@ -138,19 +142,19 @@ export default function CreateResidentForm({ onCreated }) {
           <input id="res-username" name="username" value={form.username} onChange={update} placeholder="Leave blank to auto-generate" />
         </div>
         <div className="form-group">
-          <RequiredLabel htmlFor="res-fullname">Full Name</RequiredLabel>
+          <RequiredLabel htmlFor="res-fullname" invalid={submitted && !form.full_name}>Full Name</RequiredLabel>
           <input id="res-fullname" name="full_name" value={form.full_name} onChange={update} placeholder="e.g., Juan Dela Cruz" required />
         </div>
         <div className="form-group">
-          <RequiredLabel htmlFor="res-password">Password</RequiredLabel>
+          <RequiredLabel htmlFor="res-password" invalid={submitted && !form.password}>Password</RequiredLabel>
           <input id="res-password" name="password" type="password" value={form.password} onChange={update} required />
         </div>
         <div className="form-group">
-          <RequiredLabel htmlFor="res-email">Email</RequiredLabel>
+          <RequiredLabel htmlFor="res-email" invalid={submitted && !form.email}>Email</RequiredLabel>
           <input id="res-email" name="email" type="email" value={form.email} onChange={update} required />
         </div>
         <div className="form-group">
-          <RequiredLabel htmlFor="res-phone">Phone Number</RequiredLabel>
+          <RequiredLabel htmlFor="res-phone" invalid={submitted && !form.phone_number}>Phone Number</RequiredLabel>
           <input id="res-phone" name="phone_number" value={form.phone_number} onChange={update} placeholder="e.g., 09XXXXXXXXX" required />
         </div>
         <div className="form-group">
@@ -163,7 +167,7 @@ export default function CreateResidentForm({ onCreated }) {
           </select>
         </div>
         <div className="form-group">
-          <label htmlFor="res-category">Resident Type / Status</label>
+          <label htmlFor="res-category">Resident Status</label>
           <SegmentedPillSelect
             id="res-category"
             name="resident_category"
@@ -171,7 +175,7 @@ export default function CreateResidentForm({ onCreated }) {
             options={RESIDENT_CATEGORY_OPTIONS}
             onChange={update}
           />
-          <small>Classify whether this profile is an employee, resident, or client.</small>
+          <small>Classify whether this profile is a resident or client.</small>
         </div>
         <div className="form-group">
           <label htmlFor="res-voter-status">Voter Status</label>
@@ -182,10 +186,10 @@ export default function CreateResidentForm({ onCreated }) {
             options={VOTER_STATUS_OPTIONS}
             onChange={update}
           />
-          <small>Select whether the resident is not yet a voter, registered here, or registered in another area.</small>
+          <small>Select whether the resident is registered here or not yet a voter.</small>
         </div>
         <div className="form-group">
-          <RequiredLabel htmlFor="res-address">Address</RequiredLabel>
+          <RequiredLabel htmlFor="res-address" invalid={submitted && !form.address}>Address</RequiredLabel>
           <input id="res-address" name="address" value={form.address} onChange={update} placeholder="Complete address" required />
         </div>
         <DateField
@@ -195,9 +199,15 @@ export default function CreateResidentForm({ onCreated }) {
           value={form.birthdate}
           onChange={update}
           required
+          requiredInvalid={submitted && !form.birthdate}
           placeholder="Select birthdate"
           panelInFlow
         />
+        <div className="form-group">
+          <RequiredLabel htmlFor="res-id-document" invalid={submitted && !form.id_document}>Resident ID Document</RequiredLabel>
+          <input id="res-id-document" name="id_document" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={update} required />
+          <small>Upload a clear Barangay ID or valid ID document. Accepted: JPG, PNG, WEBP, or PDF up to 5MB.</small>
+        </div>
         <div className="form-group">
           <label htmlFor="res-photo">Profile Photo (optional)</label>
           <input id="res-photo" name="photo" type="file" accept="image/*" onChange={update} />
