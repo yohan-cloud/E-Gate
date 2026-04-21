@@ -12,6 +12,7 @@ import DashboardHome from "../dashboard/DashboardHome";
 import Guests from "../dashboard/Guests";
 import ResidentsTable from "../dashboard/ResidentsTable";
 import Settings from "../dashboard/Settings";
+import VenueManagement from "../dashboard/VenueManagement";
 import VerificationRequests from "../dashboard/VerificationRequests";
 
 const ADMIN_NAV_ITEMS = [
@@ -19,6 +20,7 @@ const ADMIN_NAV_ITEMS = [
   { key: "scanner", label: "Scanner", eyebrow: "Access" },
   { key: "verifications", label: "Verifications", eyebrow: "Review" },
   { key: "dashboard", label: "Manage Events", eyebrow: "Events" },
+  { key: "venues", label: "Venues", eyebrow: "Facilities" },
   { key: "analytics", label: "Analytics", eyebrow: "Reports" },
   { key: "residents", label: "Residents", eyebrow: "Records" },
   { key: "audit", label: "Audit Trail", eyebrow: "Security" },
@@ -180,6 +182,8 @@ export default function AdminPortal({ onLogout }) {
             />
           ) : viewMode === "dashboard" ? (
             <DashboardHome />
+          ) : viewMode === "venues" ? (
+            <VenueManagement />
           ) : viewMode === "analytics" ? (
             <Analytics />
           ) : viewMode === "residents" ? (

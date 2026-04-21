@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, fetchJson } from "../../api";
 import toast from "../../lib/toast";
+import ConfirmDialog from "../common/ConfirmDialog";
 import SegmentedPillSelect from "../common/SegmentedPillSelect";
 
 const GENDER_LABEL = {
@@ -137,6 +138,7 @@ export default function ResidentsTable() {
   const [archivingId, setArchivingId] = useState(null);
   const [deactivationActionId, setDeactivationActionId] = useState(null);
   const [resettingPasswordId, setResettingPasswordId] = useState(null);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [resetModal, setResetModal] = useState({
     open: false,
     resident: null,
@@ -247,10 +249,10 @@ export default function ResidentsTable() {
   };
 
   const deleteResident = async (userId) => {
-    if (!window.confirm("Delete this resident account?")) return;
     try {
       await api.delete(`/residents/admin/${userId}/delete/`);
       toast.success("Resident deleted");
+      setDeleteTargetId(null);
       if (editingId === userId) cancelEdit();
       load();
     } catch (e) {
@@ -634,7 +636,7 @@ export default function ResidentsTable() {
                           {archivingId === r.user?.id ? "Restoring..." : "Unarchive"}
                         </button>
                       )}
-                      {!r.is_archived && <button onClick={() => deleteResident(r.user?.id)} title="Delete" style={{ color: "#b91c1c" }}>Delete</button>}
+                      {!r.is_archived && <button onClick={() => setDeleteTargetId(r.user?.id)} title="Delete" style={{ color: "#b91c1c" }}>Delete</button>}
                     </>
                   )}
                 </div>
@@ -942,6 +944,15 @@ export default function ResidentsTable() {
           </div>
         </div>
       ) : null}
+      <ConfirmDialog
+        open={Boolean(deleteTargetId)}
+        title="Delete Resident"
+        message="Delete this resident account? This cannot be undone."
+        confirmLabel="Delete"
+        tone="danger"
+        onCancel={() => setDeleteTargetId(null)}
+        onConfirm={() => deleteResident(deleteTargetId)}
+      />
     </div>
   );
 }

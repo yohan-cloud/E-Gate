@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
+import ConfirmDialog from "../common/ConfirmDialog";
 import toast, { formatApiError } from "../../lib/toast";
 import AudienceSelector from "./AudienceSelector";
 import { AUDIENCE_LABELS, parseAudienceValue } from "./audienceOptions";
 import { DateTimeField } from "./PickerField";
+import { FALLBACK_VENUES, buildVenueCapacityMap, normalizeVenueList } from "../../constants/venues";
 
 const EVENT_TYPE_OPTIONS = [
   { value: "mandatory_governance_meetings", label: "Mandatory Governance Meetings" },
@@ -40,6 +42,25 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
   const [event, setEvent] = useState(initialEvent);
   const [editing, setEditing] = useState(mode === "edit");
   const [form, setForm] = useState({});
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [venues, setVenues] = useState(FALLBACK_VENUES);
+  const venueCapacityMap = useMemo(() => buildVenueCapacityMap(venues), [venues]);
+  const hasAutoCapacity = venueCapacityMap[form.venue] !== undefined;
+  const selectableVenues = useMemo(() => {
+    const hasCurrent = venues.some(
+      (venue) => String(venue.id) === String(form.venue_id || "") || venue.name === form.venue
+    );
+    if (!form.venue || hasCurrent) return venues;
+    return [
+      ...venues,
+      {
+        id: form.venue_id || null,
+        name: form.venue,
+        max_capacity: form.capacity || event?.venue_max_capacity || event?.capacity || 0,
+        is_active: false,
+      },
+    ];
+  }, [event?.capacity, event?.venue_max_capacity, form.capacity, form.venue, form.venue_id, venues]);
 
   const toOffsetIso = (val) => {
     if (!val) return null;
@@ -68,6 +89,24 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
   }, [eventId, initialEvent]);
 
   useEffect(() => {
+    let cancelled = false;
+    api
+      .get("/events/venues/")
+      .then((res) => {
+        if (!cancelled) {
+          const nextVenues = normalizeVenueList(res.data);
+          if (nextVenues.length) setVenues(nextVenues);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setVenues(FALLBACK_VENUES);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     setEditing(mode === "edit");
     if (mode === "edit" && event) {
       startEdit();
@@ -83,6 +122,7 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
       audience_type: event.audience_type || "all",
       date: toLocalInput(event.date),
       end_date: toLocalInput(event.end_date),
+      venue_id: event.venue_ref_id ? String(event.venue_ref_id) : "",
       venue: event.venue || "",
       status: event.status || "upcoming",
       capacity: event.capacity ?? "",
@@ -93,9 +133,29 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
     setEditing(true);
   };
 
-  const updateField = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const updateField = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "venue") {
+      const selectedVenue = selectableVenues.find((venue) => String(venue.id) === value || venue.name === value);
+      const venueName = selectedVenue?.name || "";
+      const nextForm = { ...form, venue_id: selectedVenue?.id ? String(selectedVenue.id) : "", venue: venueName };
+      const defaultCapacity = selectedVenue?.max_capacity;
+      if (defaultCapacity !== undefined) {
+        nextForm.capacity = String(defaultCapacity);
+      }
+      setForm(nextForm);
+      return;
+    }
+
+    setForm({ ...form, [name]: value });
+  };
 
   const save = async () => {
+    if (form.date && form.end_date && new Date(form.end_date) <= new Date(form.date)) {
+      toast.error("Event end date/time must be after the start date/time.");
+      return;
+    }
     try {
       const payload = {
         title: form.title,
@@ -104,6 +164,7 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
         // Send datetime-local with explicit offset to avoid time shifts
         date: toOffsetIso(form.date),
         end_date: toOffsetIso(form.end_date),
+        venue_id: form.venue_id ? Number(form.venue_id) : null,
         venue: form.venue,
         status: form.status,
         capacity: form.capacity === "" ? null : Number(form.capacity),
@@ -123,10 +184,10 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
   };
 
   const remove = async () => {
-    if (!confirm("Delete this event? This cannot be undone.")) return;
     try {
       await api.delete(`/events/delete/${eventId}/`);
       toast.success("Event deleted");
+      setConfirmDeleteOpen(false);
       onDeleted?.();
     } catch (e) {
       const msg = e?.response?.data?.error || "Failed to delete";
@@ -144,7 +205,7 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
             <h2 style={{ margin: 0 }}>{event.title}</h2>
             <div>
               <button onClick={startEdit} style={{ marginRight: 8 }}>Edit</button>
-              <button onClick={remove} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6 }}>Delete</button>
+              <button onClick={() => setConfirmDeleteOpen(true)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6 }}>Delete</button>
             </div>
           </div>
           <p><b>Type:</b> {EVENT_TYPE_LABELS[event.event_type] || event.event_type}</p>
@@ -185,6 +246,7 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
               onChange={updateField}
               placeholder="Select event date and time"
               helpText="The actual start date/time of the event."
+              disablePastDates
             />
             <DateTimeField
               id="edit-end-date"
@@ -194,10 +256,19 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
               onChange={updateField}
               placeholder="Select event end date and time"
               helpText="Set when the event ends."
+              disablePastDates
             />
             <div className="form-group">
               <label htmlFor="edit-venue">Venue</label>
-              <input id="edit-venue" name="venue" value={form.venue} onChange={updateField} />
+              <select id="edit-venue" name="venue" value={form.venue_id || form.venue} onChange={updateField}>
+                <option value="">Select a venue</option>
+                {selectableVenues.map((venue) => (
+                  <option key={venue.id || venue.name} value={venue.id || venue.name}>
+                    {venue.name} ({venue.max_capacity || "no capacity"})
+                  </option>
+                ))}
+              </select>
+              <small>Select a venue to auto-fill the max capacity.</small>
             </div>
             <div className="form-group">
               <label htmlFor="edit-status">Status</label>
@@ -210,7 +281,30 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
             </div>
             <div className="form-group">
               <label htmlFor="edit-capacity">Capacity</label>
-              <input id="edit-capacity" type="number" min="0" name="capacity" value={form.capacity} onChange={updateField} />
+              <input
+                id="edit-capacity"
+                type="number"
+                min="0"
+                name="capacity"
+                value={form.capacity}
+                onChange={updateField}
+                disabled={hasAutoCapacity}
+                readOnly={hasAutoCapacity}
+                style={
+                  hasAutoCapacity
+                    ? {
+                        background: "#e5e7eb",
+                        color: "#475569",
+                        borderColor: "#cbd5e1",
+                      }
+                    : undefined
+                }
+              />
+              <small>
+                {hasAutoCapacity
+                  ? "Auto-filled from the selected venue. You can still adjust it if needed."
+                  : "Set the event capacity."}
+              </small>
             </div>
             <DateTimeField
               id="edit-open"
@@ -239,6 +333,15 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
           </div>
         </>
       )}
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="Delete Event"
+        message="Delete this event? This cannot be undone."
+        confirmLabel="Delete"
+        tone="danger"
+        onCancel={() => setConfirmDeleteOpen(false)}
+        onConfirm={remove}
+      />
     </div>
   );
 }

@@ -443,6 +443,29 @@ body {
   color: #183126;
 }
 
+.form-group label.required-field-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  width: fit-content;
+}
+
+.required-marker,
+.required-text {
+  color: #b91c1c;
+}
+
+.required-marker {
+  font-weight: 800;
+}
+
+.required-text {
+  margin-left: 10px;
+  font-size: 0.72rem;
+  font-style: italic;
+  font-weight: 700;
+}
+
 .card input,
 .card select,
 .card textarea {
@@ -458,6 +481,223 @@ body {
 .card small {
   margin-top: 6px;
   color: #4f6b5d;
+}
+
+.venue-management {
+  display: grid;
+  gap: 18px;
+}
+
+.venue-management-head,
+.venue-management-grid,
+.venue-form,
+.venue-table-shell {
+  border: 1px solid rgba(146, 181, 157, 0.34);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+.venue-management-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 18px;
+}
+
+.venue-management-head h2,
+.venue-form h3 {
+  margin: 0;
+  color: #183126;
+}
+
+.venue-management-head p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+.venue-toggle,
+.venue-form-actions,
+.venue-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.venue-toggle {
+  font-weight: 700;
+  color: #183126;
+}
+
+.venue-toggle input {
+  width: auto;
+}
+
+.venue-management-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 340px) minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px;
+}
+
+.venue-form {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 16px;
+}
+
+.venue-form input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid rgba(146, 181, 157, 0.72);
+  border-radius: 6px;
+  background: rgba(248, 255, 249, 0.92);
+  color: #183126;
+}
+
+.venue-form-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.venue-form-actions button,
+.venue-row-actions button {
+  width: auto;
+  min-height: 38px;
+}
+
+.venue-form-actions .secondary-btn,
+.venue-row-actions button {
+  background: #f8fafc;
+  color: #183126;
+  border: 1px solid rgba(146, 181, 157, 0.72);
+}
+
+.venue-row-actions .danger-btn {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.venue-row-actions .warning-btn {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+.venue-table-shell {
+  overflow-x: auto;
+  padding: 8px;
+}
+
+.venue-table {
+  min-width: 620px;
+}
+
+.venue-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  min-height: 28px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.78rem;
+}
+
+.venue-status.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.venue-status.inactive {
+  background: #e5e7eb;
+  color: #475569;
+}
+
+.confirm-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.confirm-dialog-panel {
+  width: min(420px, 100%);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(146, 181, 157, 0.6);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+}
+
+.confirm-dialog-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+.confirm-dialog-icon.danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.confirm-dialog-icon.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.confirm-dialog-body h3 {
+  margin: 0;
+  color: #183126;
+}
+
+.confirm-dialog-body p {
+  margin: 8px 0 0;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.confirm-dialog-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.confirm-dialog-actions button {
+  width: auto;
+  min-width: 92px;
+  min-height: 38px;
+}
+
+.confirm-dialog-cancel {
+  background: #f8fafc;
+  color: #183126;
+  border: 1px solid rgba(146, 181, 157, 0.72);
+}
+
+.confirm-dialog-confirm.danger {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.confirm-dialog-confirm.warning {
+  background: #f59e0b;
+  color: #1f2937;
 }
 
 .segmented-pill-group {
@@ -1216,6 +1456,16 @@ tr:hover {
 
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
+  .venue-management-head,
+  .venue-management-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .venue-management-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .dashboard-container {
     flex-direction: column;
   }

@@ -9,7 +9,7 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from django.contrib.auth import get_user_model
 from residents.models import ResidentProfile
-from events.models import EventAttendance, Event
+from events.models import EventAttendance, Event, Venue
 
 
 @override_settings(
@@ -96,6 +96,83 @@ class EventsFlowTests(TestCase):
         res = self.client.post("/api/events/create/", payload, format="json")
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         return res.data["id"]
+
+    def test_admin_can_manage_venues_and_deactivate(self):
+        self.auth(self.admin_token)
+
+        create = self.client.post(
+            "/api/events/venues/",
+            {"name": "Covered Court", "max_capacity": 120},
+            format="json",
+        )
+        self.assertEqual(create.status_code, status.HTTP_201_CREATED)
+        venue_id = create.data["id"]
+
+        update = self.client.patch(
+            f"/api/events/venues/{venue_id}/",
+            {"name": "Covered Court A", "max_capacity": 150},
+            format="json",
+        )
+        self.assertEqual(update.status_code, status.HTTP_200_OK)
+        self.assertEqual(update.data["max_capacity"], 150)
+
+        deactivate = self.client.post(f"/api/events/venues/{venue_id}/deactivate/")
+        self.assertEqual(deactivate.status_code, status.HTTP_200_OK)
+        self.assertFalse(deactivate.data["is_active"])
+
+        active_list = self.client.get("/api/events/venues/")
+        self.assertNotIn(venue_id, [item["id"] for item in active_list.data["results"]])
+
+        all_list = self.client.get("/api/events/venues/?include_inactive=1")
+        self.assertIn(venue_id, [item["id"] for item in all_list.data["results"]])
+
+    def test_event_can_use_venue_id_and_defaults_capacity(self):
+        self.auth(self.admin_token)
+        venue = Venue.objects.create(name="Training Room", max_capacity=35)
+        now = timezone.now()
+
+        res = self.client.post(
+            "/api/events/create/",
+            {
+                "title": "Venue Linked Event",
+                "event_type": "community_events",
+                "audience_type": "all",
+                "date": (now + timedelta(days=4)).isoformat(),
+                "end_date": (now + timedelta(days=4, hours=2)).isoformat(),
+                "venue_id": venue.id,
+                "registration_open": (now - timedelta(minutes=1)).isoformat(),
+                "registration_close": (now + timedelta(days=3)).isoformat(),
+            },
+            format="json",
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data["venue"], "Training Room")
+        self.assertEqual(res.data["venue_ref_id"], venue.id)
+        self.assertEqual(res.data["capacity"], 35)
+
+    def test_admin_can_remove_unused_venue_but_not_used_venue(self):
+        self.auth(self.admin_token)
+        unused = Venue.objects.create(name="Unused Room", max_capacity=12)
+        used = Venue.objects.create(name="Used Room", max_capacity=20)
+        Event.objects.create(
+            title="Used Venue Event",
+            event_type="community_events",
+            audience_type="all",
+            date=timezone.now() + timedelta(days=2),
+            venue_ref=used,
+            venue=used.name,
+            capacity=used.max_capacity,
+            created_by=self.admin,
+        )
+
+        blocked = self.client.delete(f"/api/events/venues/{used.id}/delete/")
+        self.assertEqual(blocked.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(Venue.objects.filter(id=used.id).exists())
+
+        removed = self.client.delete(f"/api/events/venues/{unused.id}/delete/")
+        self.assertEqual(removed.status_code, status.HTTP_200_OK)
+        self.assertFalse(Venue.objects.filter(id=unused.id).exists())
 
     def test_event_create_register_attendance_unreg(self):
         event_id = self.create_open_event()

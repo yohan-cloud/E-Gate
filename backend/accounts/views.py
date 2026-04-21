@@ -250,20 +250,28 @@ def logout_user(request):
     return Response({"message": "Logged out"}, status=status.HTTP_205_RESET_CONTENT)
 
 
-# Request OTP for password reset (resident only)
+# Request OTP for password reset
 @api_view(["POST"])
 @throttle_classes(password_reset_throttles())
 def request_password_reset_code(request):
     username = (request.data.get("username") or "").strip()
+    account_type = (request.data.get("account_type") or "resident").strip().lower()
     if not username:
         return Response({"error": "Username is required."}, status=status.HTTP_400_BAD_REQUEST)
-    user = find_user_by_username_case_insensitive(username, is_resident=True)
-    if not user or not hasattr(user, "profile"):
-        return Response({"error": "Resident not found."}, status=status.HTTP_404_NOT_FOUND)
+    if account_type in {"admin", "operations", "gate"}:
+        user = find_user_by_username_case_insensitive(username)
+        if not user or not (getattr(user, "is_admin", False) or getattr(user, "is_gate_operator", False)):
+            return Response({"error": "Operations account not found."}, status=status.HTTP_404_NOT_FOUND)
+        account_label = "operations"
+    else:
+        user = find_user_by_username_case_insensitive(username, is_resident=True)
+        if not user or not hasattr(user, "profile"):
+            return Response({"error": "Resident not found."}, status=status.HTTP_404_NOT_FOUND)
+        account_label = "resident"
 
     stored_email = (user.email or "").strip()
     if not stored_email:
-        return Response({"error": "No email address on file for this resident."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": f"No email address on file for this {account_label} account."}, status=status.HTTP_400_BAD_REQUEST)
 
     # Invalidate any previously issued (unused) codes before issuing a new one
     PasswordResetCode.objects.filter(user=user, used=False).update(used=True)
@@ -314,13 +322,19 @@ def request_password_reset_code(request):
 @throttle_classes(password_reset_throttles())
 def reset_password_with_code(request):
     username = (request.data.get("username") or "").strip()
+    account_type = (request.data.get("account_type") or "resident").strip().lower()
     code = (request.data.get("code") or "").strip()
     new_password = request.data.get("new_password")
     if not all([username, code, new_password]):
         return Response({"error": "Username, code, and new_password are required."}, status=status.HTTP_400_BAD_REQUEST)
-    user = find_user_by_username_case_insensitive(username, is_resident=True)
-    if not user:
-        return Response({"error": "Resident not found."}, status=status.HTTP_404_NOT_FOUND)
+    if account_type in {"admin", "operations", "gate"}:
+        user = find_user_by_username_case_insensitive(username)
+        if not user or not (getattr(user, "is_admin", False) or getattr(user, "is_gate_operator", False)):
+            return Response({"error": "Operations account not found."}, status=status.HTTP_404_NOT_FOUND)
+    else:
+        user = find_user_by_username_case_insensitive(username, is_resident=True)
+        if not user:
+            return Response({"error": "Resident not found."}, status=status.HTTP_404_NOT_FOUND)
 
     prc = (
         PasswordResetCode.objects.filter(user=user, used=False)

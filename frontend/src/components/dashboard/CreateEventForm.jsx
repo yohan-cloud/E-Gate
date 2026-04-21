@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import toast, { formatApiError } from "../../lib/toast";
 import AudienceSelector from "./AudienceSelector";
 import { DateTimeField } from "./PickerField";
-import { VENUE_DEFAULT_CAPACITIES, VENUE_OPTIONS } from "../../constants/venues";
+import { FALLBACK_VENUES, buildVenueCapacityMap, normalizeVenueList } from "../../constants/venues";
 
 const EVENT_TYPE_OPTIONS = [
   { value: "mandatory_governance_meetings", label: "Mandatory Governance Meetings" },
@@ -18,6 +18,7 @@ const DEFAULTS = {
   audience_type: "all",
   date: "",
   end_date: "",
+  venue_id: "",
   venue: "",
   capacity: "",
   registration_open: "",
@@ -25,17 +26,49 @@ const DEFAULTS = {
   description: "",
 };
 
+function RequiredLabel({ htmlFor, children }) {
+  return (
+    <label htmlFor={htmlFor} className="required-field-label">
+      <span className="required-marker">*</span>
+      <span>{children}</span>
+      <span className="required-text">Required</span>
+    </label>
+  );
+}
+
 export default function CreateEventForm({ onCreated }) {
   const [form, setForm] = useState(DEFAULTS);
+  const [venues, setVenues] = useState(FALLBACK_VENUES);
   const [busy, setBusy] = useState(false);
-  const hasAutoCapacity = VENUE_DEFAULT_CAPACITIES[form.venue] !== undefined;
+  const venueCapacityMap = useMemo(() => buildVenueCapacityMap(venues), [venues]);
+  const hasAutoCapacity = venueCapacityMap[form.venue] !== undefined;
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get("/events/venues/")
+      .then((res) => {
+        if (!cancelled) {
+          const nextVenues = normalizeVenueList(res.data);
+          if (nextVenues.length) setVenues(nextVenues);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setVenues(FALLBACK_VENUES);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const update = (e) => {
     const { name, value } = e.target;
 
     if (name === "venue") {
-      const nextForm = { ...form, venue: value };
-      const defaultCapacity = VENUE_DEFAULT_CAPACITIES[value];
+      const selectedVenue = venues.find((venue) => String(venue.id) === value || venue.name === value);
+      const venueName = selectedVenue?.name || "";
+      const nextForm = { ...form, venue_id: selectedVenue?.id ? String(selectedVenue.id) : "", venue: venueName };
+      const defaultCapacity = selectedVenue?.max_capacity;
       if (defaultCapacity !== undefined) {
         nextForm.capacity = String(defaultCapacity);
       }
@@ -63,6 +96,10 @@ export default function CreateEventForm({ onCreated }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (form.date && form.end_date && new Date(form.end_date) <= new Date(form.date)) {
+      toast.error("Event end date/time must be after the start date/time.");
+      return;
+    }
     setBusy(true);
     try {
       const payload = {
@@ -71,6 +108,7 @@ export default function CreateEventForm({ onCreated }) {
         audience_type: form.audience_type,
         date: toOffsetIso(form.date),
         end_date: toOffsetIso(form.end_date),
+        venue_id: form.venue_id ? Number(form.venue_id) : null,
         venue: form.venue,
         capacity: form.capacity ? Number(form.capacity) : null,
         registration_open: toOffsetIso(form.registration_open),
@@ -102,7 +140,7 @@ export default function CreateEventForm({ onCreated }) {
         style={{ gridTemplateColumns: "1fr", maxWidth: 520, margin: "0 auto" }}
       >
         <div className="form-group">
-          <label htmlFor="event-title">Title</label>
+          <RequiredLabel htmlFor="event-title">Title</RequiredLabel>
           <input
             id="event-title"
             name="title"
@@ -113,7 +151,7 @@ export default function CreateEventForm({ onCreated }) {
           />
         </div>
         <div className="form-group">
-          <label htmlFor="event-type">Event Type</label>
+          <RequiredLabel htmlFor="event-type">Event Type</RequiredLabel>
           <select id="event-type" name="event_type" value={form.event_type} onChange={update}>
             {EVENT_TYPE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
@@ -121,7 +159,7 @@ export default function CreateEventForm({ onCreated }) {
           </select>
         </div>
         <div className="form-group">
-          <label htmlFor="event-audience">Audience</label>
+          <RequiredLabel htmlFor="event-audience">Audience</RequiredLabel>
           <AudienceSelector
             id="event-audience"
             value={form.audience_type}
@@ -157,15 +195,17 @@ export default function CreateEventForm({ onCreated }) {
           <select
             id="event-venue"
             name="venue"
-            value={form.venue}
+            value={form.venue_id || form.venue}
             onChange={update}
           >
             <option value="">Select a venue</option>
-            {VENUE_OPTIONS.map((venue) => (
-              <option key={venue} value={venue}>{venue}</option>
+            {venues.map((venue) => (
+              <option key={venue.id || venue.name} value={venue.id || venue.name}>
+                {venue.name} ({venue.max_capacity})
+              </option>
             ))}
           </select>
-          <small>Select a venue to auto-fill the default capacity.</small>
+          <small>Select a venue to auto-fill the max capacity.</small>
         </div>
         <div className="form-group">
           <label htmlFor="event-capacity">Capacity</label>
@@ -177,6 +217,8 @@ export default function CreateEventForm({ onCreated }) {
             placeholder="e.g., 100"
             value={form.capacity}
             onChange={update}
+            disabled={hasAutoCapacity}
+            readOnly={hasAutoCapacity}
             style={
               hasAutoCapacity
                 ? {

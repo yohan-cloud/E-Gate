@@ -2,6 +2,12 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Venue Management
+    path('venues/', views.VenueListCreateView.as_view(), name='venue_list_create'),
+    path('venues/<int:pk>/', views.VenueDetailView.as_view(), name='venue_detail'),
+    path('venues/<int:venue_id>/delete/', views.delete_venue, name='venue_delete'),
+    path('venues/<int:venue_id>/deactivate/', views.deactivate_venue, name='venue_deactivate'),
+
     # Core Event Endpoints
     path('', views.EventListView.as_view(), name='list_events'),
     path('create/', views.create_event, name='create_event'),

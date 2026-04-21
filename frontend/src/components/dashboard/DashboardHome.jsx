@@ -4,6 +4,7 @@ import EventDetails from "./EventDetails";
 import AttendanceTable from "./AttendanceTable";
 import RegistrantsList from "./RegistrantsList";
 import toast from "../../lib/toast";
+import ConfirmDialog from "../common/ConfirmDialog";
 
 function getEventBucket(event) {
   const rawStatus = (event?.status || "").toLowerCase();
@@ -77,6 +78,7 @@ export default function DashboardHome() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [eventFilter, setEventFilter] = useState("active");
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const loadEvents = useCallback(async () => {
     setLoading(true);
@@ -95,6 +97,19 @@ export default function DashboardHome() {
       setLoading(false);
     }
   }, [eventFilter, search]);
+
+  const deleteEvent = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.delete(`/events/delete/${deleteTarget.id}/`);
+      setSelectedEvent(null);
+      setDeleteTarget(null);
+      setRefreshKey((k) => k + 1);
+      loadEvents();
+    } catch {
+      toast.error("Failed to delete event");
+    }
+  };
 
   useEffect(() => {
     loadEvents();
@@ -260,17 +275,7 @@ export default function DashboardHome() {
                                   </button>
                                 )}
                                 {!ev.is_archived && <button
-                                  onClick={async () => {
-                                    if (!window.confirm("Delete this event?")) return;
-                                    try {
-                                      await api.delete(`/events/delete/${ev.id}/`);
-                                      setSelectedEvent(null);
-                                      setRefreshKey((k) => k + 1);
-                                      loadEvents();
-                                    } catch {
-                                      toast.error("Failed to delete event");
-                                    }
-                                  }}
+                                  onClick={() => setDeleteTarget(ev)}
                                   title="Delete"
                                   style={{ ...iconBtn, color: "#b91c1c" }}
                                 >
@@ -302,6 +307,15 @@ export default function DashboardHome() {
           </div>
         </>
       )}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete Event"
+        message={`Delete ${deleteTarget?.title || "this event"}? This cannot be undone.`}
+        confirmLabel="Delete"
+        tone="danger"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={deleteEvent}
+      />
     </div>
   );
 }

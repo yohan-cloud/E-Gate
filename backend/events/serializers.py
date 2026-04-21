@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Event, EventRegistration, EventAttendance, EntryLog
+from .models import Event, EventRegistration, EventAttendance, EntryLog, Venue
 from django.utils import timezone
 from django.conf import settings
 try:
@@ -43,12 +43,52 @@ def normalize_audience_type(value):
 
 
 # 🧩 Event Serializer
+class VenueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Venue
+        fields = [
+            "id",
+            "name",
+            "max_capacity",
+            "is_active",
+            "created_at",
+            "updated_at",
+            "deactivated_at",
+        ]
+        read_only_fields = ["created_at", "updated_at", "deactivated_at"]
+
+    def validate_name(self, value):
+        name = (value or "").strip()
+        if not name:
+            raise serializers.ValidationError("Venue name is required.")
+        qs = Venue.objects.filter(name__iexact=name)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("A venue with this name already exists.")
+        return name
+
+    def validate_max_capacity(self, value):
+        if value is None or value <= 0:
+            raise serializers.ValidationError("Max capacity must be greater than 0.")
+        return value
+
+
 class EventSerializer(serializers.ModelSerializer):
     # Show username instead of raw user id
     created_by = serializers.StringRelatedField(read_only=True)
     registrations_count = serializers.SerializerMethodField()
     attendance_count = serializers.SerializerMethodField()
     is_archived = serializers.SerializerMethodField()
+    venue_id = serializers.PrimaryKeyRelatedField(
+        source="venue_ref",
+        queryset=Venue.objects.all(),
+        required=False,
+        allow_null=True,
+        write_only=True,
+    )
+    venue_ref_id = serializers.IntegerField(source="venue_ref.id", read_only=True, allow_null=True)
+    venue_max_capacity = serializers.IntegerField(source="venue_ref.max_capacity", read_only=True, allow_null=True)
 
     class Meta:
         model = Event
@@ -60,7 +100,10 @@ class EventSerializer(serializers.ModelSerializer):
             'audience_type',
             'date',
             'end_date',
+            'venue_id',
+            'venue_ref_id',
             'venue',
+            'venue_max_capacity',
             'capacity',
             'registration_open',
             'registration_close',
@@ -76,6 +119,15 @@ class EventSerializer(serializers.ModelSerializer):
             'attendance_count',
         ]
         read_only_fields = ['created_by', 'created_at']
+
+    def to_internal_value(self, data):
+        attrs = super().to_internal_value(data)
+        venue = attrs.get("venue_ref")
+        if venue is not None:
+            attrs["venue"] = venue.name
+            if attrs.get("capacity") is None:
+                attrs["capacity"] = venue.max_capacity
+        return attrs
 
     def get_registrations_count(self, obj):
         annotated = getattr(obj, "registrations_count", None)
@@ -118,6 +170,7 @@ class EventSerializer(serializers.ModelSerializer):
         reg_open = attrs.get('registration_open', getattr(self.instance, 'registration_open', None))
         reg_close = attrs.get('registration_close', getattr(self.instance, 'registration_close', None))
         capacity = attrs.get('capacity', getattr(self.instance, 'capacity', None))
+        venue_ref = attrs.get('venue_ref', getattr(self.instance, 'venue_ref', None))
 
         def _localize(dt):
             if dt and timezone.is_naive(dt):
@@ -150,6 +203,8 @@ class EventSerializer(serializers.ModelSerializer):
 
         if capacity is not None and capacity < 0:
             raise serializers.ValidationError({ 'capacity': 'Capacity must be >= 0.' })
+        if "venue_ref" in attrs and venue_ref is not None and not venue_ref.is_active:
+            raise serializers.ValidationError({ 'venue_id': 'Select an active venue.' })
         if date and end_date and end_date <= date:
             raise serializers.ValidationError({ 'end_date': 'End date/time must be after the event start.' })
         if reg_open and reg_close and reg_open > reg_close:

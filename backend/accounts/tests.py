@@ -312,6 +312,13 @@ class PasswordResetEmailTests(TestCase):
             birthdate="2000-01-01",
             phone_number="09171234567",
         )
+        self.admin = User.objects.create_user(
+            username="admin_reset",
+            password="AdminReset!234",
+            email="admin@example.com",
+            is_admin=True,
+            is_staff=True,
+        )
 
     def test_request_password_reset_sends_email(self):
         res = self.client.post(
@@ -361,6 +368,40 @@ class PasswordResetEmailTests(TestCase):
         login_res = self.client.post(
             "/api/accounts/login/resident/",
             {"username": "RESIDENT_RESET", "password": "UpdatedReset!234"},
+            format="json",
+        )
+        self.assertEqual(login_res.status_code, status.HTTP_200_OK)
+        self.assertIn("access", login_res.data.get("tokens", {}))
+
+    def test_admin_password_reset_and_login_work(self):
+        request_res = self.client.post(
+            "/api/accounts/password/otp/request/",
+            {"username": "ADMIN_RESET", "account_type": "admin"},
+            format="json",
+        )
+        self.assertEqual(request_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["admin@example.com"])
+
+        body = mail.outbox[0].body
+        code_line = next(line for line in body.splitlines() if "password reset code is:" in line.lower())
+        code = code_line.rsplit(":", 1)[-1].strip()
+
+        verify_res = self.client.post(
+            "/api/accounts/password/otp/verify/",
+            {
+                "username": "ADMIN_RESET",
+                "account_type": "admin",
+                "code": code,
+                "new_password": "UpdatedAdmin!234",
+            },
+            format="json",
+        )
+        self.assertEqual(verify_res.status_code, status.HTTP_200_OK)
+
+        login_res = self.client.post(
+            "/api/accounts/login/admin/",
+            {"username": "ADMIN_RESET", "password": "UpdatedAdmin!234"},
             format="json",
         )
         self.assertEqual(login_res.status_code, status.HTTP_200_OK)

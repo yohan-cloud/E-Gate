@@ -1,11 +1,18 @@
 from django.contrib import admin
-from .models import Event, EventRegistration, EventAttendance
+from .models import Event, EventRegistration, EventAttendance, Venue
+
+
+@admin.register(Venue)
+class VenueAdmin(admin.ModelAdmin):
+    list_display = ('name', 'max_capacity', 'is_active', 'updated_at')
+    search_fields = ('name',)
+    list_filter = ('is_active',)
 
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     list_display = (
-        'title', 'event_type', 'date', 'status', 'venue', 'capacity',
+        'title', 'event_type', 'date', 'status', 'venue', 'venue_ref', 'capacity',
         'registration_open', 'registration_close', 'created_by'
     )
     search_fields = ('title', 'event_type', 'venue', 'created_by__username')

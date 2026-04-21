@@ -2,6 +2,26 @@ from django.db import models
 from residents.models import User
 
 
+class Venue(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    max_capacity = models.PositiveIntegerField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    deactivated_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["name"]
+        indexes = [
+            models.Index(fields=["name"], name="venue_name_idx"),
+            models.Index(fields=["is_active"], name="venue_active_idx"),
+        ]
+
+    def __str__(self):
+        status = "active" if self.is_active else "inactive"
+        return f"{self.name} ({self.max_capacity}, {status})"
+
+
 class Event(models.Model):
     EVENT_TYPES = [
         ("mandatory_governance_meetings", "Mandatory Governance Meetings"),
@@ -41,6 +61,13 @@ class Event(models.Model):
     capacity = models.PositiveIntegerField(null=True, blank=True)
     registration_open = models.DateTimeField(null=True, blank=True)
     registration_close = models.DateTimeField(null=True, blank=True)
+    venue_ref = models.ForeignKey(
+        Venue,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="events",
+    )
     venue = models.CharField(max_length=100, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="upcoming")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_events")

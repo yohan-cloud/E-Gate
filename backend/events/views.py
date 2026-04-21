@@ -5,13 +5,14 @@ from rest_framework import status
 from django.utils import timezone
 from rest_framework import generics, permissions
 from rest_framework.views import APIView
-from .models import Event, EventRegistration, EventAttendance, EntryLog
+from .models import Event, EventRegistration, EventAttendance, EntryLog, Venue
 from .serializers import (
     EventSerializer,
     EventRegistrationSerializer,
     EventAttendanceSerializer,
     EntryLogSerializer,
     ResidentGateLogSerializer,
+    VenueSerializer,
     normalize_audience_type,
 )
 from accounts.permissions import IsAdminUserRole, IsResidentUserRole, IsAdminOrGateOperatorRole, IsGateAccessAllowed
@@ -208,6 +209,72 @@ def _validate_registration_profile(registration):
     if getattr(profile, "expiry_date", None) and profile.expiry_date < timezone.localdate():
         return None, Response({"error": "Resident ID is expired.", "result_code": "expired_id"}, status=status.HTTP_403_FORBIDDEN)
     return profile, None
+
+
+class VenueListCreateView(generics.ListCreateAPIView):
+    serializer_class = VenueSerializer
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [IsAuthenticated(), IsAdminUserRole()]
+        return [IsAuthenticated()]
+
+    def get_queryset(self):
+        qs = Venue.objects.all()
+        include_inactive = (
+            self.request.query_params.get("include_inactive") or ""
+        ).strip().lower() in {"1", "true", "yes"}
+        if not include_inactive or not IsAdminUserRole().has_permission(self.request, self):
+            qs = qs.filter(is_active=True)
+        q = (self.request.query_params.get("q") or "").strip()
+        if q:
+            qs = qs.filter(name__icontains=q)
+        return qs.order_by("name")
+
+
+class VenueDetailView(generics.RetrieveUpdateAPIView):
+    queryset = Venue.objects.all()
+    serializer_class = VenueSerializer
+    permission_classes = [IsAuthenticated, IsAdminUserRole]
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated, IsAdminUserRole])
+def delete_venue(request, venue_id):
+    try:
+        venue = Venue.objects.get(id=venue_id)
+    except Venue.DoesNotExist:
+        return Response({"error": "Venue not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    linked_events = Event.objects.filter(venue_ref=venue).count()
+    if linked_events:
+        return Response(
+            {
+                "error": (
+                    f"Cannot remove this venue because it is used by {linked_events} event"
+                    f"{'' if linked_events == 1 else 's'}. Deactivate it instead."
+                )
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    venue.delete()
+    return Response({"message": "Venue removed successfully"}, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, IsAdminUserRole])
+def deactivate_venue(request, venue_id):
+    try:
+        venue = Venue.objects.get(id=venue_id)
+    except Venue.DoesNotExist:
+        return Response({"error": "Venue not found"}, status=status.HTTP_404_NOT_FOUND)
+    if not venue.is_active:
+        return Response(VenueSerializer(venue).data)
+    venue.is_active = False
+    venue.deactivated_at = timezone.now()
+    venue.save(update_fields=["is_active", "deactivated_at", "updated_at"])
+    return Response(VenueSerializer(venue).data)
 
 
 def _entry_log_payload(registration, actor, method, direction, timestamp, confidence=None):

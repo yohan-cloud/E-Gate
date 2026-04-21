@@ -33,6 +33,16 @@ const INITIAL = {
   face_samples: [],
 };
 
+function RequiredLabel({ htmlFor, children }) {
+  return (
+    <label htmlFor={htmlFor} className="required-field-label">
+      <span className="required-marker">*</span>
+      <span>{children}</span>
+      <span className="required-text">Required</span>
+    </label>
+  );
+}
+
 export default function CreateResidentForm({ onCreated }) {
   const [form, setForm] = useState(INITIAL);
   const [busy, setBusy] = useState(false);
@@ -128,19 +138,19 @@ export default function CreateResidentForm({ onCreated }) {
           <input id="res-username" name="username" value={form.username} onChange={update} placeholder="Leave blank to auto-generate" />
         </div>
         <div className="form-group">
-          <label htmlFor="res-fullname">Full Name</label>
+          <RequiredLabel htmlFor="res-fullname">Full Name</RequiredLabel>
           <input id="res-fullname" name="full_name" value={form.full_name} onChange={update} placeholder="e.g., Juan Dela Cruz" required />
         </div>
         <div className="form-group">
-          <label htmlFor="res-password">Password</label>
+          <RequiredLabel htmlFor="res-password">Password</RequiredLabel>
           <input id="res-password" name="password" type="password" value={form.password} onChange={update} required />
         </div>
         <div className="form-group">
-          <label htmlFor="res-email">Email</label>
+          <RequiredLabel htmlFor="res-email">Email</RequiredLabel>
           <input id="res-email" name="email" type="email" value={form.email} onChange={update} required />
         </div>
         <div className="form-group">
-          <label htmlFor="res-phone">Phone Number</label>
+          <RequiredLabel htmlFor="res-phone">Phone Number</RequiredLabel>
           <input id="res-phone" name="phone_number" value={form.phone_number} onChange={update} placeholder="e.g., 09XXXXXXXXX" required />
         </div>
         <div className="form-group">
@@ -175,7 +185,7 @@ export default function CreateResidentForm({ onCreated }) {
           <small>Select whether the resident is not yet a voter, registered here, or registered in another area.</small>
         </div>
         <div className="form-group">
-          <label htmlFor="res-address">Address</label>
+          <RequiredLabel htmlFor="res-address">Address</RequiredLabel>
           <input id="res-address" name="address" value={form.address} onChange={update} placeholder="Complete address" required />
         </div>
         <DateField

@@ -130,7 +130,13 @@ function PickerShell({
       className={`form-group picker-field ${panelInFlow ? "picker-field-flow" : ""} ${panelType === "datetime" ? "picker-field-datetime" : ""}`}
       ref={rootRef}
     >
-      {label ? <label htmlFor={`${id}-trigger`}>{label}</label> : null}
+      {label ? (
+        <label htmlFor={`${id}-trigger`} className={required ? "required-field-label" : undefined}>
+          {required ? <span className="required-marker">*</span> : null}
+          <span>{label}</span>
+          {required ? <span className="required-text">Required</span> : null}
+        </label>
+      ) : null}
       <button
         id={`${id}-trigger`}
         type="button"
