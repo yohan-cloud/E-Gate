@@ -262,6 +262,21 @@ def deactivate_venue(request, venue_id):
     return Response(VenueSerializer(venue).data)
 
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, IsAdminUserRole])
+def reactivate_venue(request, venue_id):
+    try:
+        venue = Venue.objects.get(id=venue_id)
+    except Venue.DoesNotExist:
+        return Response({"error": "Venue not found"}, status=status.HTTP_404_NOT_FOUND)
+    if venue.is_active:
+        return Response(VenueSerializer(venue).data)
+    venue.is_active = True
+    venue.deactivated_at = None
+    venue.save(update_fields=["is_active", "deactivated_at", "updated_at"])
+    return Response(VenueSerializer(venue).data)
+
+
 def _entry_log_payload(registration, actor, method, direction, timestamp, confidence=None):
     profile = getattr(registration.resident, "profile", None)
     address = getattr(profile, "address", None) if profile else None

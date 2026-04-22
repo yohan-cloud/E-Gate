@@ -64,6 +64,16 @@ function toLocalInputValue(value) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+function formatGuestDateParts(value) {
+  if (!value) return { date: "-", time: "" };
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return { date: "-", time: "" };
+  return {
+    date: date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }),
+    time: date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
+  };
+}
+
 export default function Guests() {
   const [guests, setGuests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -78,6 +88,7 @@ export default function Guests() {
   const [filter, setFilter] = useState("today");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [actionMenuId, setActionMenuId] = useState(null);
 
   const heading = useMemo(() => {
     if (filter === "all") return "All guest appointments";
@@ -414,17 +425,32 @@ export default function Guests() {
             <p style={{ color: "#475569" }}>No guest appointments found.</p>
           ) : (
             <div style={{ display: "grid", gap: 10 }}>
-              {sortedGuests.map((g) => (
+              {sortedGuests.map((g) => {
+                const isMenuOpen = actionMenuId === g.id;
+                const appointmentParts = formatGuestDateParts(g.eta);
+                const checkInParts = formatGuestDateParts(g.checked_in_at);
+                const checkOutParts = formatGuestDateParts(g.checked_out_at);
+
+                return (
                 <div
                   className={`admin-guest-row guest-detail-card ${editingId === g.id ? "editing" : ""}`}
                   key={g.id}
-                  style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12, display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 10, alignItems: "start" }}
+                  style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12, display: "grid", gap: 10, alignItems: "start" }}
                 >
-                  <div className="admin-guest-main" style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 10, alignItems: "start" }}>
-                    <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#e5e7eb", display: "grid", placeItems: "center", fontSize: 22, color: "#6b7280" }}>G</div>
-                    <div>
-                      <div className="guest-detail-head" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <div style={{ fontWeight: 700, fontSize: 17 }}>{editingId === g.id ? form.name || g.name : g.name}</div>
+                  <div className="guest-record-header">
+                    <div className="guest-record-identity">
+                      <div className="guest-record-avatar">G</div>
+                      <div className="guest-record-name-block">
+                        <div className="guest-record-title-line">
+                          <div className="guest-record-name">{editingId === g.id ? form.name || g.name : g.name}</div>
+                        </div>
+                        <div className="guest-record-contact">
+                          {editingId === g.id ? form.contact || "No contact number" : g.contact || "No contact number"}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="guest-record-controls">
+                      <div className="guest-record-status-slot">
                         <span
                           className="guest-status-badge"
                           style={{
@@ -439,9 +465,82 @@ export default function Guests() {
                           {getGuestStatusMeta(editingId === g.id ? form.status : g.status, g.is_archived).label}
                         </span>
                       </div>
-                      <div style={{ color: "#6b7280", fontSize: 13, marginTop: 2 }}>
-                        {editingId === g.id ? form.contact || "No contact number" : g.contact || "No contact number"}
-                      </div>
+                      {editingId !== g.id && (
+                        <div className="admin-guest-actions guest-detail-actions">
+                          <div className="guest-action-group guest-action-primary">
+                            {!g.is_archived && <button className="btn-primary" onClick={() => editGuest(g)} title="Edit">Edit</button>}
+                            {!g.is_archived && !g.checked_in_at && (
+                              <button className="btn-primary" onClick={() => manualScan(g.id, "time_in")} disabled={manualActionId === `${g.id}:time_in`}>
+                                {manualActionId === `${g.id}:time_in` ? "Checking In..." : "Manual Check In"}
+                              </button>
+                            )}
+                            {!g.is_archived && g.checked_in_at && !g.checked_out_at && (
+                              <button className="btn-primary" onClick={() => manualScan(g.id, "time_out")} disabled={manualActionId === `${g.id}:time_out`}>
+                                {manualActionId === `${g.id}:time_out` ? "Checking Out..." : "Manual Check Out"}
+                              </button>
+                            )}
+                          </div>
+                          <div className="resident-menu-wrap guest-menu-wrap">
+                            <button
+                              className="resident-action-button resident-action-neutral resident-more-button"
+                              type="button"
+                              aria-label="More guest appointment actions"
+                              aria-expanded={isMenuOpen}
+                              onClick={() => setActionMenuId(isMenuOpen ? null : g.id)}
+                            >
+                              ...
+                            </button>
+                            {isMenuOpen ? (
+                              <div className="resident-action-menu guest-action-menu">
+                                {!g.is_archived && (
+                                  <button
+                                    className="resident-action-button resident-action-neutral"
+                                    onClick={() => { setActionMenuId(null); downloadGuestQr(g); }}
+                                    disabled={!g.qr_ready || qrBusyId === String(g.id)}
+                                  >
+                                    {qrBusyId === String(g.id) ? "Preparing QR..." : "Download QR"}
+                                  </button>
+                                )}
+                                {!g.is_archived && g.status !== "cancelled" && (
+                                  <button
+                                    className="resident-action-button resident-action-neutral"
+                                    onClick={() => { setActionMenuId(null); updateGuestStatus(g.id, "cancelled"); }}
+                                  >
+                                    Cancel Visit
+                                  </button>
+                                )}
+                                {!g.is_archived && (
+                                  <button
+                                    className="resident-action-button resident-action-neutral"
+                                    onClick={() => { setActionMenuId(null); archiveGuest(g.id); }}
+                                    disabled={archivingId === g.id}
+                                  >
+                                    {archivingId === g.id ? "Archiving..." : "Archive"}
+                                  </button>
+                                )}
+                                {g.is_archived && (
+                                  <button
+                                    className="resident-action-button resident-action-success"
+                                    onClick={() => { setActionMenuId(null); unarchiveGuest(g.id); }}
+                                    disabled={archivingId === g.id}
+                                  >
+                                    {archivingId === g.id ? "Restoring..." : "Unarchive"}
+                                  </button>
+                                )}
+                                <button
+                                  className="resident-action-button resident-action-danger"
+                                  onClick={() => { setActionMenuId(null); removeGuest(g.id); }}
+                                  title="Delete"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                       {editingId === g.id ? (
                         <form className="guest-detail-section guest-inline-form" onSubmit={submit}>
                           <div className="guest-detail-section-title">Edit Appointment</div>
@@ -463,16 +562,16 @@ export default function Guests() {
                           <div className="guest-detail-grid guest-detail-grid-compact">
                             <Info label="Purpose" value={g.purpose || "-"} />
                             <Info label="Organization" value={g.organization_company || "-"} />
-                            <Info label="Appointment" value={g.eta ? new Date(g.eta).toLocaleString() : "-"} />
+                            <Info label="Appointment" value={appointmentParts.date} subvalue={appointmentParts.time} />
                             <Info label="Participants" value={g.no_of_participants ?? 1} />
-                            <Info label="Check In" value={g.checked_in_at ? new Date(g.checked_in_at).toLocaleString() : "-"} />
-                            <Info label="Check Out" value={g.checked_out_at ? new Date(g.checked_out_at).toLocaleString() : "-"} />
+                            <Info label="Check In" value={checkInParts.date} subvalue={checkInParts.time} />
+                            <Info label="Check Out" value={checkOutParts.date} subvalue={checkOutParts.time} />
                             <Info label="QR Access" value={g.qr_ready ? "Ready" : "Unavailable"} />
                             <Info label="Status" value={getGuestStatusMeta(g.status, g.is_archived).label} />
                           </div>
                           <div className="guest-detail-notes">
                             <div className="guest-detail-section-title">Notes</div>
-                            <div className="guest-detail-notes-body">{g.notes || "-"}</div>
+                            <div className="guest-detail-notes-body">{g.notes || "No notes added"}</div>
                           </div>
                         </div>
                       )}
@@ -481,46 +580,9 @@ export default function Guests() {
                           Archived {g.archived_at ? new Date(g.archived_at).toLocaleString() : ""}
                         </div>
                       )}
-                    </div>
-                  </div>
-                  {editingId !== g.id && (
-                    <div className="admin-guest-actions guest-detail-actions" style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center", flexWrap: "wrap" }}>
-                      <div className="guest-action-group guest-action-primary">
-                        {!g.is_archived && <button className="btn-primary" onClick={() => editGuest(g)} title="Edit">Edit</button>}
-                        {!g.is_archived && !g.checked_in_at && (
-                          <button className="btn-primary" onClick={() => manualScan(g.id, "time_in")} disabled={manualActionId === `${g.id}:time_in`}>
-                            {manualActionId === `${g.id}:time_in` ? "Checking In..." : "Manual Check In"}
-                          </button>
-                        )}
-                        {!g.is_archived && g.checked_in_at && !g.checked_out_at && (
-                          <button className="btn-primary" onClick={() => manualScan(g.id, "time_out")} disabled={manualActionId === `${g.id}:time_out`}>
-                            {manualActionId === `${g.id}:time_out` ? "Checking Out..." : "Manual Check Out"}
-                          </button>
-                        )}
-                      </div>
-                      <div className="guest-action-group guest-action-secondary">
-                        {!g.is_archived && (
-                          <button onClick={() => downloadGuestQr(g)} disabled={!g.qr_ready || qrBusyId === String(g.id)}>
-                            {qrBusyId === String(g.id) ? "Preparing QR..." : "Download QR"}
-                          </button>
-                        )}
-                        {!g.is_archived && g.status !== "cancelled" && <button onClick={() => updateGuestStatus(g.id, "cancelled")}>Cancel Visit</button>}
-                        {!g.is_archived && (
-                          <button onClick={() => archiveGuest(g.id)} disabled={archivingId === g.id}>
-                            {archivingId === g.id ? "Archiving..." : "Archive"}
-                          </button>
-                        )}
-                        {g.is_archived && (
-                          <button onClick={() => unarchiveGuest(g.id)} disabled={archivingId === g.id}>
-                            {archivingId === g.id ? "Restoring..." : "Unarchive"}
-                          </button>
-                        )}
-                        <button className="guest-action-danger" onClick={() => removeGuest(g.id)} style={{ color: "#b91c1c" }}>Delete</button>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
@@ -529,11 +591,12 @@ export default function Guests() {
   );
 }
 
-function Info({ label, value }) {
+function Info({ label, value, subvalue = "" }) {
   return (
-    <div style={{ minHeight: 58, display: "flex", flexDirection: "column", justifyContent: "flex-start" }}>
-      <div style={{ color: "#6b7280", fontSize: 12 }}>{label}</div>
-      <div style={{ fontWeight: 600, lineHeight: 1.35, marginTop: 2 }}>{value}</div>
+    <div className="guest-info-item">
+      <div className="guest-info-label">{label}</div>
+      <div className="guest-info-value">{value}</div>
+      {subvalue ? <div className="guest-info-subvalue">{subvalue}</div> : null}
     </div>
   );
 }

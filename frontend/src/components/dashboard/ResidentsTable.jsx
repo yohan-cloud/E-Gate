@@ -111,6 +111,20 @@ function getResidentAudiencePills(age, residentCategory, voterStatus) {
   return pills;
 }
 
+function maskEmail(email) {
+  if (!email || !email.includes("@")) return "N/A";
+  const [name, domain] = email.split("@");
+  const visible = name.slice(0, Math.min(2, name.length));
+  return `${visible}${"*".repeat(Math.max(3, name.length - visible.length))}@${domain}`;
+}
+
+function maskPhone(phone) {
+  const value = String(phone || "").trim();
+  if (!value) return "N/A";
+  if (value.length <= 6) return value;
+  return `${value.slice(0, 4)}${"*".repeat(Math.max(4, value.length - 6))}${value.slice(-2)}`;
+}
+
 export default function ResidentsTable() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -120,6 +134,7 @@ export default function ResidentsTable() {
   const [form, setForm] = useState({});
   const [loadingDetailId, setLoadingDetailId] = useState(null);
   const [revealedById, setRevealedById] = useState({});
+  const [maskedById, setMaskedById] = useState({});
   const [filter, setFilter] = useState("active");
   const [archivingId, setArchivingId] = useState(null);
   const [deactivationActionId, setDeactivationActionId] = useState(null);
@@ -138,6 +153,7 @@ export default function ResidentsTable() {
     reason: "",
     customReason: "",
   });
+  const [actionMenuId, setActionMenuId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -152,6 +168,7 @@ export default function ResidentsTable() {
       const results = Array.isArray(data) ? data : data?.results;
       setRows(results || []);
       setRevealedById({});
+      setMaskedById({});
     } catch (e) {
       setError(e?.response?.data?.error || e?.message || "Failed to load residents");
     } finally {
@@ -205,6 +222,11 @@ export default function ResidentsTable() {
         delete next[userId];
         return next;
       });
+      setMaskedById((curr) => {
+        const next = { ...curr };
+        delete next[userId];
+        return next;
+      });
       return;
     }
 
@@ -214,12 +236,25 @@ export default function ResidentsTable() {
         params: { reason: "reveal_sensitive" },
       });
       setRevealedById((curr) => ({ ...curr, [userId]: res.data || {} }));
+      setMaskedById((curr) => ({ ...curr, [userId]: false }));
     } catch (e) {
       const msg = e?.response?.data?.error || "Failed to reveal resident details";
       toast.error(msg);
     } finally {
       setLoadingDetailId(null);
     }
+  };
+
+  const toggleSensitiveMask = async (row) => {
+    const userId = row.user?.id;
+    if (!userId) return;
+
+    if (!revealedById[userId]) {
+      await toggleReveal(row);
+      return;
+    }
+
+    setMaskedById((curr) => ({ ...curr, [userId]: !curr[userId] }));
   };
 
   const saveEdit = async (userId) => {
@@ -406,7 +441,7 @@ export default function ResidentsTable() {
   const totalResidents = useMemo(() => rows.length, [rows]);
 
   return (
-    <div className="card" style={{ marginTop: 12 }}>
+    <div className="card residents-records-card" style={{ marginTop: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <div>
           <h3 style={{ margin: 0 }}>Residents</h3>
@@ -440,15 +475,19 @@ export default function ResidentsTable() {
       ) : rows.length === 0 ? (
         <p>No residents found.</p>
       ) : (
-        <div style={{ display: "grid", gap: 12 }}>
+        <div className="residents-record-list" style={{ display: "grid", gap: 12 }}>
           {rows.map((r, idx) => {
             const isEditing = editingId === r.user?.id;
             const revealed = revealedById[r.user?.id];
             const displayRow = revealed || r;
             const age = calcAge(r.birthdate);
-            const residentAudiencePills = getResidentAudiencePills(age, r.resident_category, r.voter_status);
             const isVerified = Boolean(r.is_verified);
             const isDeactivated = Boolean(r.is_deactivated);
+            const userId = r.user?.id;
+            const fullName = `${r.user?.first_name || ""} ${r.user?.last_name || ""}`.trim() || r.user?.username || "Resident";
+            const isMenuOpen = actionMenuId === userId;
+            const isSensitiveMasked = Boolean(maskedById[userId]);
+            const showSensitive = Boolean(revealed) && !isSensitiveMasked;
             const statusBadge = r.is_archived
               ? { label: "archived", background: "#64748b", color: "#fff" }
               : isDeactivated
@@ -477,19 +516,24 @@ export default function ResidentsTable() {
                         </>
                       ) : (
                         <div style={{ fontWeight: 700, fontSize: 18, minWidth: 0, overflowWrap: "anywhere" }}>
-                          {`${r.user?.first_name || ""} ${r.user?.last_name || ""}`.trim() || r.user?.username}
+                          {fullName}
                         </div>
                       )}
                       <span style={badgeStyle(statusBadge.background, statusBadge.color)}>{statusBadge.label}</span>
                       <span style={badgeStyle(isVerified ? "#dcfce7" : "#fee2e2", isVerified ? "#166534" : "#991b1b")}>
                         {isVerified ? "verified" : "not verified"}
                       </span>
-                      {residentAudiencePills.map((pill) => (
-                        <span key={pill.label} style={badgeStyle(pill.background, pill.color)}>
-                          {pill.label}
-                        </span>
-                      ))}
                     </div>
+                    <div className="resident-summary-line" title={getResidentAudiencePills(age, r.resident_category, r.voter_status).map((pill) => pill.label).join(", ")}>
+                      <span>Age: {age !== null ? age : "N/A"}</span>
+                      <span>{GENDER_LABEL[r.gender] || "Unspecified"}</span>
+                      <span>{RESIDENT_CATEGORY_LABEL[r.resident_category] || "Resident"}</span>
+                      <span>{VOTER_STATUS_LABEL[r.voter_status] || "Not Set"}</span>
+                    </div>
+                    <button className="resident-details-toggle" type="button" onClick={() => toggleReveal(r)} disabled={loadingDetailId === r.user?.id}>
+                      <span aria-hidden="true">{revealed || isEditing ? "v" : ">"}</span>
+                      {loadingDetailId === r.user?.id ? "Loading details..." : revealed ? "Hide Details" : "More"}
+                    </button>
                     <div style={{ color: "#6b7280", fontSize: 13, marginTop: 2 }}>
                       ID: {r.barangay_id}
                     </div>
@@ -504,6 +548,8 @@ export default function ResidentsTable() {
                       </div>
                     ) : null}
                     <div className="admin-resident-info-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8, marginTop: 10, minWidth: 0 }}>
+                      <Info label="Username" value={displayRow.user?.username || "N/A"} />
+                      <Info label="Resident ID" value={displayRow.barangay_id || "N/A"} />
                       <Info label="Age" value={age !== null ? `${age} years` : "—"} />
                       <Info
                         label="Gender"
@@ -566,7 +612,7 @@ export default function ResidentsTable() {
                           isEditing ? (
                             <input type="email" value={form.email || ""} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                           ) : (
-                            displayRow.user?.email || "—"
+                            showSensitive ? (displayRow.user?.email || "N/A") : maskEmail(displayRow.user?.email)
                           )
                         }
                       />
@@ -576,7 +622,7 @@ export default function ResidentsTable() {
                           isEditing ? (
                             <input value={form.phone_number || ""} onChange={(e) => setForm({ ...form, phone_number: e.target.value })} />
                           ) : (
-                            displayRow.phone_number || "—"
+                            showSensitive ? (displayRow.phone_number || "N/A") : maskPhone(displayRow.phone_number)
                           )
                         }
                       />
@@ -586,42 +632,91 @@ export default function ResidentsTable() {
                 <div className="admin-resident-actions" style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center", flexWrap: "wrap" }}>
                   {isEditing ? (
                     <>
-                      <button className="btn-primary" onClick={() => saveEdit(r.user.id)}>Save</button>
-                      <button onClick={cancelEdit}>Cancel</button>
+                      <button className="btn-primary resident-action-button resident-action-save" onClick={() => saveEdit(r.user.id)}>Save</button>
+                      <button className="resident-action-button resident-action-neutral" onClick={cancelEdit}>Cancel</button>
                     </>
                   ) : (
                     <>
-                      <button onClick={() => toggleReveal(r)} disabled={loadingDetailId === r.user?.id}>
-                        {loadingDetailId === r.user?.id ? "Loading..." : revealed ? "Hide Details" : "Reveal Details"}
+                      <button className="resident-action-button resident-action-neutral" onClick={() => toggleReveal(r)} disabled={loadingDetailId === r.user?.id}>
+                        {loadingDetailId === r.user?.id ? "Loading..." : revealed ? "Hide Details" : "More"}
                       </button>
-                      {!r.is_archived && !isDeactivated && <button onClick={() => startEdit(r)} title="Edit" disabled={loadingDetailId === r.user?.id}>
+                      {!r.is_archived && !isDeactivated && <button className="resident-action-button resident-action-neutral" onClick={() => startEdit(r)} title="Edit" disabled={loadingDetailId === r.user?.id}>
                         {loadingDetailId === r.user?.id ? "..." : "Edit"}
                       </button>}
+                      <div className="resident-menu-wrap">
+                        <button
+                          className="resident-action-button resident-action-neutral resident-more-button"
+                          type="button"
+                          aria-label="More resident actions"
+                          aria-expanded={isMenuOpen}
+                          onClick={() => setActionMenuId(isMenuOpen ? null : userId)}
+                        >
+                          ...
+                        </button>
+                          {isMenuOpen ? (
+                            <div className="resident-action-menu">
+                            {!isEditing ? (
+                              <button className="resident-action-button resident-action-neutral" onClick={() => { setActionMenuId(null); toggleSensitiveMask(r); }} disabled={loadingDetailId === userId}>
+                                {!revealed ? "More" : isSensitiveMasked ? "Unmask Details" : "Mask Details"}
+                              </button>
+                            ) : null}
+                            {!r.is_archived && !isDeactivated && (
+                              <button className="resident-action-button resident-action-warning" onClick={() => { setActionMenuId(null); openResetModal(r); }} disabled={resettingPasswordId === userId}>
+                                {resettingPasswordId === userId ? "Resetting..." : "Reset Password"}
+                              </button>
+                            )}
+                            {!r.is_archived && !isDeactivated && (
+                              <button className="resident-action-button resident-action-warning" onClick={() => { setActionMenuId(null); openDeactivateModal(r); }} disabled={deactivationActionId === userId}>
+                                {deactivationActionId === userId ? "Updating..." : "Deactivate"}
+                              </button>
+                            )}
+                            {!r.is_archived && isDeactivated && (
+                              <button className="resident-action-button resident-action-success" onClick={() => { setActionMenuId(null); reactivateResident(userId); }} disabled={deactivationActionId === userId}>
+                                {deactivationActionId === userId ? "Updating..." : "Reactivate"}
+                              </button>
+                            )}
+                            {!r.is_archived ? (
+                              <button className="resident-action-button resident-action-neutral" onClick={() => { setActionMenuId(null); archiveResident(userId); }} disabled={archivingId === userId}>
+                                {archivingId === userId ? "Archiving..." : "Archive"}
+                              </button>
+                            ) : (
+                              <button className="resident-action-button resident-action-success" onClick={() => { setActionMenuId(null); unarchiveResident(userId); }} disabled={archivingId === userId}>
+                                {archivingId === userId ? "Restoring..." : "Unarchive"}
+                              </button>
+                            )}
+                            {!r.is_archived && (
+                              <button className="resident-action-button resident-action-danger" onClick={() => { setActionMenuId(null); setDeleteTargetId(userId); }} title="Delete">
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
                       {!r.is_archived && !isDeactivated && (
-                        <button onClick={() => openResetModal(r)} disabled={resettingPasswordId === r.user?.id}>
+                        <button className="resident-action-button resident-action-warning" onClick={() => openResetModal(r)} disabled={resettingPasswordId === r.user?.id}>
                           {resettingPasswordId === r.user?.id ? "Resetting..." : "Reset Password"}
                         </button>
                       )}
                       {!r.is_archived && !isDeactivated && (
-                        <button onClick={() => openDeactivateModal(r)} disabled={deactivationActionId === r.user?.id}>
+                        <button className="resident-action-button resident-action-warning" onClick={() => openDeactivateModal(r)} disabled={deactivationActionId === r.user?.id}>
                           {deactivationActionId === r.user?.id ? "Updating..." : "Deactivate"}
                         </button>
                       )}
                       {!r.is_archived && isDeactivated && (
-                        <button onClick={() => reactivateResident(r.user?.id)} disabled={deactivationActionId === r.user?.id}>
+                        <button className="resident-action-button resident-action-success" onClick={() => reactivateResident(r.user?.id)} disabled={deactivationActionId === r.user?.id}>
                           {deactivationActionId === r.user?.id ? "Updating..." : "Reactivate"}
                         </button>
                       )}
                       {!r.is_archived ? (
-                        <button onClick={() => archiveResident(r.user?.id)} disabled={archivingId === r.user?.id}>
+                        <button className="resident-action-button resident-action-neutral" onClick={() => archiveResident(r.user?.id)} disabled={archivingId === r.user?.id}>
                           {archivingId === r.user?.id ? "Archiving..." : "Archive"}
                         </button>
                       ) : (
-                        <button onClick={() => unarchiveResident(r.user?.id)} disabled={archivingId === r.user?.id}>
+                        <button className="resident-action-button resident-action-success" onClick={() => unarchiveResident(r.user?.id)} disabled={archivingId === r.user?.id}>
                           {archivingId === r.user?.id ? "Restoring..." : "Unarchive"}
                         </button>
                       )}
-                      {!r.is_archived && <button onClick={() => setDeleteTargetId(r.user?.id)} title="Delete" style={{ color: "#b91c1c" }}>Delete</button>}
+                      {!r.is_archived && <button className="resident-action-button resident-action-danger" onClick={() => setDeleteTargetId(r.user?.id)} title="Delete">Delete</button>}
                     </>
                   )}
                 </div>

@@ -5,7 +5,7 @@ export const AUDIENCE_OPTIONS = [
   { value: "senior_only", label: "Senior Citizens", group: "Age Group" },
   { value: "resident_only", label: "Residents", group: "Status" },
   { value: "client_only", label: "Clients", group: "Status" },
-  { value: "registered_voter_only", label: "Registered Here", group: "Voter Status" },
+  { value: "registered_voter_only", label: "Registered", group: "Voter Status" },
   { value: "not_yet_voter_only", label: "Not Yet Voters", group: "Voter Status" },
 ];
 

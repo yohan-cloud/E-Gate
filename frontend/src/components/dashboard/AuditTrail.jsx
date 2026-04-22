@@ -67,7 +67,7 @@ export default function AuditTrail() {
   }, [rows]);
 
   return (
-    <div className="card" style={{ marginTop: 12 }}>
+    <div className="card audit-records-card" style={{ marginTop: 12 }}>
       <div className="section-head">
         <div>
           <h3 style={{ margin: 0 }}>Audit Trail</h3>

@@ -125,8 +125,8 @@ class EventSerializer(serializers.ModelSerializer):
         venue = attrs.get("venue_ref")
         if venue is not None:
             attrs["venue"] = venue.name
-            if attrs.get("capacity") is None:
-                attrs["capacity"] = venue.max_capacity
+        elif str(attrs.get("venue") or "").strip().lower() == "tbd":
+            attrs["venue"] = "TBD"
         return attrs
 
     def get_registrations_count(self, obj):
@@ -201,10 +201,16 @@ class EventSerializer(serializers.ModelSerializer):
                 attrs['registration_close'] = nc
                 reg_close = nc
 
-        if capacity is not None and capacity < 0:
-            raise serializers.ValidationError({ 'capacity': 'Capacity must be >= 0.' })
+        if capacity is None:
+            raise serializers.ValidationError({ 'capacity': 'Estimated capacity is required.' })
+        if capacity <= 0:
+            raise serializers.ValidationError({ 'capacity': 'Estimated capacity must be greater than 0.' })
         if "venue_ref" in attrs and venue_ref is not None and not venue_ref.is_active:
             raise serializers.ValidationError({ 'venue_id': 'Select an active venue.' })
+        if venue_ref is not None and capacity > venue_ref.max_capacity:
+            raise serializers.ValidationError({
+                'capacity': f'Estimated capacity cannot exceed the selected venue max capacity of {venue_ref.max_capacity}.'
+            })
         if date and end_date and end_date <= date:
             raise serializers.ValidationError({ 'end_date': 'End date/time must be after the event start.' })
         if reg_open and reg_close and reg_open > reg_close:

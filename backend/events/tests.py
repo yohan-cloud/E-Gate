@@ -126,7 +126,15 @@ class EventsFlowTests(TestCase):
         all_list = self.client.get("/api/events/venues/?include_inactive=1")
         self.assertIn(venue_id, [item["id"] for item in all_list.data["results"]])
 
-    def test_event_can_use_venue_id_and_defaults_capacity(self):
+        reactivate = self.client.post(f"/api/events/venues/{venue_id}/reactivate/")
+        self.assertEqual(reactivate.status_code, status.HTTP_200_OK)
+        self.assertTrue(reactivate.data["is_active"])
+        self.assertIsNone(reactivate.data["deactivated_at"])
+
+        active_list = self.client.get("/api/events/venues/")
+        self.assertIn(venue_id, [item["id"] for item in active_list.data["results"]])
+
+    def test_event_can_use_venue_id_and_capacity_within_venue_limit(self):
         self.auth(self.admin_token)
         venue = Venue.objects.create(name="Training Room", max_capacity=35)
         now = timezone.now()
@@ -140,6 +148,7 @@ class EventsFlowTests(TestCase):
                 "date": (now + timedelta(days=4)).isoformat(),
                 "end_date": (now + timedelta(days=4, hours=2)).isoformat(),
                 "venue_id": venue.id,
+                "capacity": 35,
                 "registration_open": (now - timedelta(minutes=1)).isoformat(),
                 "registration_close": (now + timedelta(days=3)).isoformat(),
             },
@@ -150,6 +159,58 @@ class EventsFlowTests(TestCase):
         self.assertEqual(res.data["venue"], "Training Room")
         self.assertEqual(res.data["venue_ref_id"], venue.id)
         self.assertEqual(res.data["capacity"], 35)
+
+    def test_event_capacity_is_required_and_cannot_exceed_real_venue_limit(self):
+        self.auth(self.admin_token)
+        venue = Venue.objects.create(name="Small Room", max_capacity=20)
+        now = timezone.now()
+        base_payload = {
+            "title": "Venue Capacity Check",
+            "event_type": "community_events",
+            "audience_type": "all",
+            "date": (now + timedelta(days=4)).isoformat(),
+            "end_date": (now + timedelta(days=4, hours=2)).isoformat(),
+            "venue_id": venue.id,
+            "registration_open": (now - timedelta(minutes=1)).isoformat(),
+            "registration_close": (now + timedelta(days=3)).isoformat(),
+        }
+
+        missing = self.client.post("/api/events/create/", base_payload, format="json")
+        self.assertEqual(missing.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("capacity", missing.data)
+
+        over_limit = self.client.post(
+            "/api/events/create/",
+            {**base_payload, "capacity": 21},
+            format="json",
+        )
+        self.assertEqual(over_limit.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("capacity", over_limit.data)
+
+    def test_event_can_use_tbd_venue_with_estimated_capacity(self):
+        self.auth(self.admin_token)
+        now = timezone.now()
+
+        res = self.client.post(
+            "/api/events/create/",
+            {
+                "title": "Venue TBD Event",
+                "event_type": "community_events",
+                "audience_type": "all",
+                "date": (now + timedelta(days=4)).isoformat(),
+                "end_date": (now + timedelta(days=4, hours=2)).isoformat(),
+                "venue": "TBD",
+                "capacity": 75,
+                "registration_open": (now - timedelta(minutes=1)).isoformat(),
+                "registration_close": (now + timedelta(days=3)).isoformat(),
+            },
+            format="json",
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data["venue"], "TBD")
+        self.assertIsNone(res.data["venue_ref_id"])
+        self.assertEqual(res.data["capacity"], 75)
 
     def test_admin_can_remove_unused_venue_but_not_used_venue(self):
         self.auth(self.admin_token)

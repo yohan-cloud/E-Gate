@@ -86,6 +86,17 @@ export default function VenueManagement() {
     }
   };
 
+  const reactivateVenue = async (venue) => {
+    try {
+      await api.post(`/events/venues/${venue.id}/reactivate/`);
+      toast.success("Venue reactivated");
+      setConfirmAction(null);
+      await loadVenues();
+    } catch (e) {
+      toast.error(formatApiError(e, "Failed to reactivate venue"));
+    }
+  };
+
   const removeVenue = async (venue) => {
     try {
       await api.delete(`/events/venues/${venue.id}/delete/`);
@@ -190,7 +201,15 @@ export default function VenueManagement() {
                           >
                             Deactivate
                           </button>
-                        ) : null}
+                        ) : (
+                          <button
+                            type="button"
+                            className="secondary-btn"
+                            onClick={() => setConfirmAction({ type: "reactivate", venue })}
+                          >
+                            Reactivate
+                          </button>
+                        )}
                         <button
                           type="button"
                           className="danger-btn"
@@ -209,19 +228,35 @@ export default function VenueManagement() {
       </div>
       <ConfirmDialog
         open={Boolean(confirmAction)}
-        title={confirmAction?.type === "remove" ? "Remove Venue" : "Deactivate Venue"}
+        title={
+          confirmAction?.type === "remove"
+            ? "Remove Venue"
+            : confirmAction?.type === "reactivate"
+              ? "Reactivate Venue"
+              : "Deactivate Venue"
+        }
         message={
           confirmAction?.type === "remove"
             ? `Remove ${confirmAction?.venue?.name}? This permanently deletes the venue if it is not used by any event.`
-            : `Deactivate ${confirmAction?.venue?.name}? It will no longer appear in event venue dropdowns.`
+            : confirmAction?.type === "reactivate"
+              ? `Reactivate ${confirmAction?.venue?.name}? It will appear again in event venue dropdowns.`
+              : `Deactivate ${confirmAction?.venue?.name}? It will no longer appear in event venue dropdowns.`
         }
-        confirmLabel={confirmAction?.type === "remove" ? "Remove" : "Deactivate"}
-        tone={confirmAction?.type === "remove" ? "danger" : "warning"}
+        confirmLabel={
+          confirmAction?.type === "remove"
+            ? "Remove"
+            : confirmAction?.type === "reactivate"
+              ? "Reactivate"
+              : "Deactivate"
+        }
+        tone={confirmAction?.type === "remove" ? "danger" : confirmAction?.type === "reactivate" ? "success" : "warning"}
         onCancel={() => setConfirmAction(null)}
         onConfirm={() => {
           if (!confirmAction?.venue) return;
           if (confirmAction.type === "remove") {
             removeVenue(confirmAction.venue);
+          } else if (confirmAction.type === "reactivate") {
+            reactivateVenue(confirmAction.venue);
           } else {
             deactivateVenue(confirmAction.venue);
           }

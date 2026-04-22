@@ -7,6 +7,7 @@ urlpatterns = [
     path('venues/<int:pk>/', views.VenueDetailView.as_view(), name='venue_detail'),
     path('venues/<int:venue_id>/delete/', views.delete_venue, name='venue_delete'),
     path('venues/<int:venue_id>/deactivate/', views.deactivate_venue, name='venue_deactivate'),
+    path('venues/<int:venue_id>/reactivate/', views.reactivate_venue, name='venue_reactivate'),
 
     # Core Event Endpoints
     path('', views.EventListView.as_view(), name='list_events'),

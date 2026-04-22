@@ -12,7 +12,7 @@ export default function ModernSelect({
   const shellRef = useRef(null);
 
   const selectedOption = useMemo(
-    () => options.find((option) => option.value === value) || null,
+    () => options.find((option) => !option.divider && option.value === value) || null,
     [options, value],
   );
 
@@ -66,12 +66,23 @@ export default function ModernSelect({
             <span className="modern-select-placeholder">{placeholder}</span>
           )}
         </span>
-        <span className="modern-select-caret" aria-hidden="true">▼</span>
+        <span className="modern-select-caret" aria-hidden="true">v</span>
       </button>
 
       {open ? (
         <div className="modern-select-panel" role="listbox" aria-labelledby={id}>
-          {options.map((option) => {
+          {options.map((option, index) => {
+            if (option.divider) {
+              return (
+                <div
+                  key={option.id || `divider-${index}`}
+                  className="modern-select-divider"
+                  role="separator"
+                  aria-hidden="true"
+                />
+              );
+            }
+
             const isSelected = option.value === value;
             return (
               <button
@@ -79,9 +90,16 @@ export default function ModernSelect({
                 type="button"
                 className={`modern-select-option ${isSelected ? "selected" : ""}`}
                 onClick={() => commitValue(option.value)}
+                role="option"
+                aria-selected={isSelected}
               >
-                <span>{option.label}</span>
-                {isSelected ? <span className="modern-select-check" aria-hidden="true">✓</span> : null}
+                <span className="modern-select-option-main">
+                  {option.icon ? <span className="modern-select-option-icon" aria-hidden="true">{option.icon}</span> : null}
+                  <span className="modern-select-option-copy">
+                    <span>{option.label}</span>
+                    {option.description ? <small>{option.description}</small> : null}
+                  </span>
+                </span>
               </button>
             );
           })}

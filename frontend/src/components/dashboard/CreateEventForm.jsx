@@ -2,8 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import toast, { formatApiError } from "../../lib/toast";
 import AudienceSelector from "./AudienceSelector";
+import ModernSelect from "../common/ModernSelect";
 import { DateTimeField } from "./PickerField";
-import { FALLBACK_VENUES, buildVenueCapacityMap, normalizeVenueList } from "../../constants/venues";
+import {
+  FALLBACK_VENUES,
+  TBD_VENUE_NAME,
+  TBD_VENUE_VALUE,
+  isTbdVenueName,
+  normalizeVenueList,
+} from "../../constants/venues";
 
 const EVENT_TYPE_OPTIONS = [
   { value: "mandatory_governance_meetings", label: "Mandatory Governance Meetings" },
@@ -14,7 +21,7 @@ const EVENT_TYPE_OPTIONS = [
 
 const DEFAULTS = {
   title: "",
-  event_type: "mandatory_governance_meetings",
+  event_type: "",
   audience_type: "all",
   date: "",
   end_date: "",
@@ -41,8 +48,25 @@ export default function CreateEventForm({ onCreated }) {
   const [venues, setVenues] = useState(FALLBACK_VENUES);
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const venueCapacityMap = useMemo(() => buildVenueCapacityMap(venues), [venues]);
-  const hasAutoCapacity = venueCapacityMap[form.venue] !== undefined;
+  const selectedVenue = useMemo(
+    () => venues.find((venue) => String(venue.id) === String(form.venue_id || "") || venue.name === form.venue),
+    [form.venue, form.venue_id, venues],
+  );
+  const selectedVenueMax = selectedVenue?.max_capacity ? Number(selectedVenue.max_capacity) : null;
+  const isTbdVenue = isTbdVenueName(form.venue) && !form.venue_id;
+  const venueOptions = useMemo(
+    () => [
+      { value: "", label: "Select a venue" },
+      { divider: true, id: "venue-divider-top" },
+      { value: TBD_VENUE_VALUE, label: "TBD", description: "Venue not yet assigned" },
+      { divider: true, id: "venue-divider-bottom" },
+      ...venues.map((venue) => ({
+        value: String(venue.id || venue.name),
+        label: `${venue.name} (${venue.max_capacity})`,
+      })),
+    ],
+    [venues],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +90,10 @@ export default function CreateEventForm({ onCreated }) {
     const { name, value } = e.target;
 
     if (name === "venue") {
+      if (value === TBD_VENUE_VALUE) {
+        setForm({ ...form, venue_id: "", venue: TBD_VENUE_NAME, capacity: "" });
+        return;
+      }
       const selectedVenue = venues.find((venue) => String(venue.id) === value || venue.name === value);
       const venueName = selectedVenue?.name || "";
       const nextForm = { ...form, venue_id: selectedVenue?.id ? String(selectedVenue.id) : "", venue: venueName };
@@ -74,6 +102,11 @@ export default function CreateEventForm({ onCreated }) {
         nextForm.capacity = String(defaultCapacity);
       }
       setForm(nextForm);
+      return;
+    }
+
+    if (name === "capacity" && selectedVenueMax && Number(value) > selectedVenueMax) {
+      setForm({ ...form, capacity: String(selectedVenueMax) });
       return;
     }
 
@@ -98,6 +131,18 @@ export default function CreateEventForm({ onCreated }) {
   const submit = async (e) => {
     e.preventDefault();
     setSubmitted(true);
+    if (!form.date) {
+      toast.error("Please select an event date and time.");
+      return;
+    }
+    if (form.capacity === "") {
+      toast.error("Please enter the estimated capacity.");
+      return;
+    }
+    if (selectedVenueMax && Number(form.capacity) > selectedVenueMax) {
+      toast.error(`Estimated capacity cannot exceed ${selectedVenueMax} for the selected venue.`);
+      return;
+    }
     if (form.date && form.end_date && new Date(form.end_date) <= new Date(form.date)) {
       toast.error("Event end date/time must be after the start date/time.");
       return;
@@ -156,7 +201,8 @@ export default function CreateEventForm({ onCreated }) {
         </div>
         <div className="form-group">
           <RequiredLabel htmlFor="event-type" invalid={submitted && !form.event_type}>Event Type</RequiredLabel>
-          <select id="event-type" name="event_type" value={form.event_type} onChange={update}>
+          <select id="event-type" name="event_type" value={form.event_type} onChange={update} required>
+            <option value="">Select event type</option>
             {EVENT_TYPE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
@@ -197,35 +243,34 @@ export default function CreateEventForm({ onCreated }) {
         />
         <div className="form-group">
           <label htmlFor="event-venue">Venue</label>
-          <select
+          <ModernSelect
             id="event-venue"
             name="venue"
-            value={form.venue_id || form.venue}
+            value={isTbdVenue ? TBD_VENUE_VALUE : form.venue_id || form.venue}
             onChange={update}
-          >
-            <option value="">Select a venue</option>
-            {venues.map((venue) => (
-              <option key={venue.id || venue.name} value={venue.id || venue.name}>
-                {venue.name} ({venue.max_capacity})
-              </option>
-            ))}
-          </select>
-          <small>Select a venue to auto-fill the max capacity.</small>
+            options={venueOptions}
+            placeholder="Select a venue"
+          />
+          <small>Select an active venue or TBD if the venue is not yet finalized.</small>
         </div>
         <div className="form-group">
-          <label htmlFor="event-capacity">Capacity</label>
+          <RequiredLabel htmlFor="event-capacity" invalid={submitted && form.capacity === ""}>
+            {isTbdVenue ? "Estimated Capacity" : "Capacity"}
+          </RequiredLabel>
           <input
             id="event-capacity"
             name="capacity"
             type="number"
-            min="0"
+            min="1"
+            max={selectedVenueMax || undefined}
             placeholder="e.g., 100"
             value={form.capacity}
             onChange={update}
-            disabled={hasAutoCapacity}
-            readOnly={hasAutoCapacity}
+            disabled={Boolean(selectedVenueMax)}
+            readOnly={Boolean(selectedVenueMax)}
+            required
             style={
-              hasAutoCapacity
+              selectedVenueMax
                 ? {
                     background: "#e5e7eb",
                     color: "#475569",
@@ -235,9 +280,11 @@ export default function CreateEventForm({ onCreated }) {
             }
           />
           <small>
-            {hasAutoCapacity
-              ? "Auto-filled from the selected venue. You can still adjust it if needed."
-              : "Set the event capacity."}
+            {isTbdVenue
+              ? "Enter estimated number of attendees since the venue is not yet finalized."
+              : selectedVenueMax
+                ? `Auto-filled from the selected venue. Maximum allowed: ${selectedVenueMax}.`
+                : "Set the event capacity."}
           </small>
         </div>
         <div className="form-group">

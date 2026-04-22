@@ -7,12 +7,15 @@ export const FALLBACK_VENUES = [
   { id: null, name: "Court", max_capacity: 300, is_active: true },
 ];
 
+export const TBD_VENUE_VALUE = "__TBD__";
+export const TBD_VENUE_NAME = "TBD";
+
 export function normalizeVenueList(payload) {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.results)) return payload.results;
   return [];
 }
 
-export function buildVenueCapacityMap(venues) {
-  return Object.fromEntries((venues || []).map((venue) => [venue.name, venue.max_capacity]));
+export function isTbdVenueName(value) {
+  return String(value || "").trim().toLowerCase() === TBD_VENUE_NAME.toLowerCase();
 }
