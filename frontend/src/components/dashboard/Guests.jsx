@@ -25,6 +25,15 @@ const STATUS_FILTER_OPTIONS = [
   ...STATUS_OPTIONS,
 ];
 
+const SORT_OPTIONS = [
+  { value: "time_newest", label: "Time: Newest first" },
+  { value: "time_oldest", label: "Time: Oldest first" },
+  { value: "guest_az", label: "Guest: A to Z" },
+  { value: "guest_za", label: "Guest: Z to A" },
+];
+
+const CONTACT_ALLOWED_PATTERN = /^[0-9+\-() ]*$/;
+
 function getGuestStatusMeta(status, isArchived = false) {
   if (isArchived) {
     return { label: "Archived", background: "#e2e8f0", color: "#475569" };
@@ -88,7 +97,9 @@ export default function Guests() {
   const [filter, setFilter] = useState("today");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState("time_newest");
   const [actionMenuId, setActionMenuId] = useState(null);
+  const [numericOnlyNotice, setNumericOnlyNotice] = useState({ contact: false, participants: false });
 
   const heading = useMemo(() => {
     if (filter === "all") return "All guest appointments";
@@ -104,16 +115,25 @@ export default function Guests() {
       return Number.isNaN(parsed) ? Number.NEGATIVE_INFINITY : parsed;
     };
 
+    const compareText = (a, b) => String(a || "").localeCompare(String(b || ""), undefined, { sensitivity: "base" });
+
     return [...guests].sort((a, b) => {
+      if (sortOrder === "time_oldest") {
+        const etaDiff = toTimestamp(a?.eta) - toTimestamp(b?.eta);
+        if (etaDiff !== 0) return etaDiff;
+        return (a?.id || 0) - (b?.id || 0);
+      }
+      if (sortOrder === "guest_az" || sortOrder === "guest_za") {
+        const nameDiff = compareText(a?.name, b?.name);
+        if (nameDiff !== 0) return sortOrder === "guest_az" ? nameDiff : -nameDiff;
+      }
       const etaDiff = toTimestamp(b?.eta) - toTimestamp(a?.eta);
       if (etaDiff !== 0) return etaDiff;
-
       const createdDiff = toTimestamp(b?.created_at) - toTimestamp(a?.created_at);
       if (createdDiff !== 0) return createdDiff;
-
       return (b?.id || 0) - (a?.id || 0);
     });
-  }, [guests]);
+  }, [guests, sortOrder]);
 
   const fetchGuests = async () => {
     try {
@@ -140,8 +160,34 @@ export default function Guests() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, statusFilter]);
 
+  useEffect(() => {
+    if (!numericOnlyNotice.contact && !numericOnlyNotice.participants) return undefined;
+    const timeout = window.setTimeout(() => {
+      setNumericOnlyNotice({ contact: false, participants: false });
+    }, 1800);
+    return () => window.clearTimeout(timeout);
+  }, [numericOnlyNotice]);
+
   const onChange = (e) => {
     const { name, value } = e.target;
+    if (name === "contact") {
+      if (!CONTACT_ALLOWED_PATTERN.test(value)) {
+        setNumericOnlyNotice((prev) => ({ ...prev, contact: true }));
+        return;
+      }
+      setNumericOnlyNotice((prev) => ({ ...prev, contact: false }));
+      setForm((prev) => ({ ...prev, contact: value }));
+      return;
+    }
+    if (name === "no_of_participants") {
+      if (/\D/.test(value)) {
+        setNumericOnlyNotice((prev) => ({ ...prev, participants: true }));
+      } else {
+        setNumericOnlyNotice((prev) => ({ ...prev, participants: false }));
+      }
+      setForm((prev) => ({ ...prev, no_of_participants: value.replace(/\D/g, "") }));
+      return;
+    }
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -152,13 +198,26 @@ export default function Guests() {
 
   const submit = async (e) => {
     e.preventDefault();
+    const contact = form.contact.trim();
+    const participantCount = Number(form.no_of_participants || 1);
+    if (contact && !CONTACT_ALLOWED_PATTERN.test(contact)) {
+      setError("Contact number can only contain numbers and phone symbols.");
+      setSuccess("");
+      return;
+    }
+    if (!Number.isInteger(participantCount) || participantCount < 1) {
+      setError("Number of participants must be at least 1.");
+      setSuccess("");
+      return;
+    }
     setSaving(true);
     setError("");
     setSuccess("");
     try {
       const payload = {
         ...form,
-        no_of_participants: Number(form.no_of_participants || 1),
+        contact,
+        no_of_participants: participantCount,
         eta: toOffsetIso(form.eta),
       };
       if (editingId) {
@@ -300,7 +359,28 @@ export default function Guests() {
       <>
         <input className="guest-form-input" name="name" placeholder="Guest Name" value={form.name} onChange={onChange} required />
         <input className="guest-form-input" name="organization_company" placeholder="Organization / Company" value={form.organization_company} onChange={onChange} />
-        <input className="guest-form-input" name="contact" placeholder="Contact Number" value={form.contact} onChange={onChange} />
+        <div className="guest-input-shell">
+          <input
+            className="guest-form-input"
+            name="contact"
+            placeholder="Contact Number"
+            value={form.contact}
+            onChange={onChange}
+            inputMode="tel"
+            autoComplete="tel"
+            pattern="[0-9+\-() ]*"
+            title="Use numbers only. You may include +, spaces, hyphens, or parentheses."
+          />
+          {numericOnlyNotice.contact ? (
+            <div className="guest-input-notice" role="alert">
+              <span className="guest-input-notice-icon">!</span>
+              <span>
+                <strong>Unacceptable Character</strong>
+                <span>You can only type a number here.</span>
+              </span>
+            </div>
+          ) : null}
+        </div>
         <input className="guest-form-input" name="purpose" placeholder="Purpose of Visit" value={form.purpose} onChange={onChange} required />
         <DateTimeField
           id={isInline ? `guest-eta-inline-${editingId}` : "guest-eta"}
@@ -311,18 +391,30 @@ export default function Guests() {
           required
           placeholder="Appointment Schedule"
           panelInFlow
+          disablePastDates
         />
-        <input
-          className="guest-form-input"
-          type="number"
-          min="1"
-          step="1"
-          name="no_of_participants"
-          placeholder="Number of Participants"
-          value={form.no_of_participants}
-          onChange={onChange}
-          required
-        />
+        <div className="guest-input-shell">
+          <input
+            className="guest-form-input"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            name="no_of_participants"
+            placeholder="Number of Participants"
+            value={form.no_of_participants}
+            onChange={onChange}
+            required
+          />
+          {numericOnlyNotice.participants ? (
+            <div className="guest-input-notice" role="alert">
+              <span className="guest-input-notice-icon">!</span>
+              <span>
+                <strong>Unacceptable Character</strong>
+                <span>You can only type a number here.</span>
+              </span>
+            </div>
+          ) : null}
+        </div>
         <select className="guest-form-input" name="status" value={form.status} onChange={onChange}>
           {STATUS_OPTIONS.map((item) => (
             <option key={item.value} value={item.value}>{item.label}</option>
@@ -392,17 +484,31 @@ export default function Guests() {
             />
           </div>
           {filter === "all" && (
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              style={{ minWidth: 180 }}
-            >
-              {STATUS_FILTER_OPTIONS.map((item) => (
-                <option key={item.value || "all"} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+            <label className="guest-filter-field">
+              <span>Status:</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                {STATUS_FILTER_OPTIONS.map((item) => (
+                  <option key={item.value || "all"} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {(filter === "all" || filter === "archived") && (
+            <label className="guest-sort-field">
+              <span>Sort by:</span>
+              <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+                {SORT_OPTIONS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           )}
         </div>
       </div>

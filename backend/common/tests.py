@@ -139,6 +139,38 @@ class CommonApiTests(TestCase):
         self.assertEqual(invalid.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("no_of_participants", invalid.data)
 
+        invalid_contact = self.client.post(
+            "/api/common/guests/",
+            {
+                "name": "Invalid Contact",
+                "organization_company": "Barangay Partner",
+                "no_of_participants": 1,
+                "contact": "0917ABC0000",
+                "purpose": "Outreach",
+                "eta": timezone.now().isoformat(),
+                "status": "expected",
+            },
+            format="json",
+        )
+        self.assertEqual(invalid_contact.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("contact", invalid_contact.data)
+
+        invalid_eta = self.client.post(
+            "/api/common/guests/",
+            {
+                "name": "Past Guest",
+                "organization_company": "Barangay Partner",
+                "no_of_participants": 1,
+                "contact": "09170000002",
+                "purpose": "Outreach",
+                "eta": (timezone.now() - timedelta(days=1)).isoformat(),
+                "status": "expected",
+            },
+            format="json",
+        )
+        self.assertEqual(invalid_eta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("eta", invalid_eta.data)
+
     def test_guest_list_all_is_not_implicitly_limited_to_today(self):
         with override_settings(ARCHIVE_ROOT=Path(self.tempdir.name)):
             self.auth(self.admin)
@@ -328,7 +360,7 @@ class CommonApiTests(TestCase):
                 "name": "Manual Guest",
                 "contact": "09171230003",
                 "purpose": "Late arrival",
-                "eta": (timezone.now() - timedelta(days=1)).isoformat(),
+                "eta": (timezone.now() + timedelta(hours=1)).isoformat(),
                 "status": "expected",
             },
             format="json",

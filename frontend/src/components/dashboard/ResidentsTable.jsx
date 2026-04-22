@@ -125,6 +125,12 @@ function maskPhone(phone) {
   return `${value.slice(0, 4)}${"*".repeat(Math.max(4, value.length - 6))}${value.slice(-2)}`;
 }
 
+function truncateMiddle(value, start = 8, end = 4) {
+  const text = String(value || "").trim();
+  if (!text || text.length <= start + end + 3) return text || "N/A";
+  return `${text.slice(0, start)}...${text.slice(-end)}`;
+}
+
 export default function ResidentsTable() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -494,7 +500,7 @@ export default function ResidentsTable() {
                 ? { label: "deactivated", background: "#fef2f2", color: "#b91c1c" }
                 : { label: "active", background: "#0f172a", color: "#fff" };
             return (
-              <div className={`admin-resident-row ${revealed || isEditing ? "resident-details-open" : "resident-details-closed"}`} key={idx} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 12, alignItems: "center" }}>
+              <div className={`admin-resident-row ${revealed || isEditing ? "resident-details-open" : "resident-details-closed"}`} key={idx} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 14, display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 12, alignItems: "start" }}>
                 <div className="admin-resident-main" style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", gap: 12, alignItems: "center", minWidth: 0 }}>
                   <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#e5e7eb", display: "grid", placeItems: "center", fontSize: 24, color: "#6b7280" }}>👤</div>
                   <div style={{ minWidth: 0 }}>
@@ -531,8 +537,7 @@ export default function ResidentsTable() {
                       <span>{VOTER_STATUS_LABEL[r.voter_status] || "Not Set"}</span>
                     </div>
                     <button className="resident-details-toggle" type="button" onClick={() => toggleReveal(r)} disabled={loadingDetailId === r.user?.id}>
-                      <span aria-hidden="true">{revealed || isEditing ? "v" : ">"}</span>
-                      {loadingDetailId === r.user?.id ? "Loading details..." : revealed ? "Hide Details" : "More"}
+                      {loadingDetailId === r.user?.id ? "Loading details..." : revealed ? "Hide Details ▲" : "Show Details ▼"}
                     </button>
                     <div style={{ color: "#6b7280", fontSize: 13, marginTop: 2 }}>
                       ID: {r.barangay_id}
@@ -547,9 +552,9 @@ export default function ResidentsTable() {
                         {r.deactivation_reason ? ` • ${r.deactivation_reason}` : ""}
                       </div>
                     ) : null}
-                    <div className="admin-resident-info-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8, marginTop: 10, minWidth: 0 }}>
+                    <div className="admin-resident-info-grid">
                       <Info label="Username" value={displayRow.user?.username || "N/A"} />
-                      <Info label="Resident ID" value={displayRow.barangay_id || "N/A"} />
+                      <Info label="Resident ID" value={truncateMiddle(displayRow.barangay_id)} title={displayRow.barangay_id || "N/A"} />
                       <Info label="Age" value={age !== null ? `${age} years` : "—"} />
                       <Info
                         label="Gender"
@@ -637,9 +642,6 @@ export default function ResidentsTable() {
                     </>
                   ) : (
                     <>
-                      <button className="resident-action-button resident-action-neutral" onClick={() => toggleReveal(r)} disabled={loadingDetailId === r.user?.id}>
-                        {loadingDetailId === r.user?.id ? "Loading..." : revealed ? "Hide Details" : "More"}
-                      </button>
                       {!r.is_archived && !isDeactivated && <button className="resident-action-button resident-action-neutral" onClick={() => startEdit(r)} title="Edit" disabled={loadingDetailId === r.user?.id}>
                         {loadingDetailId === r.user?.id ? "..." : "Edit"}
                       </button>}
@@ -655,9 +657,9 @@ export default function ResidentsTable() {
                         </button>
                           {isMenuOpen ? (
                             <div className="resident-action-menu">
-                            {!isEditing ? (
+                            {revealed ? (
                               <button className="resident-action-button resident-action-neutral" onClick={() => { setActionMenuId(null); toggleSensitiveMask(r); }} disabled={loadingDetailId === userId}>
-                                {!revealed ? "More" : isSensitiveMasked ? "Unmask Details" : "Mask Details"}
+                                {isSensitiveMasked ? "Unmask Details" : "Mask Details"}
                               </button>
                             ) : null}
                             {!r.is_archived && !isDeactivated && (
@@ -1037,11 +1039,11 @@ export default function ResidentsTable() {
   );
 }
 
-function Info({ label, value }) {
+function Info({ label, value, title }) {
   return (
-    <div style={{ minWidth: 0 }}>
-      <div style={{ color: "#6b7280", fontSize: 12 }}>{label}</div>
-      <div style={{ fontWeight: 600, minWidth: 0, overflowWrap: "anywhere", wordBreak: "break-word" }}>{value}</div>
+    <div className="resident-info-item">
+      <div className="resident-info-label">{label}</div>
+      <div className="resident-info-value" title={title}>{value}</div>
     </div>
   );
 }

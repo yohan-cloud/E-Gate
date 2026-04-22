@@ -1,8 +1,14 @@
+from datetime import timedelta
+import re
+
+from django.utils import timezone
 from rest_framework import serializers
 
 import json
 
 from .models import AdminSetting, AuditLog, GuestAppointment, GuestAppointmentScanLog
+
+PHONE_VALUE_RE = re.compile(r"^[0-9+\-() ]*$")
 
 
 class GuestAppointmentSerializer(serializers.ModelSerializer):
@@ -98,7 +104,15 @@ class GuestAppointmentSerializer(serializers.ModelSerializer):
         return value
 
     def validate_contact(self, value):
-        return (value or "").strip()
+        value = (value or "").strip()
+        if value and not PHONE_VALUE_RE.fullmatch(value):
+            raise serializers.ValidationError("Contact number can only contain numbers and phone symbols.")
+        return value
+
+    def validate_eta(self, value):
+        if value and value < timezone.now() - timedelta(minutes=1):
+            raise serializers.ValidationError("Appointment schedule cannot be in the past.")
+        return value
 
     def validate_organization_company(self, value):
         return (value or "").strip()
