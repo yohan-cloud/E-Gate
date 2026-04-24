@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import ConfirmDialog from "../common/ConfirmDialog";
 import { api } from "../../api";
 import toast, { formatApiError } from "../../lib/toast";
+import userAddIcon from "../../assets/user-add.png";
 
 const DEFAULT_FORM = {
   full_name: "",
@@ -23,6 +24,7 @@ const DEACTIVATION_REASONS = [
 export default function GateAccounts() {
   const [gateForm, setGateForm] = useState(DEFAULT_FORM);
   const [isCreatingGateOperator, setIsCreatingGateOperator] = useState(false);
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
   const [accountsError, setAccountsError] = useState("");
@@ -88,6 +90,7 @@ export default function GateAccounts() {
       const createdName = response?.data?.user?.full_name || response?.data?.user?.username || gateForm.username.trim();
       setGateForm(DEFAULT_FORM);
       setShowPassword(false);
+      setIsCreateFormOpen(false);
       toast.success(`Account for "${createdName}" created successfully.`);
       await loadAccounts(search);
     } catch (error) {
@@ -232,77 +235,119 @@ export default function GateAccounts() {
         </div>
       </div>
 
-      <form onSubmit={createGateOperator} className="gate-account-form gate-account-form-compact">
-        <div className="gate-account-grid">
-          <label className="gate-account-field">
-            <span className="gate-account-label">Full Name</span>
-            <input name="full_name" value={gateForm.full_name} onChange={updateGateForm} required placeholder="Juan Dela Cruz" />
-          </label>
-
-          <label className="gate-account-field">
-            <span className="gate-account-label">Username</span>
-            <input name="username" value={gateForm.username} onChange={updateGateForm} autoComplete="username" required placeholder="gate_operator_01" />
-          </label>
-
-          <label className="gate-account-field">
-            <span className="gate-account-label">Email</span>
-            <input name="email" type="email" value={gateForm.email} onChange={updateGateForm} autoComplete="email" placeholder="optional@example.com" />
-          </label>
-
-          <label className="gate-account-field">
-            <span className="gate-account-label">Contact Number</span>
-            <input name="contact_number" value={gateForm.contact_number} onChange={updateGateForm} inputMode="tel" placeholder="09171234567" />
-          </label>
-
-          <label className="gate-account-field gate-account-field-wide">
-            <span className="gate-account-label">Password</span>
-            <div className="gate-account-password-wrap">
-              <input
-                name="password"
-                type={showPassword ? "text" : "password"}
-                value={gateForm.password}
-                onChange={updateGateForm}
-                autoComplete="new-password"
-                required
-                placeholder="Create a strong password"
-              />
-              <button
-                type="button"
-                className="gate-account-password-toggle"
-                onClick={() => setShowPassword((current) => !current)}
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
-            </div>
-          </label>
-        </div>
-
-        <div className="gate-account-hint">
-          Optional fields. Email enables password reset.
-        </div>
-
-        <div>
-          <button type="submit" disabled={isCreatingGateOperator} className="gate-account-submit">
-            {isCreatingGateOperator ? "Creating..." : "Create Account"}
-          </button>
-        </div>
-      </form>
-
       <section className="gate-account-list-section">
         <div className="gate-account-list-header">
           <div>
             <h3 style={{ margin: 0 }}>Manage Gate Accounts</h3>
-            <div className="gate-account-hint">Search existing gate operators and manage their access.</div>
+            <div className="gate-account-hint">
+              Search existing gate operators and manage their access.
+              {!loadingAccounts ? ` ${accounts.length} account${accounts.length === 1 ? "" : "s"} shown.` : ""}
+            </div>
           </div>
-          <form onSubmit={handleSearchSubmit} className="gate-account-search">
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search name, username, email, or number"
-            />
-            <button type="submit">Search</button>
-          </form>
+          <div className="gate-account-toolbar">
+            <form onSubmit={handleSearchSubmit} className="gate-account-search">
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search name, username, email, or number"
+              />
+              <button type="submit">Search</button>
+            </form>
+            <button
+              type="button"
+              className={`gate-account-add-toggle ${isCreateFormOpen ? "open" : ""}`}
+              onClick={() => {
+                setIsCreateFormOpen((current) => !current);
+                setShowPassword(false);
+              }}
+            >
+              <span className="gate-account-add-icon" aria-hidden="true">
+                <img src={userAddIcon} alt="" />
+              </span>
+              <span>{isCreateFormOpen ? "Close Form" : "Add Account"}</span>
+            </button>
+          </div>
         </div>
+
+        {isCreateFormOpen ? (
+          <form onSubmit={createGateOperator} className="gate-account-form gate-account-form-compact gate-account-form-collapsible">
+            <div className="gate-account-form-head">
+              <div>
+                <h4 style={{ margin: 0 }}>Create Gate Account</h4>
+                <div className="gate-account-hint">Only opens when needed, so the account list stays easier to scan.</div>
+              </div>
+            </div>
+
+            <div className="gate-account-grid">
+              <label className="gate-account-field">
+                <span className="gate-account-label">Full Name</span>
+                <input name="full_name" value={gateForm.full_name} onChange={updateGateForm} required placeholder="Juan Dela Cruz" />
+              </label>
+
+              <label className="gate-account-field">
+                <span className="gate-account-label">Username</span>
+                <input name="username" value={gateForm.username} onChange={updateGateForm} autoComplete="username" required placeholder="gate_operator_01" />
+              </label>
+
+              <label className="gate-account-field">
+                <span className="gate-account-label">Email</span>
+                <input name="email" type="email" value={gateForm.email} onChange={updateGateForm} autoComplete="email" placeholder="optional@example.com" />
+              </label>
+
+              <label className="gate-account-field">
+                <span className="gate-account-label">Contact Number</span>
+                <input name="contact_number" value={gateForm.contact_number} onChange={updateGateForm} inputMode="tel" placeholder="09171234567" />
+              </label>
+
+              <label className="gate-account-field gate-account-field-wide">
+                <span className="gate-account-label">Password</span>
+                <div className="gate-account-password-wrap">
+                  <input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={gateForm.password}
+                    onChange={updateGateForm}
+                    autoComplete="new-password"
+                    required
+                    placeholder="Create a strong password"
+                  />
+                  <button
+                    type="button"
+                    className="gate-account-password-toggle"
+                    onClick={() => setShowPassword((current) => !current)}
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+              </label>
+            </div>
+
+            <div className="gate-account-hint">
+              Optional fields. Email enables password reset.
+            </div>
+
+            <div className="gate-account-form-actions">
+              <button
+                type="button"
+                className="gate-account-secondary"
+                onClick={() => {
+                  setIsCreateFormOpen(false);
+                  setShowPassword(false);
+                }}
+              >
+                Cancel
+              </button>
+              <button type="submit" disabled={isCreatingGateOperator} className="gate-account-submit button-with-icon">
+                {!isCreatingGateOperator ? (
+                  <span className="button-icon-wrap gate-submit-icon" aria-hidden="true">
+                    <img src={userAddIcon} alt="" />
+                  </span>
+                ) : null}
+                <span>{isCreatingGateOperator ? "Creating..." : "Create Account"}</span>
+              </button>
+            </div>
+          </form>
+        ) : null}
 
         {accountsError ? <div className="gate-account-error">{accountsError}</div> : null}
 

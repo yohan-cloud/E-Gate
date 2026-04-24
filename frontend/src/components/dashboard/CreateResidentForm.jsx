@@ -4,6 +4,7 @@ import toast from "../../lib/toast";
 import FaceCaptureField from "../common/FaceCaptureField";
 import SegmentedPillSelect from "../common/SegmentedPillSelect";
 import { DateField } from "./PickerField";
+import userAddIcon from "../../assets/user-add.png";
 
 const RESIDENT_CATEGORY_OPTIONS = [
   { value: "resident", label: "Resident" },
@@ -225,8 +226,13 @@ export default function CreateResidentForm({ onCreated }) {
           {captureLabel ? <small style={{ display: "block", marginTop: 6 }}>{captureLabel}</small> : null}
         </div>
         <div style={{ gridColumn: "1 / -1", textAlign: "right" }}>
-          <button type="submit" disabled={busy} className="event-create-submit" style={{ padding: "10px 16px" }}>
-            {busy ? "Creating..." : "Create Resident"}
+          <button type="submit" disabled={busy} className="event-create-submit resident-create-submit button-with-icon" style={{ padding: "10px 16px" }}>
+            {!busy ? (
+              <span className="button-icon-wrap resident-action-icon" aria-hidden="true">
+                <img src={userAddIcon} alt="" />
+              </span>
+            ) : null}
+            <span>{busy ? "Creating..." : "Create Resident"}</span>
           </button>
         </div>
       </form>

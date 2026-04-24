@@ -4,6 +4,7 @@ import { api } from "../../api";
 import ConfirmDialog from "../common/ConfirmDialog";
 import { normalizeVenueList } from "../../constants/venues";
 import toast, { formatApiError } from "../../lib/toast";
+import addLocationIcon from "../../assets/add-location.png";
 
 const EMPTY_FORM = {
   name: "",
@@ -157,8 +158,13 @@ export default function VenueManagement() {
                 Cancel
               </button>
             ) : null}
-            <button type="submit" disabled={saving}>
-              {saving ? "Saving..." : editingId ? "Save Changes" : "Add Venue"}
+            <button type="submit" disabled={saving} className={!editingId ? "button-with-icon" : ""}>
+              {!editingId && !saving ? (
+                <span className="button-icon-wrap venue-action-icon" aria-hidden="true">
+                  <img src={addLocationIcon} alt="" />
+                </span>
+              ) : null}
+              <span>{saving ? "Saving..." : editingId ? "Save Changes" : "Add Venue"}</span>
             </button>
           </div>
         </form>

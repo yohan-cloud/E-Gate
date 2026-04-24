@@ -44,6 +44,13 @@ function formatSchedule(start, end) {
 }
 
 export default function AdminPortal({ onLogout }) {
+  const [adminUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  });
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [viewMode, setViewMode] = useState("overview");
   const [scannerMode, setScannerMode] = useState("qr");
@@ -55,6 +62,8 @@ export default function AdminPortal({ onLogout }) {
   });
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const activeItem = ADMIN_NAV_ITEMS.find((item) => item.key === viewMode) || ADMIN_NAV_ITEMS[0];
+  const adminName = getPreferredName(adminUser, "Admin User");
+  const greeting = getTimeGreeting();
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;
@@ -134,7 +143,7 @@ export default function AdminPortal({ onLogout }) {
         </div>
         <div className="admin-sidebar-bottom">
           <div className="admin-user-card">
-            <div className="user-name">Admin User</div>
+            <div className="user-name">{adminName}</div>
             <div className="user-role">Administrator</div>
           </div>
           <button className="logout-pill admin-logout" onClick={onLogout}>Logout</button>
@@ -163,7 +172,7 @@ export default function AdminPortal({ onLogout }) {
           </div>
           <div className="admin-main-meta">
             <div className="user-chip">
-              <div className="user-name">Admin User</div>
+              <div className="user-name">{greeting}, {adminName}</div>
               <div className="user-role">Administrator</div>
             </div>
           </div>
@@ -211,6 +220,25 @@ export default function AdminPortal({ onLogout }) {
       </section>
     </div>
   );
+}
+
+function getTimeGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function getPreferredName(user, fallback) {
+  const candidate =
+    user?.first_name ||
+    user?.user?.first_name ||
+    user?.full_name ||
+    user?.user?.full_name ||
+    user?.username ||
+    user?.user?.username ||
+    "";
+  return String(candidate || "").trim() || fallback;
 }
 
 function ScannerWorkspace({

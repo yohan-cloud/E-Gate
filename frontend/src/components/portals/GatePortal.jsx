@@ -49,9 +49,18 @@ export default function GatePortal({ onExit }) {
   const [guestSheetDate, setGuestSheetDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [isMobileGateView, setIsMobileGateView] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const activeUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  })();
   const activeRole = localStorage.getItem("role") || "";
   const activeUsername = localStorage.getItem("username") || "";
   const isAuthenticatedGateUser = activeRole === "Administrator" || activeRole === "GateOperator";
+  const greeting = getTimeGreeting();
+  const displayName = getPreferredName(activeUser, activeUsername || "Guard Desk");
   const activeItem = GATE_NAV_ITEMS.find((item) => item.key === gateMode) || GATE_NAV_ITEMS[0];
 
   useEffect(() => {
@@ -201,7 +210,7 @@ export default function GatePortal({ onExit }) {
 
         <div className="gate-sidebar-bottom">
           <div className="gate-user-card">
-            <div className="user-name">{activeUsername || "Guard Desk"}</div>
+            <div className="user-name">{displayName}</div>
             <div className="user-role">{isAuthenticatedGateUser ? activeRole : "Public gate mode"}</div>
           </div>
           <button className="logout-pill gate-exit" onClick={onExit}>Logout</button>
@@ -233,7 +242,7 @@ export default function GatePortal({ onExit }) {
           </div>
           <div className="gate-main-meta">
             <div className="user-chip">
-              <div className="user-name">{activeUsername || "Guard Desk"}</div>
+              <div className="user-name">{greeting}, {displayName}</div>
               <div className="user-role">{isAuthenticatedGateUser ? activeRole : "Public gate mode"}</div>
             </div>
           </div>
@@ -505,6 +514,25 @@ export default function GatePortal({ onExit }) {
       </section>
     </div>
   );
+}
+
+function getTimeGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function getPreferredName(user, fallback) {
+  const candidate =
+    user?.first_name ||
+    user?.user?.first_name ||
+    user?.full_name ||
+    user?.user?.full_name ||
+    user?.username ||
+    user?.user?.username ||
+    "";
+  return String(candidate || "").trim() || fallback;
 }
 
 function ModeShell({ title, subtitle, controls, badgeLabel, metaItems, latestEntries, children }) {

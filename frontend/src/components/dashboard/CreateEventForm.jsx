@@ -4,6 +4,7 @@ import toast, { formatApiError } from "../../lib/toast";
 import AudienceSelector from "./AudienceSelector";
 import ModernSelect from "../common/ModernSelect";
 import { DateTimeField } from "./PickerField";
+import addEventIcon from "../../assets/add-event.png";
 import {
   FALLBACK_VENUES,
   TBD_VENUE_NAME,
@@ -320,8 +321,13 @@ export default function CreateEventForm({ onCreated }) {
           panelInFlow
         />
         <div style={{ gridColumn: "1 / -1", textAlign: "right" }}>
-          <button type="submit" disabled={busy} className="event-create-submit" style={{ padding: "10px 16px" }}>
-            {busy ? "Creating..." : "Create"}
+          <button type="submit" disabled={busy} className="event-create-submit button-with-icon" style={{ padding: "10px 16px" }}>
+            {!busy ? (
+              <span className="button-icon-wrap event-action-icon" aria-hidden="true">
+                <img src={addEventIcon} alt="" />
+              </span>
+            ) : null}
+            <span>{busy ? "Creating..." : "Create"}</span>
           </button>
         </div>
       </form>

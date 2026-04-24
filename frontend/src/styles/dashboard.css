@@ -152,6 +152,17 @@ body {
   background: #1d4ed8;
 }
 
+.resident-create-submit {
+  border: 1px solid rgba(134, 239, 172, 0.9);
+  background: #ffffff;
+  color: #166534;
+  box-shadow: 0 10px 24px rgba(74, 222, 128, 0.12);
+}
+
+.resident-create-submit:hover {
+  background: #f7fff9;
+}
+
 .guest-card-shell {
   display: flex;
   justify-content: center;
@@ -1726,6 +1737,342 @@ body {
   margin-bottom: 12px;
 }
 
+.gate-account-card {
+  display: grid;
+  gap: 18px;
+}
+
+.gate-account-header {
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(146, 181, 157, 0.4);
+}
+
+.gate-account-kicker {
+  margin-bottom: 8px;
+  color: #08915b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gate-account-copy {
+  margin-top: 10px;
+  max-width: 840px;
+  color: #355745;
+  line-height: 1.6;
+}
+
+.gate-account-list-section {
+  display: grid;
+  gap: 16px;
+}
+
+.gate-account-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.gate-account-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.gate-account-add-toggle,
+.gate-account-search button,
+.gate-account-submit,
+.gate-account-secondary,
+.gate-account-actions button,
+.gate-account-password-toggle {
+  width: auto !important;
+}
+
+.gate-account-add-toggle {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #166534;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+}
+
+.gate-account-add-toggle.open {
+  background: #dbeafe;
+}
+
+.gate-account-add-icon {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 24px;
+}
+
+.gate-account-add-icon img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.button-with-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.button-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.button-icon-wrap img {
+  display: block;
+  object-fit: contain;
+}
+
+.venue-action-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.venue-action-icon img {
+  width: 18px;
+  height: 18px;
+}
+
+.resident-action-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.resident-action-icon img {
+  width: 22px;
+  height: 22px;
+}
+
+.event-action-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.event-action-icon img {
+  width: 22px;
+  height: 22px;
+}
+
+.gate-submit-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.gate-submit-icon img {
+  width: 22px;
+  height: 22px;
+}
+
+.gate-account-search {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.gate-account-search input {
+  width: 370px;
+  min-height: 42px;
+}
+
+.gate-account-search button,
+.gate-account-secondary,
+.gate-account-actions button {
+  min-height: 40px;
+  padding: 9px 14px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.gate-account-search button,
+.gate-account-secondary,
+.gate-account-actions button:not(.danger),
+.gate-account-password-toggle {
+  border: 1px solid rgba(146, 181, 157, 0.72);
+  background: #ffffff;
+  color: #183126;
+}
+
+.gate-account-form {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(146, 181, 157, 0.52);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(248, 255, 249, 0.96), rgba(237, 249, 241, 0.94));
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+.gate-account-form-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+}
+
+.gate-account-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.gate-account-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.gate-account-field-wide {
+  grid-column: 1 / -1;
+}
+
+.gate-account-label {
+  color: #183126;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.gate-account-password-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.gate-account-password-wrap input {
+  min-width: 0;
+}
+
+.gate-account-password-toggle {
+  min-height: 42px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.gate-account-form-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.gate-account-submit {
+  min-height: 42px;
+  padding: 10px 18px;
+  border: 1px solid rgba(134, 239, 172, 0.9);
+  border-radius: 12px;
+  background: #ffffff;
+  color: #166534;
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgba(74, 222, 128, 0.12);
+}
+
+.gate-account-list-header h3 {
+  color: #183126;
+}
+
+.gate-account-hint {
+  color: #4f6b5d;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.gate-account-error,
+.gate-account-empty {
+  padding: 14px 16px;
+  border-radius: 14px;
+}
+
+.gate-account-error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.gate-account-empty {
+  border: 1px dashed rgba(146, 181, 157, 0.72);
+  background: rgba(248, 255, 249, 0.75);
+  color: #4f6b5d;
+}
+
+.gate-account-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(146, 181, 157, 0.45);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.gate-account-table {
+  min-width: 980px;
+  margin-top: 0;
+}
+
+.gate-account-table thead th {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.gate-account-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+.gate-account-status.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.gate-account-status.inactive {
+  background: #e5e7eb;
+  color: #475569;
+}
+
+.gate-account-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gate-account-actions .danger {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 .table-container {
   overflow-x: auto;
 }
@@ -2034,6 +2381,33 @@ tr:hover {
 
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
+  .gate-account-list-header {
+    align-items: stretch;
+  }
+
+  .gate-account-toolbar,
+  .gate-account-search {
+    justify-content: flex-start;
+  }
+
+  .gate-account-search {
+    flex: 1 1 100%;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .gate-account-search input {
+    width: 100%;
+  }
+
+  .gate-account-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gate-account-password-wrap {
+    grid-template-columns: 1fr;
+  }
+
   .venue-management-head,
   .venue-management-grid {
     grid-template-columns: 1fr;
@@ -2125,6 +2499,33 @@ tr:hover {
 }
 
 @media (max-width: 640px) {
+  .gate-account-form,
+  .gate-account-table-wrap {
+    border-radius: 16px;
+  }
+
+  .gate-account-toolbar {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .gate-account-add-toggle,
+  .gate-account-search button,
+  .gate-account-secondary,
+  .gate-account-submit {
+    width: 100% !important;
+  }
+
+  .gate-account-search {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .gate-account-form-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
   .admin-main-content > .card {
     margin-top: 0 !important;
     margin-bottom: 10px;

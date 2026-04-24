@@ -99,6 +99,133 @@ function buildYearOptions() {
   return Array.from({ length: endYear - startYear + 1 }, (_, index) => startYear + index);
 }
 
+function parseDateParts(value) {
+  if (!value) return { year: "", month: "", day: "" };
+  const [year = "", month = "", day = ""] = value.split("-");
+  return { year, month, day };
+}
+
+function daysInMonth(year, month) {
+  if (!year || !month) return 31;
+  return new Date(Number(year), Number(month), 0).getDate();
+}
+
+function buildDayOptions(year, month) {
+  const total = daysInMonth(year, month);
+  return Array.from({ length: total }, (_, index) => pad(index + 1));
+}
+
+function CompactDateInputs({
+  id,
+  name,
+  value,
+  onChange,
+  disablePastDates = false,
+}) {
+  const todayParts = parseDateParts(todayDateKey());
+  const [draft, setDraft] = useState(() => parseDateParts(value));
+  const yearOptions = useMemo(() => buildYearOptions(), []);
+  const dayOptions = useMemo(() => buildDayOptions(draft.year, draft.month), [draft.year, draft.month]);
+
+  useEffect(() => {
+    setDraft(parseDateParts(value));
+  }, [value]);
+
+  const emitDate = (nextDraft) => {
+    if (nextDraft.year && nextDraft.month && nextDraft.day) {
+      onChange?.({ target: { name, value: `${nextDraft.year}-${nextDraft.month}-${nextDraft.day}` } });
+      return;
+    }
+    onChange?.({ target: { name, value: "" } });
+  };
+
+  const updatePart = (part, nextValue) => {
+    setDraft((current) => {
+      const nextDraft = { ...current, [part]: nextValue };
+      if (part === "month" || part === "year") {
+        const validDays = buildDayOptions(nextDraft.year, nextDraft.month);
+        if (nextDraft.day && !validDays.includes(nextDraft.day)) {
+          nextDraft.day = "";
+        }
+      }
+      if (
+        disablePastDates &&
+        nextDraft.year &&
+        nextDraft.month &&
+        nextDraft.day &&
+        `${nextDraft.year}-${nextDraft.month}-${nextDraft.day}` < todayDateKey()
+      ) {
+        if (part === "day") {
+          nextDraft.day = "";
+        } else {
+          nextDraft.day = "";
+        }
+      }
+      emitDate(nextDraft);
+      return nextDraft;
+    });
+  };
+
+  return (
+    <div className="picker-compact-row">
+      <select id={`${id}-month`} value={draft.month} onChange={(e) => updatePart("month", e.target.value)}>
+        <option value="">Month</option>
+        {MONTH_LABELS.map((monthLabel, index) => (
+          <option key={monthLabel} value={pad(index + 1)}>
+            {monthLabel}
+          </option>
+        ))}
+      </select>
+      <select id={`${id}-day`} value={draft.day} onChange={(e) => updatePart("day", e.target.value)}>
+        <option value="">Day</option>
+        {dayOptions.map((dayOption) => (
+          <option key={dayOption} value={dayOption}>
+            {Number(dayOption)}
+          </option>
+        ))}
+      </select>
+      <select id={`${id}-year`} value={draft.year} onChange={(e) => updatePart("year", e.target.value)}>
+        <option value="">Year</option>
+        {[...yearOptions].reverse().map((yearOption) => (
+          <option
+            key={yearOption}
+            value={String(yearOption)}
+            disabled={disablePastDates && String(yearOption) < todayParts.year}
+          >
+            {yearOption}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function CompactTimeInputs({ value, onChange }) {
+  const draft = parseDateTime(value);
+
+  const updatePart = (part, nextValue) => {
+    onChange({
+      ...draft,
+      [part]: nextValue,
+    });
+  };
+
+  return (
+    <div className="picker-compact-row picker-compact-row-time">
+      <select value={draft.hour} onChange={(e) => updatePart("hour", e.target.value)}>
+        {HOUR_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+      </select>
+      <select value={draft.minute} onChange={(e) => updatePart("minute", e.target.value)}>
+        {MINUTE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+      </select>
+      <select value={draft.period} onChange={(e) => updatePart("period", e.target.value)}>
+        <option value="AM">AM</option>
+        <option value="PM">PM</option>
+      </select>
+    </div>
+  );
+}
+
 function PickerShell({
   id,
   label,
@@ -155,6 +282,10 @@ function PickerShell({
 }
 
 export function DateField({ id, label, name, value, onChange, required = false, requiredInvalid = false, helpText = "", placeholder = "Select date", panelInFlow = false }) {
+  return <StandardDateField {...{ id, label, name, value, onChange, required, requiredInvalid, helpText, placeholder, panelInFlow }} />;
+}
+
+function StandardDateField({ id, label, name, value, onChange, required = false, requiredInvalid = false, helpText = "", placeholder = "Select date", panelInFlow = false }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value || "");
   const [view, setView] = useState(() => toMonthKey(value));
@@ -239,6 +370,22 @@ export function DateField({ id, label, name, value, onChange, required = false, 
 }
 
 export function DateTimeField({
+  id,
+  label,
+  name,
+  value,
+  onChange,
+  required = false,
+  requiredInvalid = false,
+  helpText = "",
+  placeholder = "Select date and time",
+  panelInFlow = false,
+  disablePastDates = false,
+}) {
+  return <StandardDateTimeField {...{ id, label, name, value, onChange, required, requiredInvalid, helpText, placeholder, panelInFlow, disablePastDates }} />;
+}
+
+function StandardDateTimeField({
   id,
   label,
   name,

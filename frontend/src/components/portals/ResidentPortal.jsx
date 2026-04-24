@@ -92,7 +92,8 @@ export default function ResidentPortal({ onLogout }) {
     });
   }, [refreshProfile]);
 
-  const name = user?.profile?.user?.username || user?.username || user?.user?.username || "Resident";
+  const name = getPreferredName(user, "Resident");
+  const greeting = getTimeGreeting();
   const expiryDate = user?.profile?.expiry_date ? new Date(`${user.profile.expiry_date}T00:00:00`) : null;
   const isExpired = !!(expiryDate && !Number.isNaN(expiryDate.getTime()) && expiryDate < new Date(new Date().setHours(0, 0, 0, 0)));
   const isVerified = !!user?.profile?.is_verified && !isExpired;
@@ -231,7 +232,7 @@ export default function ResidentPortal({ onLogout }) {
           </div>
           <div className="resident-main-meta">
             <div className="user-chip">
-              <div className="user-name">{name}</div>
+              <div className="user-name">{greeting}, {name}</div>
               <div className="user-role">{role || "Resident"}</div>
             </div>
           </div>
@@ -300,4 +301,26 @@ export default function ResidentPortal({ onLogout }) {
       </section>
     </div>
   );
+}
+
+function getTimeGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function getPreferredName(user, fallback) {
+  const candidate =
+    user?.profile?.user?.first_name ||
+    user?.first_name ||
+    user?.user?.first_name ||
+    user?.profile?.full_name ||
+    user?.full_name ||
+    user?.user?.full_name ||
+    user?.profile?.user?.username ||
+    user?.username ||
+    user?.user?.username ||
+    "";
+  return String(candidate || "").trim() || fallback;
 }
