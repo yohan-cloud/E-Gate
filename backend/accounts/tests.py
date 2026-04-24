@@ -70,6 +70,117 @@ class AccountsFlowTests(TestCase):
         self.assertIn("access", tokens)
         self.assertIn("refresh", tokens)
 
+    def test_admin_can_register_gate_operator_and_gate_operator_can_login(self):
+        res = self.client.post(
+            "/api/accounts/register/gate-operator/",
+            {
+                "full_name": "Gate Test",
+                "username": "gate_test",
+                "password": "GateFlow!234",
+                "email": "gate@example.com",
+                "contact_number": "09171234560",
+                "is_active": True,
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(res.data["user"]["is_gate_operator"])
+        self.assertEqual(res.data["user"]["full_name"], "Gate Test")
+        self.assertEqual(res.data["user"]["contact_number"], "09171234560")
+
+        self.client.force_authenticate(user=None)
+        res = self.client.post(
+            "/api/accounts/login/admin/",
+            {"username": "gate_test", "password": "GateFlow!234"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data.get("meta", {}).get("role"), "GateOperator")
+        tokens = res.data.get("tokens", {})
+        self.assertIn("access", tokens)
+        self.assertIn("refresh", tokens)
+
+    def test_unified_login_routes_admin_to_administrator_role(self):
+        self.client.force_authenticate(user=None)
+        res = self.client.post(
+            "/api/accounts/login/",
+            {"username": "admin_for_tests", "password": "AdminFlow!234"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data.get("meta", {}).get("role"), "Administrator")
+
+    def test_unified_login_routes_gate_operator_to_gate_role(self):
+        self.client.post(
+            "/api/accounts/register/gate-operator/",
+            {
+                "full_name": "Gate Unified",
+                "username": "gate_unified",
+                "password": "GateFlow!234",
+                "email": "gate-unified@example.com",
+                "contact_number": "09171234561",
+            },
+            format="json",
+        )
+        self.client.force_authenticate(user=None)
+        res = self.client.post(
+            "/api/accounts/login/",
+            {"username": "gate_unified", "password": "GateFlow!234"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data.get("meta", {}).get("role"), "GateOperator")
+
+    def test_admin_can_list_manage_and_delete_gate_operator(self):
+        create_res = self.client.post(
+            "/api/accounts/register/gate-operator/",
+            {
+                "full_name": "Gate Manage",
+                "username": "gate_manage",
+                "password": "GateFlow!234",
+                "email": "gate-manage@example.com",
+                "contact_number": "09171234562",
+                "is_active": True,
+            },
+            format="json",
+        )
+        self.assertEqual(create_res.status_code, status.HTTP_201_CREATED)
+        gate_id = create_res.data["user"]["id"]
+
+        list_res = self.client.get("/api/accounts/gate-operators/")
+        self.assertEqual(list_res.status_code, status.HTTP_200_OK)
+        self.assertTrue(any(row["username"] == "gate_manage" for row in list_res.data))
+        managed_row = next(row for row in list_res.data if row["username"] == "gate_manage")
+        self.assertEqual(managed_row["full_name"], "Gate Manage")
+        self.assertEqual(managed_row["contact_number"], "09171234562")
+
+        reset_res = self.client.post(
+            f"/api/accounts/gate-operators/{gate_id}/reset-password/",
+            {"temporary_password": "TemporaryGate!234"},
+            format="json",
+        )
+        self.assertEqual(reset_res.status_code, status.HTTP_200_OK)
+
+        deactivate_res = self.client.post(
+            f"/api/accounts/gate-operators/{gate_id}/set-active/",
+            {"is_active": False, "reason": "Left gate operations"},
+            format="json",
+        )
+        self.assertEqual(deactivate_res.status_code, status.HTTP_200_OK)
+        self.assertFalse(get_user_model().objects.get(id=gate_id).is_active)
+
+        reactivate_res = self.client.post(
+            f"/api/accounts/gate-operators/{gate_id}/set-active/",
+            {"is_active": True},
+            format="json",
+        )
+        self.assertEqual(reactivate_res.status_code, status.HTTP_200_OK)
+        self.assertTrue(get_user_model().objects.get(id=gate_id).is_active)
+
+        delete_res = self.client.delete(f"/api/accounts/gate-operators/{gate_id}/delete/")
+        self.assertEqual(delete_res.status_code, status.HTTP_200_OK)
+        self.assertFalse(get_user_model().objects.filter(id=gate_id).exists())
+
     def test_resident_register_and_login(self):
         # Authenticate as admin to register a resident
         self.client.force_authenticate(user=self.admin)
@@ -134,6 +245,31 @@ class AccountsFlowTests(TestCase):
         )
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertIn("access", res.data.get("tokens", {}))
+
+    def test_unified_login_routes_resident_to_resident_role(self):
+        self.client.force_authenticate(user=self.admin)
+        res = self.client.post(
+            "/api/accounts/register/resident/",
+            {
+                "username": "res_unified",
+                "password": "ResidentFlow!234",
+                "email": "res_unified@example.com",
+                "address": "Block 3 Lot 4",
+                "birthdate": "2000-01-01",
+                "phone_number": "09171234564",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.client.force_authenticate(user=None)
+
+        res = self.client.post(
+            "/api/accounts/login/",
+            {"username": "res_unified", "password": "ResidentFlow!234"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data.get("meta", {}).get("role"), "Resident")
 
     def test_deactivated_resident_cannot_log_in(self):
         self.client.force_authenticate(user=self.admin)
@@ -431,6 +567,48 @@ class PasswordResetEmailTests(TestCase):
         )
         self.assertEqual(login_res.status_code, status.HTTP_200_OK)
         self.assertIn("access", login_res.data.get("tokens", {}))
+
+    def test_gate_operator_password_reset_and_login_work(self):
+        User = get_user_model()
+        User.objects.create_user(
+            username="gate_reset",
+            password="GateReset!234",
+            email="gate@example.com",
+            is_gate_operator=True,
+        )
+
+        request_res = self.client.post(
+            "/api/accounts/password/otp/request/",
+            {"username": "GATE_RESET", "account_type": "gate"},
+            format="json",
+        )
+        self.assertEqual(request_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["gate@example.com"])
+
+        body = mail.outbox[0].body
+        code_line = next(line for line in body.splitlines() if "password reset code is:" in line.lower())
+        code = code_line.rsplit(":", 1)[-1].strip()
+
+        verify_res = self.client.post(
+            "/api/accounts/password/otp/verify/",
+            {
+                "username": "GATE_RESET",
+                "account_type": "gate",
+                "code": code,
+                "new_password": "UpdatedGate!234",
+            },
+            format="json",
+        )
+        self.assertEqual(verify_res.status_code, status.HTTP_200_OK)
+
+        login_res = self.client.post(
+            "/api/accounts/login/admin/",
+            {"username": "GATE_RESET", "password": "UpdatedGate!234"},
+            format="json",
+        )
+        self.assertEqual(login_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(login_res.data.get("meta", {}).get("role"), "GateOperator")
 
 
 @override_settings(

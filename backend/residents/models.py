@@ -15,6 +15,7 @@ class User(AbstractUser):
     is_admin = models.BooleanField(default=False)
     is_gate_operator = models.BooleanField(default=False)
     must_change_password = models.BooleanField(default=False)
+    contact_number = models.CharField(max_length=20, blank=True, default="")
 
 
 class ResidentProfile(models.Model):

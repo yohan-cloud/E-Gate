@@ -17,7 +17,7 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import ResidentRegisterSerializer, AdminRegisterSerializer, LoginSerializer
+from .serializers import ResidentRegisterSerializer, AdminRegisterSerializer, GateOperatorRegisterSerializer, LoginSerializer
 from .utils import generate_token_response as unified_generate_token_response
 from .permissions import IsAdminUserRole
 from accounts.models import PasswordResetCode
@@ -69,6 +69,67 @@ def find_user_by_username_case_insensitive(raw_username, **filters):
     if len(matches) == 1:
         return matches[0]
     return None
+
+
+def build_login_payload(user, request, username_for_logs=None):
+    if getattr(user, "is_resident", False):
+        profile = getattr(user, "profile", None)
+        if getattr(profile, "deactivated_at", None):
+            return None, Response(
+                {"error": "This resident account is deactivated. Please contact the admin."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        profile_data = None
+        if profile is not None:
+            profile_data = {
+                "barangay_id": str(profile.barangay_id),
+                "address": profile.address,
+                "birthdate": str(profile.birthdate),
+                "date_registered": str(profile.date_registered),
+                "expiry_date": str(profile.expiry_date),
+            }
+
+        response_data = unified_generate_token_response(
+            user,
+            message="Resident login successful",
+            role="Resident",
+            profile_data=profile_data,
+        )
+        audit_log(
+            request,
+            actor=user,
+            action="login_success",
+            target_type="auth",
+            target_id=user.id,
+            target_label=user.username,
+            metadata={"role": "Resident"},
+        )
+        return response_data, None
+
+    if getattr(user, "is_admin", False) or getattr(user, "is_gate_operator", False):
+        role = "Administrator" if getattr(user, "is_admin", False) else "GateOperator"
+        logger.info(
+            f"[ADMIN LOGIN SUCCESS] Admin/Gate: {username_for_logs or user.username}, "
+            f"Role={role}, Time: {timezone.now()}"
+        )
+        response_data = unified_generate_token_response(
+            user,
+            message="Admin login successful" if role == "Administrator" else "Gate Operator login successful",
+            role=role,
+        )
+        audit_log(
+            request,
+            actor=user,
+            action="login_success",
+            target_type="auth",
+            target_id=user.id,
+            target_label=user.username,
+            metadata={"role": role},
+        )
+        return response_data, None
+
+    return None, Response({"error": "Access denied: Account role is not supported"}, status=status.HTTP_403_FORBIDDEN)
 
 
 # Register Resident
@@ -134,6 +195,169 @@ def register_admin(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, IsAdminUserRole])
+def register_gate_operator(request):
+    """
+    Registers a new gate operator account for gate portal access.
+    """
+    serializer = GateOperatorRegisterSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        audit_log(
+            request,
+            actor=request.user,
+            action="gate_operator_create",
+            target_type="gate_operator_account",
+            target_id=user.id,
+            target_label=user.username,
+            metadata={"email": user.email or ""},
+        )
+        return Response(
+            {
+                "message": "Gate operator account created successfully",
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "full_name": user.get_full_name().strip(),
+                    "email": user.email,
+                    "contact_number": getattr(user, "contact_number", "") or "",
+                    "is_gate_operator": getattr(user, "is_gate_operator", False),
+                    "is_active": user.is_active,
+                },
+            },
+            status=status.HTTP_201_CREATED,
+        )
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsAdminUserRole])
+def list_gate_operators(request):
+    query = (request.query_params.get("q") or "").strip()
+    users = User.objects.filter(is_gate_operator=True, is_admin=False, is_resident=False).order_by("-date_joined")
+    if query:
+        users = users.filter(
+            username__icontains=query,
+        ) | users.filter(
+            email__icontains=query,
+        ) | users.filter(
+            first_name__icontains=query,
+        ) | users.filter(
+            last_name__icontains=query,
+        ) | users.filter(
+            contact_number__icontains=query,
+        )
+    data = [
+        {
+            "id": user.id,
+            "full_name": user.get_full_name().strip() or user.username,
+            "username": user.username,
+            "email": user.email,
+            "contact_number": getattr(user, "contact_number", "") or "",
+            "is_active": user.is_active,
+            "date_joined": str(user.date_joined),
+            "last_login": str(user.last_login) if user.last_login else None,
+        }
+        for user in users.distinct()
+    ]
+    audit_log(
+        request,
+        actor=request.user,
+        action="gate_operator_list_view",
+        target_type="gate_operator_account",
+        target_label="gate operator directory",
+        metadata={"query": query, "result_count": len(data)},
+    )
+    return Response(data, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, IsAdminUserRole])
+def reset_gate_operator_password(request, user_id):
+    user = User.objects.filter(id=user_id, is_gate_operator=True, is_admin=False, is_resident=False).first()
+    if not user:
+        return Response({"error": "Gate operator not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    temporary_password = (request.data.get("temporary_password") or "").strip()
+    if not temporary_password:
+        return Response({"error": "Temporary password is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        validate_password(temporary_password, user=user)
+    except Exception as exc:
+        return Response(
+            {"error": list(getattr(exc, "messages", ["Password invalid."]))},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user.set_password(temporary_password)
+    user.must_change_password = True
+    user.save(update_fields=["password", "must_change_password"])
+    PasswordResetCode.objects.filter(user=user, used=False).update(used=True)
+    audit_log(
+        request,
+        actor=request.user,
+        action="gate_operator_password_reset",
+        target_type="gate_operator_account",
+        target_id=user.id,
+        target_label=user.username,
+        metadata={"must_change_password": True},
+    )
+    return Response(
+        {"message": "Temporary password set. The gate operator must change it after login.", "must_change_password": True},
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, IsAdminUserRole])
+def toggle_gate_operator_active(request, user_id):
+    user = User.objects.filter(id=user_id, is_gate_operator=True, is_admin=False, is_resident=False).first()
+    if not user:
+        return Response({"error": "Gate operator not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    next_active = bool(request.data.get("is_active", not user.is_active))
+    reason = (request.data.get("reason") or "").strip()
+    if not next_active and not reason:
+        return Response({"error": "Reason is required when deactivating a gate operator."}, status=status.HTTP_400_BAD_REQUEST)
+    user.is_active = next_active
+    user.save(update_fields=["is_active"])
+    audit_log(
+        request,
+        actor=request.user,
+        action="gate_operator_reactivate" if next_active else "gate_operator_deactivate",
+        target_type="gate_operator_account",
+        target_id=user.id,
+        target_label=user.username,
+        metadata={"is_active": next_active, "reason": reason},
+    )
+    return Response(
+        {"message": "Gate operator activated." if next_active else "Gate operator deactivated.", "is_active": next_active},
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated, IsAdminUserRole])
+def delete_gate_operator(request, user_id):
+    user = User.objects.filter(id=user_id, is_gate_operator=True, is_admin=False, is_resident=False).first()
+    if not user:
+        return Response({"error": "Gate operator not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    audit_log(
+        request,
+        actor=request.user,
+        action="gate_operator_delete",
+        target_type="gate_operator_account",
+        target_id=user.id,
+        target_label=user.username,
+        metadata={"email": user.email or ""},
+    )
+    user.delete()
+    return Response({"message": "Gate operator deleted."}, status=status.HTTP_200_OK)
+
+
 # Login Resident
 @api_view(["POST"])
 def login_resident(request):
@@ -148,43 +372,17 @@ def login_resident(request):
     resident = find_user_by_username_case_insensitive(username, is_resident=True)
     if not resident:
         return Response({"error": "Invalid username or password"}, status=status.HTTP_401_UNAUTHORIZED)
-    profile = getattr(resident, "profile", None)
-    if getattr(profile, "deactivated_at", None):
+    if getattr(getattr(resident, "profile", None), "deactivated_at", None):
         return Response({"error": "This resident account is deactivated. Please contact the admin."}, status=status.HTTP_403_FORBIDDEN)
-
     user = authenticate(username=resident.username, password=password)
 
     if not user:
         return Response({"error": "Invalid username or password"}, status=status.HTTP_401_UNAUTHORIZED)
     if not getattr(user, "is_resident", False):
         return Response({"error": "Access denied: Not a resident account"}, status=status.HTTP_403_FORBIDDEN)
-
-    # Fetch resident profile
-    profile_data = None
-    if profile is not None:
-        profile_data = {
-            "barangay_id": str(profile.barangay_id),
-            "address": profile.address,
-            "birthdate": str(profile.birthdate),
-            "date_registered": str(profile.date_registered),
-            "expiry_date": str(profile.expiry_date),
-        }
-
-    response_data = unified_generate_token_response(
-        user,
-        message="Resident login successful",
-        role="Resident",
-        profile_data=profile_data,
-    )
-    audit_log(
-        request,
-        actor=user,
-        action="login_success",
-        target_type="auth",
-        target_id=user.id,
-        target_label=user.username,
-        metadata={"role": "Resident"},
-    )
+    response_data, error_response = build_login_payload(user, request, username_for_logs=username)
+    if error_response is not None:
+        return error_response
     return Response(response_data, status=status.HTTP_200_OK)
 
 
@@ -210,23 +408,38 @@ def login_admin(request):
         logger.warning(f"[UNAUTHORIZED ADMIN LOGIN] Username: {username}, Time: {timezone.now()}")
         return Response({"error": "Access denied: Not an admin account"}, status=status.HTTP_403_FORBIDDEN)
 
-    role = "Administrator" if getattr(user, "is_admin", False) else "GateOperator"
-    logger.info(f"[ADMIN LOGIN SUCCESS] Admin/Gate: {username}, Role={role}, Time: {timezone.now()}")
+    response_data, error_response = build_login_payload(user, request, username_for_logs=username)
+    if error_response is not None:
+        return error_response
+    return Response(response_data, status=status.HTTP_200_OK)
 
-    response_data = unified_generate_token_response(
-        user,
-        message="Admin login successful" if role == "Administrator" else "Gate Operator login successful",
-        role=role,
-    )
-    audit_log(
-        request,
-        actor=user,
-        action="login_success",
-        target_type="auth",
-        target_id=user.id,
-        target_label=user.username,
-        metadata={"role": role},
-    )
+
+@api_view(["POST"])
+def login_user(request):
+    """
+    Authenticates any supported account type using a single username/password login flow.
+    """
+    serializer = LoginSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    username = serializer.validated_data["username"].strip()
+    password = serializer.validated_data["password"]
+    candidate = find_user_by_username_case_insensitive(username)
+    if candidate and getattr(candidate, "is_resident", False):
+        if getattr(getattr(candidate, "profile", None), "deactivated_at", None):
+            return Response(
+                {"error": "This resident account is deactivated. Please contact the admin."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+    user = authenticate(username=candidate.username, password=password) if candidate else None
+
+    if not user:
+        logger.warning(f"[FAILED UNIFIED LOGIN] Username: {username}, Time: {timezone.now()}")
+        return Response({"error": "Invalid username or password"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    response_data, error_response = build_login_payload(user, request, username_for_logs=username)
+    if error_response is not None:
+        return error_response
     return Response(response_data, status=status.HTTP_200_OK)
 
 

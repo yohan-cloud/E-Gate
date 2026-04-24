@@ -259,10 +259,6 @@ export default function ResidentLogin({ onLogin, redirectTo = "/resident" }) {
     <div className="login-shell valo-login-shell">
       <div className="valo-login-frame">
         <section className="valo-login-panel">
-          <Link className="valo-login-gate-link" to="/gate">
-            <span>Gate Portal</span>
-          </Link>
-
           <div className="valo-login-card">
             <div className="valo-login-brand-row">
               <img className="valo-login-logo" src="/barangay-663a-logo.png" alt="Barangay 663-A logo" />
@@ -273,7 +269,7 @@ export default function ResidentLogin({ onLogin, redirectTo = "/resident" }) {
             </div>
 
             <div className="valo-login-header">
-              <h1 className="valo-login-title">{resetMode ? "Account Recovery" : "Resident Login"}</h1>
+              <h1 className="valo-login-title">{resetMode ? "Account Recovery" : "Welcome"}</h1>
               <p className="valo-login-subtitle">
                 {resetMode
                   ? "Recover your access using your registered account details."

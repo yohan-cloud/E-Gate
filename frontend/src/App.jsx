@@ -2,12 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
 import { AUTH_STATE_CHANGED_EVENT, clearStoredAuth } from "./api";
-import AdminLogin from "./components/AdminLogin";
 import ToastContainer from "./components/common/ToastContainer";
-import ResidentLogin from "./components/ResidentLogin";
 import AdminPortal from "./components/portals/AdminPortal";
 import GatePortal from "./components/portals/GatePortal";
 import ResidentPortal from "./components/portals/ResidentPortal";
+import UnifiedLogin from "./components/UnifiedLogin";
 
 function readStoredAuth() {
   return {
@@ -16,16 +15,27 @@ function readStoredAuth() {
   };
 }
 
-function homeForRole(role) {
-  if (role === "Resident") return "/resident";
-  if (role === "GateOperator") return "/gate";
-  return "/admin";
+function dashboardForRole(role) {
+  if (role === "Resident") return "/resident/dashboard";
+  if (role === "GateOperator") return "/gate/dashboard";
+  return "/admin/dashboard";
+}
+
+function ProtectedRoute({ isLoggedIn, role, allowedRoles, children }) {
+  if (!isLoggedIn) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!allowedRoles.includes(role)) {
+    return <Navigate to={dashboardForRole(role)} replace />;
+  }
+
+  return children;
 }
 
 export default function App() {
   const navigate = useNavigate();
   const [{ token, role }, setAuthState] = useState(readStoredAuth);
-
   const isLoggedIn = !!token;
 
   const syncAuthState = () => {
@@ -50,83 +60,58 @@ export default function App() {
     try {
       localStorage.removeItem("user");
       localStorage.removeItem("username");
-    } catch {
-      return;
     } finally {
       setAuthState({ token: "", role: "" });
-      navigate("/");
+      navigate("/login", { replace: true });
     }
   };
 
-  const defaultHome = useMemo(() => homeForRole(role), [role]);
+  const defaultDashboard = useMemo(() => dashboardForRole(role), [role]);
 
   return (
     <div className="app-wrapper">
       <ToastContainer />
       <Routes>
-        <Route path="/" element={isLoggedIn ? <Navigate to={defaultHome} replace /> : <Navigate to="/resident/login" replace />} />
+        <Route path="/" element={<Navigate to={isLoggedIn ? defaultDashboard : "/login"} replace />} />
         <Route
-          path="/admin/login"
-          element={
-            isLoggedIn ? (
-              <Navigate to={role === "Administrator" ? "/admin" : defaultHome} replace />
-            ) : (
-              <AdminLogin
-                onLogin={syncAuthState}
-                redirectTo="/admin"
-                title="Admin Login"
-                helper="Use the administrator portal for events, analytics, and resident operations."
-                backLinkTo="/resident/login"
-                backLinkLabel="Resident Login"
-              />
-            )
-          }
+          path="/login"
+          element={isLoggedIn ? <Navigate to={defaultDashboard} replace /> : <UnifiedLogin onLogin={syncAuthState} />}
         />
+
+        <Route path="/admin/login" element={<Navigate to="/login" replace />} />
+        <Route path="/resident/login" element={<Navigate to="/login" replace />} />
+        <Route path="/gate/login" element={<Navigate to="/login" replace />} />
+
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/resident" element={<Navigate to="/resident/dashboard" replace />} />
+        <Route path="/gate" element={<Navigate to="/gate/dashboard" replace />} />
+
         <Route
-          path="/resident/login"
-          element={
-            isLoggedIn ? (
-              <Navigate to={role === "Resident" ? "/resident" : defaultHome} replace />
-            ) : (
-              <ResidentLogin onLogin={syncAuthState} redirectTo="/resident" />
-            )
-          }
-        />
-        <Route
-          path="/gate/login"
-          element={<Navigate to="/gate" replace />}
-        />
-        <Route
-          path="/admin"
-          element={
-            !isLoggedIn ? (
-              <Navigate to="/admin/login" replace />
-            ) : role !== "Administrator" ? (
-              <Navigate to={defaultHome} replace />
-            ) : (
+          path="/admin/dashboard"
+          element={(
+            <ProtectedRoute isLoggedIn={isLoggedIn} role={role} allowedRoles={["Administrator"]}>
               <AdminPortal onLogout={handleLogout} />
-            )
-          }
+            </ProtectedRoute>
+          )}
         />
         <Route
-          path="/resident"
-          element={
-            !isLoggedIn ? (
-              <Navigate to="/resident/login" replace />
-            ) : role !== "Resident" ? (
-              <Navigate to={defaultHome} replace />
-            ) : (
+          path="/resident/dashboard"
+          element={(
+            <ProtectedRoute isLoggedIn={isLoggedIn} role={role} allowedRoles={["Resident"]}>
               <ResidentPortal onLogout={handleLogout} />
-            )
-          }
+            </ProtectedRoute>
+          )}
         />
         <Route
-          path="/gate"
-          element={
-            <GatePortal onExit={() => navigate("/")} />
-          }
+          path="/gate/dashboard"
+          element={(
+            <ProtectedRoute isLoggedIn={isLoggedIn} role={role} allowedRoles={["Administrator", "GateOperator"]}>
+              <GatePortal onExit={handleLogout} />
+            </ProtectedRoute>
+          )}
         />
-        <Route path="*" element={<Navigate to={isLoggedIn ? defaultHome : "/resident/login"} replace />} />
+
+        <Route path="*" element={<Navigate to={isLoggedIn ? defaultDashboard : "/login"} replace />} />
       </Routes>
     </div>
   );

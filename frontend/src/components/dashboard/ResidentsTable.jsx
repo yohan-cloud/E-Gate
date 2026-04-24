@@ -55,6 +55,19 @@ function calcAge(birthdate) {
   }
 }
 
+function isExpiredResident(expiryDate) {
+  if (!expiryDate) return false;
+  try {
+    const expiry = new Date(`${expiryDate}T00:00:00`);
+    if (Number.isNaN(expiry.getTime())) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return expiry < today;
+  } catch {
+    return false;
+  }
+}
+
 function getResidentAudiencePills(age, residentCategory, voterStatus) {
   const pills = [];
 
@@ -488,6 +501,7 @@ export default function ResidentsTable() {
             const displayRow = revealed || r;
             const age = calcAge(r.birthdate);
             const isVerified = Boolean(r.is_verified);
+            const isExpired = isExpiredResident(r.expiry_date);
             const isDeactivated = Boolean(r.is_deactivated);
             const userId = r.user?.id;
             const fullName = `${r.user?.first_name || ""} ${r.user?.last_name || ""}`.trim() || r.user?.username || "Resident";
@@ -529,6 +543,11 @@ export default function ResidentsTable() {
                       <span style={badgeStyle(isVerified ? "#dcfce7" : "#fee2e2", isVerified ? "#166534" : "#991b1b")}>
                         {isVerified ? "verified" : "not verified"}
                       </span>
+                      {isExpired ? (
+                        <span style={badgeStyle("#fee2e2", "#991b1b")}>
+                          expired
+                        </span>
+                      ) : null}
                     </div>
                     <div className="resident-summary-line" title={getResidentAudiencePills(age, r.resident_category, r.voter_status).map((pill) => pill.label).join(", ")}>
                       <span>Age: {age !== null ? age : "N/A"}</span>

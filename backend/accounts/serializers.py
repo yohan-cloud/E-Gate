@@ -313,6 +313,83 @@ class AdminRegisterSerializer(serializers.ModelSerializer):
 
 
 # 🔐 Login Serializer (shared by both Resident and Admin)
+class GateOperatorRegisterSerializer(serializers.ModelSerializer):
+    """
+    Handles gate operator account creation with gate-only permissions.
+    """
+
+    full_name = serializers.CharField(required=True, allow_blank=False)
+    contact_number = serializers.CharField(required=False, allow_blank=True)
+    is_active = serializers.BooleanField(required=False, default=True)
+
+    class Meta:
+        model = User
+        fields = ["full_name", "username", "email", "contact_number", "password", "is_active"]
+        extra_kwargs = {
+            "password": {"write_only": True},
+            "email": {"required": False, "allow_blank": True},
+        }
+
+    def validate_full_name(self, value):
+        cleaned = " ".join((value or "").strip().split())
+        if len(cleaned) < 3:
+            raise serializers.ValidationError("Full name must be at least 3 characters long.")
+        return cleaned
+
+    def validate_email(self, value):
+        return (value or "").strip().lower()
+
+    def validate_contact_number(self, value):
+        digits = re.sub(r"\D", "", value or "")
+        if digits and (len(digits) < 7 or len(digits) > 15):
+            raise serializers.ValidationError("Contact number must be 7-15 digits.")
+        return digits
+
+    def validate(self, attrs):
+        pwd = attrs.get("password")
+        username = attrs.get("username")
+        email = attrs.get("email")
+        full_name = attrs.get("full_name")
+        contact_number = attrs.get("contact_number", "")
+        temp_user = User(
+            username=username,
+            email=email,
+            first_name=full_name,
+            contact_number=contact_number,
+            is_gate_operator=True,
+        )
+        try:
+            validate_password(pwd, user=temp_user)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError({"password": list(e.messages)})
+        return attrs
+
+    def create(self, validated_data):
+        full_name = validated_data.pop("full_name", "").strip()
+        contact_number = validated_data.pop("contact_number", "")
+        is_active = validated_data.pop("is_active", True)
+        first_name = full_name
+        last_name = ""
+        if full_name:
+            parts = full_name.split()
+            if len(parts) > 1:
+                first_name = " ".join(parts[:-1])
+                last_name = parts[-1]
+        with transaction.atomic():
+            return User.objects.create_user(
+                username=validated_data["username"],
+                password=validated_data["password"],
+                email=validated_data.get("email", ""),
+                first_name=first_name,
+                last_name=last_name,
+                contact_number=contact_number,
+                is_gate_operator=True,
+                is_staff=False,
+                is_superuser=False,
+                is_active=is_active,
+            )
+
+
 class LoginSerializer(serializers.Serializer):
     """
     Basic login input validation for username/password.

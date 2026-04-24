@@ -293,7 +293,7 @@ export default function AdminLogin({
     <div className="login-shell valo-login-shell">
       <div className="valo-login-frame">
         <section className="valo-login-panel">
-          <Link className="valo-login-gate-link" to="/gate">
+          <Link className="valo-login-gate-link" to="/gate/login">
             <span>Gate Portal</span>
           </Link>
 

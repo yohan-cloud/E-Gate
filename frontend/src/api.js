@@ -9,7 +9,7 @@ export const api = axios.create({
 
 export const AUTH_STATE_CHANGED_EVENT = "egate-auth-changed";
 
-function notifyAuthChanged() {
+export function notifyAuthChanged() {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGED_EVENT));
   }

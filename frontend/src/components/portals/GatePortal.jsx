@@ -204,7 +204,7 @@ export default function GatePortal({ onExit }) {
             <div className="user-name">{activeUsername || "Guard Desk"}</div>
             <div className="user-role">{isAuthenticatedGateUser ? activeRole : "Public gate mode"}</div>
           </div>
-          <button className="logout-pill gate-exit" onClick={onExit}>Back</button>
+          <button className="logout-pill gate-exit" onClick={onExit}>Logout</button>
         </div>
       </aside>
 

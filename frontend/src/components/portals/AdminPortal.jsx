@@ -9,6 +9,7 @@ import AdminOverview from "../dashboard/AdminOverview";
 import CreateEventForm from "../dashboard/CreateEventForm";
 import CreateResidentForm from "../dashboard/CreateResidentForm";
 import DashboardHome from "../dashboard/DashboardHome";
+import GateAccounts from "../dashboard/GateAccounts";
 import Guests from "../dashboard/Guests";
 import ResidentsTable from "../dashboard/ResidentsTable";
 import Settings from "../dashboard/Settings";
@@ -26,6 +27,7 @@ const ADMIN_NAV_ITEMS = [
   { key: "audit", label: "Audit Trail", eyebrow: "Security" },
   { key: "createEvent", label: "Event Creation", eyebrow: "New" },
   { key: "createResident", label: "Resident Registration", eyebrow: "Onboard" },
+  { key: "gateAccounts", label: "Gate Accounts", eyebrow: "Access" },
   { key: "guests", label: "Guest Appointment", eyebrow: "Visitors" },
   { key: "settings", label: "Settings", eyebrow: "System" },
 ];
@@ -196,6 +198,8 @@ export default function AdminPortal({ onLogout }) {
             <CreateEventForm onCreated={() => setViewMode("dashboard")} />
           ) : viewMode === "createResident" ? (
             <CreateResidentForm />
+          ) : viewMode === "gateAccounts" ? (
+            <GateAccounts />
           ) : viewMode === "guests" ? (
             <Guests />
           ) : viewMode === "settings" ? (

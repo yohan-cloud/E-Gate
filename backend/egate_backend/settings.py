@@ -24,7 +24,8 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY') or ('dev-insecure-key' if DEBUG else
 if not SECRET_KEY:
     raise ValueError("DJANGO_SECRET_KEY must be set when DJANGO_DEBUG is false.")
 
-ALLOW_PUBLIC_GATE = os.getenv('ALLOW_PUBLIC_GATE', 'true' if DEBUG else 'false').lower() == 'true'
+# Secure by default: only enable public gate/kiosk mode when explicitly requested.
+ALLOW_PUBLIC_GATE = os.getenv('ALLOW_PUBLIC_GATE', 'false').lower() == 'true'
 
 
 def env_bool(name: str, default: bool = False) -> bool:
