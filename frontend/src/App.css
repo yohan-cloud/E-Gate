@@ -386,6 +386,73 @@ input[type="date"] { color-scheme: dark; }
   color: #991b1b;
 }
 
+.scanner-result-card {
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.scanner-result-success {
+  border-color: rgba(34, 197, 94, 0.38);
+}
+
+.scanner-result-warning {
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.scanner-result-error {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.scanner-result-pop.scanner-result-success {
+  animation: scannerPopSuccess 820ms ease-out;
+}
+
+.scanner-result-pop.scanner-result-warning {
+  animation: scannerPopWarning 820ms ease-out;
+}
+
+.scanner-result-pop.scanner-result-error {
+  animation: scannerPopError 820ms ease-out;
+}
+
+@keyframes scannerPopSuccess {
+  0% {
+    background: rgba(34, 197, 94, 0.18);
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18), 0 18px 38px rgba(22, 101, 52, 0.16);
+    transform: scale(1.006);
+  }
+  100% {
+    background: rgba(240, 253, 244, 0.68);
+    box-shadow: none;
+    transform: scale(1);
+  }
+}
+
+@keyframes scannerPopWarning {
+  0% {
+    background: rgba(245, 158, 11, 0.2);
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2), 0 18px 38px rgba(146, 64, 14, 0.16);
+    transform: scale(1.006);
+  }
+  100% {
+    background: rgba(255, 251, 235, 0.62);
+    box-shadow: none;
+    transform: scale(1);
+  }
+}
+
+@keyframes scannerPopError {
+  0% {
+    background: rgba(239, 68, 68, 0.16);
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.16), 0 18px 38px rgba(153, 27, 27, 0.14);
+    transform: scale(1.006);
+  }
+  100% {
+    background: rgba(254, 242, 242, 0.58);
+    box-shadow: none;
+    transform: scale(1);
+  }
+}
+
 .scanner-history-list {
   display: grid;
   gap: 8px;
@@ -543,6 +610,7 @@ input[type="date"] { color-scheme: dark; }
   padding-top: 6px;
   border-top: 1px solid rgba(146, 181, 157, 0.24);
   background: linear-gradient(180deg, rgba(244, 255, 246, 0.92), rgba(228, 244, 232, 0.98));
+  overflow: hidden;
 }
 
 .admin-brand .brand-sub,
@@ -565,7 +633,7 @@ input[type="date"] { color-scheme: dark; }
   gap: 5px;
   flex: 1 1 auto;
   min-height: 0;
-  max-height: calc(100vh - 9rem);
+  max-height: calc(100vh - 13rem);
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 4px;

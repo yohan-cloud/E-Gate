@@ -291,11 +291,13 @@ class EventAttendanceSerializer(serializers.ModelSerializer):
     event_capacity = serializers.IntegerField(source='registration.event.capacity', read_only=True, allow_null=True)
     event_registrations_count = serializers.SerializerMethodField(read_only=True)
     resident_username = serializers.CharField(source='registration.resident.username', read_only=True)
+    resident_full_name = serializers.SerializerMethodField(read_only=True)
     verified_by = serializers.SerializerMethodField(read_only=True)
     barangay_id = serializers.SerializerMethodField(read_only=True)
     resident_address = serializers.SerializerMethodField(read_only=True)
     resident_zone = serializers.SerializerMethodField(read_only=True)
     resident_verified = serializers.SerializerMethodField(read_only=True)
+    resident_birthdate = serializers.SerializerMethodField(read_only=True)
     resident_expiry_date = serializers.SerializerMethodField(read_only=True)
     resident_photo = serializers.SerializerMethodField(read_only=True)
     resident_face_image = serializers.SerializerMethodField(read_only=True)
@@ -309,12 +311,14 @@ class EventAttendanceSerializer(serializers.ModelSerializer):
             'event_capacity',
             'event_registrations_count',
             'resident_username',
+            'resident_full_name',
             'checked_in_at',
             'verified_by',
             'barangay_id',
             'resident_address',
             'resident_zone',
             'resident_verified',
+            'resident_birthdate',
             'resident_expiry_date',
             'resident_photo',
             'resident_face_image',
@@ -359,6 +363,14 @@ class EventAttendanceSerializer(serializers.ModelSerializer):
         except Exception:
             return 0
 
+    def get_resident_full_name(self, obj):
+        try:
+            user = obj.registration.resident
+            full_name = f"{(user.first_name or '').strip()} {(user.last_name or '').strip()}".strip()
+            return full_name or user.username
+        except Exception:
+            return None
+
     def get_resident_address(self, obj):
         try:
             return obj.registration.resident.profile.address
@@ -378,6 +390,13 @@ class EventAttendanceSerializer(serializers.ModelSerializer):
             return bool(obj.registration.resident.profile.is_verified)
         except Exception:
             return False
+
+    def get_resident_birthdate(self, obj):
+        try:
+            birthdate = obj.registration.resident.profile.birthdate
+            return birthdate.isoformat() if birthdate else None
+        except Exception:
+            return None
 
     def get_resident_expiry_date(self, obj):
         try:
@@ -424,11 +443,14 @@ class EntryLogSerializer(serializers.ModelSerializer):
 
 class ResidentGateLogSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", read_only=True)
+    resident_full_name = serializers.SerializerMethodField(read_only=True)
     barangay_id = serializers.SerializerMethodField(read_only=True)
     resident_address = serializers.SerializerMethodField(read_only=True)
     resident_zone = serializers.SerializerMethodField(read_only=True)
     resident_verified = serializers.SerializerMethodField(read_only=True)
+    resident_birthdate = serializers.SerializerMethodField(read_only=True)
     resident_expiry_date = serializers.SerializerMethodField(read_only=True)
+    resident_photo = serializers.SerializerMethodField(read_only=True)
     recorded_by = serializers.CharField(source="created_by.username", read_only=True)
 
     class Meta:
@@ -436,6 +458,7 @@ class ResidentGateLogSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "username",
+            "resident_full_name",
             "barangay_id",
             "direction",
             "method",
@@ -446,8 +469,25 @@ class ResidentGateLogSerializer(serializers.ModelSerializer):
             "resident_address",
             "resident_zone",
             "resident_verified",
+            "resident_birthdate",
             "resident_expiry_date",
+            "resident_photo",
         ]
+
+    def _build_url(self, path: str):
+        if not path:
+            return None
+        request = self.context.get("request") if isinstance(self.context, dict) else None
+        if request:
+            return request.build_absolute_uri(path)
+        return path
+
+    def get_resident_full_name(self, obj):
+        try:
+            full_name = f"{(obj.user.first_name or '').strip()} {(obj.user.last_name or '').strip()}".strip()
+            return full_name or obj.user.username
+        except Exception:
+            return None
 
     def get_barangay_id(self, obj):
         try:
@@ -475,10 +515,24 @@ class ResidentGateLogSerializer(serializers.ModelSerializer):
         except Exception:
             return False
 
+    def get_resident_birthdate(self, obj):
+        try:
+            birthdate = obj.user.profile.birthdate
+            return birthdate.isoformat() if birthdate else None
+        except Exception:
+            return None
+
     def get_resident_expiry_date(self, obj):
         try:
             expiry = obj.user.profile.expiry_date
             return expiry.isoformat() if expiry else None
+        except Exception:
+            return None
+
+    def get_resident_photo(self, obj):
+        try:
+            photo = obj.user.profile.photo
+            return self._build_url(photo.url) if photo else None
         except Exception:
             return None
 

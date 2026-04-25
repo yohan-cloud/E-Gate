@@ -20,7 +20,7 @@ from django.db.models import Q, Count
 from django.db.models.functions import TruncDate
 from django.utils.dateparse import parse_datetime, parse_date
 from django.http import HttpResponse
-from datetime import datetime, time as dtime
+from datetime import datetime, time as dtime, timedelta
 import os
 import csv
 from residents.models import ResidentProfile
@@ -277,26 +277,38 @@ def reactivate_venue(request, venue_id):
     return Response(VenueSerializer(venue).data)
 
 
-def _entry_log_payload(registration, actor, method, direction, timestamp, confidence=None):
+def _build_media_url(file_field, request=None):
+    try:
+        if not file_field:
+            return None
+        url = file_field.url
+        return request.build_absolute_uri(url) if request else url
+    except Exception:
+        return None
+
+
+def _entry_log_payload(registration, actor, method, direction, timestamp, confidence=None, request=None):
     profile = getattr(registration.resident, "profile", None)
     address = getattr(profile, "address", None) if profile else None
     zone = None
     if address:
         parts = [part.strip() for part in address.split(",") if part.strip()]
         zone = parts[-1] if parts else address
+    full_name = f"{(registration.resident.first_name or '').strip()} {(registration.resident.last_name or '').strip()}".strip()
     return {
         "event_id": registration.event_id,
         "event_title": registration.event.title,
         "event_capacity": registration.event.capacity,
         "event_registrations_count": registration.event.registrations.count(),
         "resident_username": registration.resident.username,
+        "resident_full_name": full_name or registration.resident.username,
         "barangay_id": str(getattr(profile, "barangay_id", "")) if profile else None,
         "resident_address": address,
         "resident_zone": zone,
         "resident_verified": bool(getattr(profile, "is_verified", False)) if profile else False,
         "resident_birthdate": profile.birthdate.isoformat() if profile and getattr(profile, "birthdate", None) else None,
         "resident_expiry_date": profile.expiry_date.isoformat() if profile and getattr(profile, "expiry_date", None) else None,
-        "resident_photo": None,
+        "resident_photo": _build_media_url(getattr(profile, "photo", None), request),
         "resident_face_image": None,
         "verified_by": getattr(actor, "username", None),
         "checked_in_at": timestamp.isoformat() if timestamp else None,
@@ -384,6 +396,7 @@ def _record_time_out(registration, actor, request, method, raw_payload=None, con
         direction="time_out",
         timestamp=entry.created_at,
         confidence=confidence,
+        request=request,
     )
     _emit(
         "entrylog.created",
@@ -1560,14 +1573,38 @@ class AttendanceAnalyticsView(APIView):
             archived_at__isnull=True,
             deactivated_at__isnull=True,
         )
+        total_resident_profiles = ResidentProfile.objects.filter(user__is_resident=True).count()
         active_residents = active_profiles.count()
+        inactive_residents = max(total_resident_profiles - active_residents, 0)
         verified_ids = active_profiles.filter(is_verified=True).count()
+        expiring_soon_profiles = (
+            ResidentProfile.objects.select_related("user")
+            .filter(
+                user__is_resident=True,
+                expiry_date__gte=today_date,
+                expiry_date__lte=today_date + timedelta(days=30),
+                archived_at__isnull=True,
+                deactivated_at__isnull=True,
+            )
+            .order_by("expiry_date", "user__last_name", "user__first_name")[:8]
+        )
+        expiring_soon = []
+        for profile in expiring_soon_profiles:
+            user = profile.user
+            full_name = f"{(user.first_name or '').strip()} {(user.last_name or '').strip()}".strip()
+            expiring_soon.append(
+                {
+                    "id": profile.id,
+                    "username": user.username,
+                    "full_name": full_name or user.username,
+                    "expiry_date": profile.expiry_date.isoformat() if profile.expiry_date else None,
+                }
+            )
         avg_attendance_pct = 0.0
         if total_registrations:
             avg_attendance_pct = round((total_attendance / total_registrations) * 100, 1)
 
         # Simple growth: compare registrations in last 30 days vs previous 30 days
-        from datetime import timedelta
         window = timedelta(days=30)
         recent_start = timezone.now() - window
         prev_start = recent_start - window
@@ -1698,6 +1735,7 @@ class AttendanceAnalyticsView(APIView):
                 'total_attendance': total_attendance,
                 'events_this_year': events_this_year,
                 'active_residents': active_residents,
+                'inactive_residents': inactive_residents,
                 'avg_attendance': avg_attendance_pct,
                 'growth_rate': growth_rate,
                 'verified_ids': verified_ids,
@@ -1714,6 +1752,7 @@ class AttendanceAnalyticsView(APIView):
                 ],
             },
             'upcoming_events': upcoming_events,
+            'expiring_soon': expiring_soon,
             'recent_activity': [
                 {
                     **item,

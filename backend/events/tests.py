@@ -677,12 +677,28 @@ class EventsFlowTests(TestCase):
 
         latest_attendance = EventAttendance.objects.latest("checked_in_at")
         checkin_day = latest_attendance.checked_in_at.astimezone(timezone.get_current_timezone()).date().isoformat()
+        ResidentProfile.objects.filter(user=self.resident).update(expiry_date=timezone.localdate() + timedelta(days=10))
+        User = get_user_model()
+        expired_user = User.objects.create_user(
+            username="expired_metrics",
+            password="ExpiredMetrics!234",
+            is_resident=True,
+        )
+        ResidentProfile.objects.create(
+            user=expired_user,
+            address="Expired Zone",
+            birthdate="1990-01-01",
+            expiry_date=timezone.localdate() - timedelta(days=1),
+        )
 
         summary = self.client.get(
             f"/api/events/metrics/summary/?date_from={checkin_day}&date_to={checkin_day}"
         )
         self.assertEqual(summary.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(summary.data["kpis"]["total_attendance"], 1)
+        self.assertGreaterEqual(summary.data["kpis"]["active_residents"], 1)
+        self.assertGreaterEqual(summary.data["kpis"]["inactive_residents"], 1)
+        self.assertTrue(any(item.get("username") == self.resident.username for item in summary.data["expiring_soon"]))
         self.assertTrue(any(item.get("count", 0) >= 1 for item in summary.data["timeseries"]))
 
     @override_settings(ALLOW_PUBLIC_GATE=False)

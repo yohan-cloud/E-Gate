@@ -195,6 +195,8 @@ export default function FaceScanner({
           code: "duplicate",
           title: "Already Marked",
           message: duplicateMessage,
+          residentFullName: res?.data?.resident_full_name,
+          residentPhoto: res?.data?.resident_photo,
           username: res?.data?.resident_username || res?.data?.username,
           barangayId: res?.data?.barangay_id,
           eventTitle: res?.data?.event_title,
@@ -227,6 +229,8 @@ export default function FaceScanner({
               ? "Time In Recorded"
               : "Face Match Successful",
         message: res?.data?.message || successMessage,
+        residentFullName: res?.data?.resident_full_name,
+        residentPhoto: res?.data?.resident_photo,
         username: res?.data?.resident_username || res?.data?.username,
         barangayId: res?.data?.barangay_id,
         checkedInAt: res?.data?.checked_in_at || res?.data?.created_at || res?.data?.logged_at,

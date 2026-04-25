@@ -426,11 +426,31 @@ export default function GatePortal({ onExit }) {
                     </div>
                   </div>
                   {lastResult ? (
-                    <div style={{ border: "1px solid #e5e7eb", borderRadius: 14, padding: 16, background: "#fff", marginTop: 12 }}>
+                    <div
+                      style={{
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 14,
+                        padding: 16,
+                        background: "#fff",
+                        marginTop: 12,
+                      }}
+                    >
+                      <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}>
+                        <ResidentPhotoAvatar src={lastResult.residentPhoto} name={lastResult.residentFullName || lastResult.username || "Resident"} />
+                        <div>
+                          <div style={{ fontWeight: 800, color: "#0f172a" }}>
+                            {lastResult.residentFullName || lastResult.username || "Resident"}
+                          </div>
+                          {lastResult.username && lastResult.username !== lastResult.residentFullName ? (
+                            <div style={{ color: "#64748b", fontSize: 13 }}>@{lastResult.username}</div>
+                          ) : null}
+                        </div>
+                      </div>
                       <div style={{ color: resultTone, fontWeight: 700 }}>{lastResult.title || "Latest gate action"}</div>
                       <div style={{ marginTop: 6 }}>{lastResult.message}</div>
                       <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
-                        <InfoRow label="Resident / Guest" value={lastResult.username || "N/A"} />
+                        <InfoRow label="Resident / Guest" value={lastResult.residentFullName || lastResult.username || "N/A"} />
+                        <InfoRow label="Full Name" value={lastResult.residentFullName || lastResult.username || "N/A"} />
                         <InfoRow label="Barangay ID" value={lastResult.barangayId || "N/A"} />
                         <InfoRow label="Event" value={lastResult.eventTitle || "N/A"} />
                         <InfoRow label="Time" value={formatDateTime(lastResult.checkedInAt || lastResult.checkedOutAt || lastResult.timestamp)} />
@@ -585,6 +605,40 @@ function InfoRow({ label, value }) {
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 14 }}>
       <span style={{ color: "#64748b" }}>{label}</span>
       <span style={{ textAlign: "right" }}>{value}</span>
+    </div>
+  );
+}
+
+function ResidentPhotoAvatar({ src, name }) {
+  const initials = String(name || "Resident")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "R";
+
+  return (
+    <div
+      style={{
+        width: 58,
+        height: 58,
+        borderRadius: "50%",
+        overflow: "hidden",
+        background: "#e8f4ed",
+        border: "2px solid #b8dcc8",
+        display: "grid",
+        placeItems: "center",
+        flex: "0 0 auto",
+        color: "#166534",
+        fontWeight: 800,
+      }}
+      aria-label={`${name || "Resident"} profile photo`}
+    >
+      {src ? (
+        <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      ) : (
+        <span>{initials}</span>
+      )}
     </div>
   );
 }

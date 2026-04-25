@@ -304,19 +304,29 @@ function ScannerWorkspace({
 }
 
 function ScanSummaryCard({ lastScan, scanHistory }) {
+  const residentLabel = lastScan?.residentFullName || lastScan?.username || "Resident";
   return (
-    <div className={`card scanner-result-card scanner-result-${getScanTone(lastScan)}`} style={{ padding: 16, minHeight: 320 }}>
+    <div
+      key={lastScan?.timestamp || "awaiting-scan"}
+      className={`card scanner-result-card scanner-result-${getScanTone(lastScan)} ${lastScan ? "scanner-result-pop" : ""}`}
+      style={{ padding: 16, minHeight: 320 }}
+    >
       <h3 style={{ marginTop: 0 }}>{lastScan ? lastScan.title || "Scan Result" : "Awaiting scan"}</h3>
       {lastScan ? (
         <div style={{ display: "grid", gap: 10 }}>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <div className="scanner-result-icon">{getScanIcon(lastScan)}</div>
+            <ResidentPhotoAvatar src={lastScan.residentPhoto} name={residentLabel} />
             <div>
-              <div className="scanner-result-name">{lastScan.username || "Resident"}</div>
+              <div className="scanner-result-name">{residentLabel}</div>
+              {lastScan.username && lastScan.username !== residentLabel ? (
+                <div style={{ color: "#64748b", fontSize: 13 }}>@{lastScan.username}</div>
+              ) : null}
               <div style={{ color: "#475569" }}>{lastScan.message || "Waiting for the next scan."}</div>
             </div>
+            <div className="scanner-result-icon" style={{ marginLeft: "auto" }}>{getScanIcon(lastScan)}</div>
           </div>
           <InfoRow label="Result" value={<span className={`scanner-status-pill scanner-status-${getScanTone(lastScan)}`}>{lastScan.code || "pending"}</span>} />
+          <InfoRow label="Full Name" value={lastScan.residentFullName || lastScan.username || "N/A"} />
           <InfoRow label="ID" value={lastScan.barangayId || "N/A"} />
           <InfoRow label="Birthdate" value={formatDateTime(lastScan.residentBirthdate, true) || "N/A"} />
           <InfoRow label="Verified" value={lastScan.residentVerified === true ? "Yes" : lastScan.residentVerified === false ? "No" : "N/A"} />
@@ -335,7 +345,7 @@ function ScanSummaryCard({ lastScan, scanHistory }) {
           ) : (
             scanHistory.map((item, index) => (
               <div key={`${item.timestamp}-${index}`} className={`scanner-history-item scanner-history-${getScanTone(item)}`}>
-                <div style={{ fontWeight: 700 }}>{item.username || item.title || "Unknown resident"}</div>
+                <div style={{ fontWeight: 700 }}>{item.residentFullName || item.username || item.title || "Unknown resident"}</div>
                 <div style={{ color: "#475569", fontSize: 13 }}>{item.title || item.message}</div>
                 <div style={{ color: "#64748b", fontSize: 12 }}>{formatDateTime(item.timestamp)}</div>
               </div>
@@ -343,6 +353,40 @@ function ScanSummaryCard({ lastScan, scanHistory }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ResidentPhotoAvatar({ src, name }) {
+  const initials = String(name || "Resident")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "R";
+
+  return (
+    <div
+      style={{
+        width: 64,
+        height: 64,
+        borderRadius: "50%",
+        overflow: "hidden",
+        background: "#e8f4ed",
+        border: "2px solid #b8dcc8",
+        display: "grid",
+        placeItems: "center",
+        flex: "0 0 auto",
+        color: "#166534",
+        fontWeight: 800,
+      }}
+      aria-label={`${name || "Resident"} profile photo`}
+    >
+      {src ? (
+        <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      ) : (
+        <span>{initials}</span>
+      )}
     </div>
   );
 }
