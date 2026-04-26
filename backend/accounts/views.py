@@ -71,14 +71,26 @@ def find_user_by_username_case_insensitive(raw_username, **filters):
     return None
 
 
+def resident_account_block_response(profile):
+    if getattr(profile, "archived_at", None):
+        return Response(
+            {"error": "This resident account is archived. Please contact the admin."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    if getattr(profile, "deactivated_at", None):
+        return Response(
+            {"error": "This resident account is deactivated. Please contact the admin."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    return None
+
+
 def build_login_payload(user, request, username_for_logs=None):
     if getattr(user, "is_resident", False):
         profile = getattr(user, "profile", None)
-        if getattr(profile, "deactivated_at", None):
-            return None, Response(
-                {"error": "This resident account is deactivated. Please contact the admin."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        block_response = resident_account_block_response(profile)
+        if block_response is not None:
+            return None, block_response
 
         profile_data = None
         if profile is not None:
@@ -372,8 +384,9 @@ def login_resident(request):
     resident = find_user_by_username_case_insensitive(username, is_resident=True)
     if not resident:
         return Response({"error": "Invalid username or password"}, status=status.HTTP_401_UNAUTHORIZED)
-    if getattr(getattr(resident, "profile", None), "deactivated_at", None):
-        return Response({"error": "This resident account is deactivated. Please contact the admin."}, status=status.HTTP_403_FORBIDDEN)
+    block_response = resident_account_block_response(getattr(resident, "profile", None))
+    if block_response is not None:
+        return block_response
     user = authenticate(username=resident.username, password=password)
 
     if not user:
@@ -426,11 +439,9 @@ def login_user(request):
     password = serializer.validated_data["password"]
     candidate = find_user_by_username_case_insensitive(username)
     if candidate and getattr(candidate, "is_resident", False):
-        if getattr(getattr(candidate, "profile", None), "deactivated_at", None):
-            return Response(
-                {"error": "This resident account is deactivated. Please contact the admin."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        block_response = resident_account_block_response(getattr(candidate, "profile", None))
+        if block_response is not None:
+            return block_response
     user = authenticate(username=candidate.username, password=password) if candidate else None
 
     if not user:

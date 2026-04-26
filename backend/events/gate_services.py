@@ -28,6 +28,10 @@ def resolve_resident_profile(*, barangay_id=None, username=None):
 def validate_resident_gate_profile(profile):
     if profile is None:
         return "Resident profile not found.", "not_found", 404
+    if profile.archived_at:
+        return "Resident account is archived.", "resident_archived", 403
+    if profile.deactivated_at:
+        return "Resident account is deactivated.", "resident_deactivated", 403
     if not profile.is_verified:
         return "Resident is not verified.", "not_verified", 403
     if profile.expiry_date and profile.expiry_date < timezone.localdate():
@@ -147,7 +151,7 @@ def parse_tolerance(raw_tolerance):
 def match_verified_resident_by_face(image, *, tolerance=None, fallback_username=None):
     verified_profiles = list(
         ResidentProfile.objects.select_related("user")
-        .filter(user__is_resident=True, is_verified=True)
+        .filter(user__is_resident=True, is_verified=True, archived_at__isnull=True, deactivated_at__isnull=True)
     )
     if fallback_username:
         fallback = next((profile for profile in verified_profiles if profile.user.username == fallback_username), None)

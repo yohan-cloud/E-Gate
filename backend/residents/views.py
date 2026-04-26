@@ -59,6 +59,24 @@ def _profile_is_expired(profile):
     return bool(profile and getattr(profile, "expiry_date", None) and profile.expiry_date < timezone.localdate())
 
 
+def _resident_account_block_response(profile):
+    if getattr(profile, "archived_at", None):
+        return Response({'error': 'This resident account is archived. Please contact the admin.'}, status=status.HTTP_403_FORBIDDEN)
+    if getattr(profile, "deactivated_at", None):
+        return Response({'error': 'This resident account is deactivated. Please contact the admin.'}, status=status.HTTP_403_FORBIDDEN)
+    return None
+
+
+def _archived_resident_read_only_response():
+    return Response(
+        {
+            'error': 'Archived resident records are read-only. Unarchive this resident before making changes.',
+            'result_code': 'resident_archived',
+        },
+        status=status.HTTP_403_FORBIDDEN,
+    )
+
+
 DEACTIVATION_REASON_OPTIONS = {
     "Moved out of barangay",
     "Duplicate resident record",
@@ -102,16 +120,19 @@ def login_resident(request):
     username = cast(str, data.get('username', ''))
     password = cast(str, data.get('password', ''))
     resident_candidate = get_user_model().objects.filter(username=username, is_resident=True).select_related("profile").first()
-    if resident_candidate and getattr(getattr(resident_candidate, "profile", None), "deactivated_at", None):
-        return Response({'error': 'This resident account is deactivated. Please contact the admin.'}, status=status.HTTP_403_FORBIDDEN)
+    if resident_candidate:
+        block_response = _resident_account_block_response(getattr(resident_candidate, "profile", None))
+        if block_response is not None:
+            return block_response
     user = authenticate(username=username, password=password)
     if not user:
         return Response({'error': 'Invalid username or password'}, status=status.HTTP_401_UNAUTHORIZED)
     if not getattr(user, 'is_resident', False):
         return Response({'error': 'Access denied: Not a resident account'}, status=status.HTTP_403_FORBIDDEN)
     profile = getattr(user, "profile", None)
-    if getattr(profile, "deactivated_at", None):
-        return Response({'error': 'This resident account is deactivated. Please contact the admin.'}, status=status.HTTP_403_FORBIDDEN)
+    block_response = _resident_account_block_response(profile)
+    if block_response is not None:
+        return block_response
 
     profile_data = None
     # Use getattr to satisfy type checker about dynamic reverse relation
@@ -479,6 +500,8 @@ def renew_resident_id(request):
 
     if not profile:
         return Response({'error': 'Resident profile not found'}, status=status.HTTP_404_NOT_FOUND)
+    if profile.archived_at:
+        return _archived_resident_read_only_response()
 
     today = date.today()
     profile.date_registered = today
@@ -579,6 +602,9 @@ def admin_update_resident(request, user_id):
         )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    if profile.archived_at:
+        return _archived_resident_read_only_response()
+
     serializer = AdminResidentUpdateSerializer(data=request.data, context={'user': user})
     serializer.is_valid(raise_exception=True)
     previous_state = {
@@ -633,6 +659,9 @@ def admin_reset_resident_password(request, user_id):
         return Response({'error': 'Resident not found'}, status=status.HTTP_404_NOT_FOUND)
     if not getattr(user, 'is_resident', False):
         return Response({'error': 'Password reset is only available for resident accounts.'}, status=status.HTTP_403_FORBIDDEN)
+    profile = getattr(user, 'profile', None)
+    if getattr(profile, 'archived_at', None):
+        return _archived_resident_read_only_response()
 
     temporary_password = (request.data.get("temporary_password") or "").strip()
     if not temporary_password:
@@ -651,7 +680,6 @@ def admin_reset_resident_password(request, user_id):
     user.save(update_fields=["password", "must_change_password"])
     PasswordResetCode.objects.filter(user=user, used=False).update(used=True)
 
-    profile = getattr(user, 'profile', None)
     audit_log(
         request,
         action="resident_password_reset",
@@ -683,6 +711,8 @@ def admin_delete_resident(request, user_id):
     if getattr(user, 'is_admin', False):
         return Response({'error': 'Cannot delete admin accounts'}, status=status.HTTP_403_FORBIDDEN)
     profile = getattr(user, 'profile', None)
+    if getattr(profile, 'archived_at', None):
+        return _archived_resident_read_only_response()
     target_label = _resident_label(profile) if profile else (user.username or f"user-{user.id}")
     audit_log(
         request,

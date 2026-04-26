@@ -189,6 +189,10 @@ def _validate_registration_profile(registration):
     profile = getattr(registration.resident, "profile", None)
     if profile is None:
         return None, Response({"error": "Resident profile not found.", "result_code": "resident_profile_missing"}, status=status.HTTP_400_BAD_REQUEST)
+    if getattr(profile, "archived_at", None):
+        return None, Response({"error": "Resident account is archived.", "result_code": "resident_archived"}, status=status.HTTP_403_FORBIDDEN)
+    if getattr(profile, "deactivated_at", None):
+        return None, Response({"error": "Resident account is deactivated.", "result_code": "resident_deactivated"}, status=status.HTTP_403_FORBIDDEN)
     if not getattr(profile, "is_verified", False):
         return None, Response({"error": "Resident is not verified.", "result_code": "not_verified"}, status=status.HTTP_403_FORBIDDEN)
     if getattr(profile, "expiry_date", None) and profile.expiry_date < timezone.localdate():

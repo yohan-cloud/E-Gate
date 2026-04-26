@@ -188,9 +188,55 @@ class ResidentSecurityAuditTests(TestCase):
             self.assertEqual(len(archived.data), 1)
             self.assertTrue(archived.data[0]["is_archived"])
 
+            detail = self.client.get(f"/api/residents/admin/{self.resident.id}/")
+            self.assertEqual(detail.status_code, status.HTTP_200_OK)
+            self.assertTrue(detail.data["is_archived"])
+
+            update = self.client.patch(
+                f"/api/residents/admin/{self.resident.id}/",
+                {"address": "New active address"},
+                format="json",
+            )
+            self.assertEqual(update.status_code, status.HTTP_403_FORBIDDEN)
+            self.assertEqual(update.data["result_code"], "resident_archived")
+
+            reset_password = self.client.post(
+                f"/api/residents/admin/{self.resident.id}/reset-password/",
+                {"temporary_password": "TempArchive!234"},
+                format="json",
+            )
+            self.assertEqual(reset_password.status_code, status.HTTP_403_FORBIDDEN)
+
+            renew = self.client.post(
+                "/api/residents/renew/",
+                {"username": self.resident.username},
+                format="json",
+            )
+            self.assertEqual(renew.status_code, status.HTTP_403_FORBIDDEN)
+
+            delete = self.client.delete(f"/api/residents/admin/{self.resident.id}/delete/")
+            self.assertEqual(delete.status_code, status.HTTP_403_FORBIDDEN)
+            self.assertTrue(get_user_model().objects.filter(id=self.resident.id).exists())
+
+            attendance = self.client.post(
+                "/api/events/attendance/mark/",
+                {"event_id": self.event.id, "username": self.resident.username},
+                format="json",
+            )
+            self.assertEqual(attendance.status_code, status.HTTP_403_FORBIDDEN)
+            self.assertEqual(attendance.data["result_code"], "resident_archived")
+
             unarchive = self.client.post(f"/api/residents/admin/{self.resident.id}/unarchive/")
             self.assertEqual(unarchive.status_code, status.HTTP_200_OK)
             self.assertFalse(unarchive.data["is_archived"])
+
+            update_after_unarchive = self.client.patch(
+                f"/api/residents/admin/{self.resident.id}/",
+                {"address": "New active address"},
+                format="json",
+            )
+            self.assertEqual(update_after_unarchive.status_code, status.HTTP_200_OK)
+            self.assertEqual(update_after_unarchive.data["address"], "New active address")
 
     def test_resident_deactivation_moves_resident_to_deactivated_filter_and_blocks_resident_access(self):
         self.auth_admin()

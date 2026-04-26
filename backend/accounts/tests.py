@@ -3,6 +3,7 @@ from django.core import mail
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 from django.utils.datastructures import MultiValueDict
 from io import BytesIO
 from PIL import Image
@@ -302,6 +303,36 @@ class AccountsFlowTests(TestCase):
             format="json",
         )
         self.assertEqual(login_res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_archived_resident_cannot_log_in(self):
+        self.client.force_authenticate(user=self.admin)
+        res = self.client.post(
+            "/api/accounts/register/resident/",
+            {
+                "username": "res_archived",
+                "password": "ResidentFlow!234",
+                "email": "res_archived@example.com",
+                "address": "Block 1 Lot 2",
+                "birthdate": "2000-01-01",
+                "phone_number": "09171234563",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        profile = ResidentProfile.objects.select_related("user").get(user__username="res_archived")
+        profile.archived_at = timezone.now()
+        profile.archive_status = "archived"
+        profile.save(update_fields=["archived_at", "archive_status"])
+
+        self.client.force_authenticate(user=None)
+        for endpoint in ("/api/accounts/login/resident/", "/api/accounts/login/"):
+            login_res = self.client.post(
+                endpoint,
+                {"username": "res_archived", "password": "ResidentFlow!234"},
+                format="json",
+            )
+            self.assertEqual(login_res.status_code, status.HTTP_403_FORBIDDEN)
+            self.assertIn("archived", login_res.data["error"])
 
     def test_admin_created_resident_starts_auto_verified(self):
         self.client.force_authenticate(user=self.admin)

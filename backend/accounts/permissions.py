@@ -38,6 +38,9 @@ class IsResidentUserRole(BasePermission):
         if not (user and user.is_authenticated and getattr(user, "is_resident", False)):
             return False
         profile = getattr(user, "profile", None)
+        if getattr(profile, "archived_at", None):
+            self.message = "Access denied: This resident account is archived."
+            return False
         if getattr(profile, "deactivated_at", None):
             self.message = "Access denied: This resident account is deactivated."
             return False
