@@ -335,7 +335,7 @@ export default function UnifiedLogin({ onLogin }) {
             <div className="valo-login-brand-row valo-login-brand-row-unified-inline">
               <img className="valo-login-logo valo-login-logo-unified-inline" src="/barangay-663a-logo.png" alt="Barangay 663-A logo" />
               <div className="valo-login-brand-copy valo-login-brand-copy-unified">
-                <div className="valo-login-brand valo-login-brand-unified">E-Gate System</div>
+                <div className="valo-login-brand valo-login-brand-unified">Barangay 663-A</div>
               </div>
             </div>
 
@@ -369,9 +369,6 @@ export default function UnifiedLogin({ onLogin }) {
         <aside className="valo-login-visual">
           <div className="valo-login-visual-image" />
           <div className="valo-login-visual-overlay" />
-          <div className="valo-login-visual-content">
-            <div className="valo-login-visual-tag">Barangay 663-A</div>
-          </div>
         </aside>
       </div>
     </div>
