@@ -12,16 +12,21 @@ from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.mail import send_mail
+from django.db.models import CharField, Q
+from django.db.models.functions import Cast
+from django.utils.dateparse import parse_date
 from rest_framework import status
+from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import ResidentRegisterSerializer, AdminRegisterSerializer, GateOperatorRegisterSerializer, LoginSerializer
+from .gate_audit import gate_audit_log
+from .serializers import ResidentRegisterSerializer, AdminRegisterSerializer, GateOperatorRegisterSerializer, GateAuditLogSerializer, LoginSerializer
 from .utils import generate_token_response as unified_generate_token_response
 from .permissions import IsAdminUserRole
-from accounts.models import PasswordResetCode
-from datetime import timedelta
+from accounts.models import GateAuditLog, PasswordResetCode
+from datetime import datetime, time, timedelta
 import secrets
 import logging
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
@@ -85,6 +90,10 @@ def find_user_by_username_case_insensitive(raw_username, **filters):
     return None
 
 
+def parse_filter_date(value):
+    return parse_date(value or "")
+
+
 def resident_account_block_response(profile):
     if getattr(profile, "archived_at", None):
         return Response(
@@ -97,6 +106,21 @@ def resident_account_block_response(profile):
             status=status.HTTP_403_FORBIDDEN,
         )
     return None
+
+
+def record_successful_login(user):
+    now = timezone.now()
+    user.last_login = now
+    user.save(update_fields=["last_login"])
+    return now
+
+
+def gate_account_details(user):
+    return {
+        "gate_user": user if getattr(user, "is_gate_operator", False) else None,
+        "gate_username": getattr(user, "username", "") or "",
+        "gate_full_name": (user.get_full_name().strip() if user else "") or getattr(user, "username", "") or "",
+    }
 
 
 def build_login_payload(user, request, username_for_logs=None):
@@ -116,6 +140,7 @@ def build_login_payload(user, request, username_for_logs=None):
                 "expiry_date": str(profile.expiry_date),
             }
 
+        record_successful_login(user)
         response_data = unified_generate_token_response(
             user,
             message="Resident login successful",
@@ -135,9 +160,19 @@ def build_login_payload(user, request, username_for_logs=None):
 
     if getattr(user, "is_admin", False) or getattr(user, "is_gate_operator", False):
         role = "Administrator" if getattr(user, "is_admin", False) else "GateOperator"
+        login_time = record_successful_login(user)
+        if role == "GateOperator":
+            gate_audit_log(
+                request,
+                action_type=GateAuditLog.ActionType.LOGIN_SUCCESS,
+                status=GateAuditLog.Status.SUCCESS,
+                details="Gate operator login successful.",
+                performed_by=user,
+                **gate_account_details(user),
+            )
         logger.info(
             f"[ADMIN LOGIN SUCCESS] Admin/Gate: {username_for_logs or user.username}, "
-            f"Role={role}, Time: {timezone.now()}"
+            f"Role={role}, Time: {login_time}"
         )
         response_data = unified_generate_token_response(
             user,
@@ -239,6 +274,17 @@ def register_gate_operator(request):
             target_label=user.username,
             metadata={"email": user.email or ""},
         )
+        gate_audit_log(
+            request,
+            action_type=GateAuditLog.ActionType.ACCOUNT_CREATED,
+            status=GateAuditLog.Status.WARNING,
+            details=f"Gate account {user.username} was created.",
+            gate_user=user,
+            gate_username=user.username,
+            gate_full_name=user.get_full_name().strip() or user.username,
+            performed_by=request.user,
+            metadata={"email": user.email or "", "contact_number": getattr(user, "contact_number", "") or ""},
+        )
         return Response(
             {
                 "message": "Gate operator account created successfully",
@@ -298,6 +344,71 @@ def list_gate_operators(request):
     return Response(data, status=status.HTTP_200_OK)
 
 
+class GateAuditLogListView(generics.ListAPIView):
+    serializer_class = GateAuditLogSerializer
+    permission_classes = [IsAuthenticated, IsAdminUserRole]
+    pagination_class = None
+
+    def get_queryset(self):
+        qs = GateAuditLog.objects.select_related("gate_user", "performed_by").annotate(ip_text=Cast("ip_address", CharField()))
+        user_id = self.kwargs.get("user_id")
+        if user_id:
+            user = User.objects.filter(id=user_id, is_gate_operator=True).first()
+            if not user:
+                return GateAuditLog.objects.none()
+            qs = qs.filter(Q(gate_user_id=user.id) | Q(gate_username=user.username))
+        q = (self.request.query_params.get("q") or "").strip()
+        action_type = (self.request.query_params.get("action_type") or "").strip()
+        log_status = (self.request.query_params.get("status") or "").strip()
+        account = (self.request.query_params.get("account") or "").strip()
+        performed_by = (self.request.query_params.get("performed_by") or "").strip()
+        date_from = parse_filter_date(self.request.query_params.get("date_from"))
+        date_to = parse_filter_date(self.request.query_params.get("date_to"))
+
+        if action_type:
+            qs = qs.filter(action_type=action_type)
+        if log_status:
+            qs = qs.filter(status=log_status)
+        if account:
+            qs = qs.filter(
+                Q(gate_username__icontains=account)
+                | Q(gate_full_name__icontains=account)
+                | Q(gate_user__username__icontains=account)
+                | Q(gate_user__first_name__icontains=account)
+                | Q(gate_user__last_name__icontains=account)
+            )
+        if performed_by:
+            qs = qs.filter(
+                Q(performed_by_label__icontains=performed_by)
+                | Q(performed_by__username__icontains=performed_by)
+                | Q(performed_by__first_name__icontains=performed_by)
+                | Q(performed_by__last_name__icontains=performed_by)
+            )
+        if q:
+            qs = qs.filter(
+                Q(action_type__icontains=q)
+                | Q(status__icontains=q)
+                | Q(gate_username__icontains=q)
+                | Q(gate_full_name__icontains=q)
+                | Q(performed_by_label__icontains=q)
+                | Q(details__icontains=q)
+                | Q(ip_text__icontains=q)
+            )
+        if date_from:
+            start = timezone.make_aware(datetime.combine(date_from, time.min))
+            qs = qs.filter(created_at__gte=start)
+        if date_to:
+            end = timezone.make_aware(datetime.combine(date_to + timedelta(days=1), time.min))
+            qs = qs.filter(created_at__lt=end)
+
+        limit = 100 if user_id else 500
+        return qs.order_by("-created_at", "-id")[:limit]
+
+
+class GateOperatorAuditLogListView(GateAuditLogListView):
+    pass
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsAdminUserRole])
 def reset_gate_operator_password(request, user_id):
@@ -321,6 +432,17 @@ def reset_gate_operator_password(request, user_id):
     user.must_change_password = True
     user.save(update_fields=["password", "must_change_password"])
     PasswordResetCode.objects.filter(user=user, used=False).update(used=True)
+    gate_audit_log(
+        request,
+        action_type=GateAuditLog.ActionType.PASSWORD_RESET,
+        status=GateAuditLog.Status.WARNING,
+        details=f"Admin reset the temporary password for {user.username}.",
+        gate_user=user,
+        gate_username=user.username,
+        gate_full_name=user.get_full_name().strip() or user.username,
+        performed_by=request.user,
+        metadata={"must_change_password": True},
+    )
     audit_log(
         request,
         actor=request.user,
@@ -349,6 +471,17 @@ def toggle_gate_operator_active(request, user_id):
         return Response({"error": "Reason is required when deactivating a gate operator."}, status=status.HTTP_400_BAD_REQUEST)
     user.is_active = next_active
     user.save(update_fields=["is_active"])
+    gate_audit_log(
+        request,
+        action_type=GateAuditLog.ActionType.ACCOUNT_REACTIVATED if next_active else GateAuditLog.ActionType.ACCOUNT_DEACTIVATED,
+        status=GateAuditLog.Status.WARNING,
+        details=f"Gate account {user.username} was {'reactivated' if next_active else 'deactivated'}.",
+        gate_user=user,
+        gate_username=user.username,
+        gate_full_name=user.get_full_name().strip() or user.username,
+        performed_by=request.user,
+        metadata={"is_active": next_active, "reason": reason},
+    )
     audit_log(
         request,
         actor=request.user,
@@ -371,6 +504,17 @@ def delete_gate_operator(request, user_id):
     if not user:
         return Response({"error": "Gate operator not found."}, status=status.HTTP_404_NOT_FOUND)
 
+    gate_audit_log(
+        request,
+        action_type=GateAuditLog.ActionType.ACCOUNT_DELETED,
+        status=GateAuditLog.Status.WARNING,
+        details=f"Gate account {user.username} was deleted.",
+        gate_user=user,
+        gate_username=user.username,
+        gate_full_name=user.get_full_name().strip() or user.username,
+        performed_by=request.user,
+        metadata={"email": user.email or "", "contact_number": getattr(user, "contact_number", "") or ""},
+    )
     audit_log(
         request,
         actor=request.user,
@@ -430,6 +574,17 @@ def login_admin(request):
     user = authenticate(username=candidate.username, password=password) if candidate else None
 
     if not user:
+        if candidate is None or getattr(candidate, "is_gate_operator", False):
+            gate_audit_log(
+                request,
+                action_type=GateAuditLog.ActionType.LOGIN_FAILED,
+                status=GateAuditLog.Status.FAILED,
+                details="Gate login failed: invalid username or password.",
+                gate_user=candidate if getattr(candidate, "is_gate_operator", False) else None,
+                gate_username=getattr(candidate, "username", username) if candidate else username,
+                gate_full_name=(candidate.get_full_name().strip() if candidate else "") or (getattr(candidate, "username", "") if candidate else username),
+                metadata={"attempted_username": username, "endpoint": "login_admin"},
+            )
         logger.warning(f"[FAILED ADMIN LOGIN] Username: {username}, Time: {timezone.now()}")
         return Response({"error": "Invalid username or password"}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -462,6 +617,17 @@ def login_user(request):
     user = authenticate(username=candidate.username, password=password) if candidate else None
 
     if not user:
+        if candidate is None or getattr(candidate, "is_gate_operator", False):
+            gate_audit_log(
+                request,
+                action_type=GateAuditLog.ActionType.LOGIN_FAILED,
+                status=GateAuditLog.Status.FAILED,
+                details="Gate login failed: invalid username or password.",
+                gate_user=candidate if getattr(candidate, "is_gate_operator", False) else None,
+                gate_username=getattr(candidate, "username", username) if candidate else username,
+                gate_full_name=(candidate.get_full_name().strip() if candidate else "") or (getattr(candidate, "username", "") if candidate else username),
+                metadata={"attempted_username": username, "endpoint": "login"},
+            )
         logger.warning(f"[FAILED UNIFIED LOGIN] Username: {username}, Time: {timezone.now()}")
         return Response({"error": "Invalid username or password"}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -479,6 +645,16 @@ def logout_user(request):
     Blacklists the refresh token to invalidate further use.
     """
     refresh_token = request.data.get("refresh_token")
+    user = request.user if getattr(request.user, "is_authenticated", False) else None
+    if getattr(user, "is_gate_operator", False):
+        gate_audit_log(
+            request,
+            action_type=GateAuditLog.ActionType.LOGOUT,
+            status=GateAuditLog.Status.INFO,
+            details="Gate operator logged out.",
+            performed_by=user,
+            **gate_account_details(user),
+        )
     if not refresh_token:
         # Idempotent: consider already logged out if no token provided
         return Response({"message": "Logged out"}, status=status.HTTP_205_RESET_CONTENT)

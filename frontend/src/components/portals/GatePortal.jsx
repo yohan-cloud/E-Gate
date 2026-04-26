@@ -18,9 +18,9 @@ const GATE_MODES = {
 };
 
 const GATE_NAV_ITEMS = [
-  { key: GATE_MODES.RESIDENT, label: "Resident Log", eyebrow: "Access" },
-  { key: GATE_MODES.EVENT, label: "Event Attendance", eyebrow: "Events" },
-  { key: GATE_MODES.GUEST, label: "Guest Appointment", eyebrow: "Visitors" },
+  { key: GATE_MODES.RESIDENT, label: "Resident Log", eyebrow: "Access", icon: "users" },
+  { key: GATE_MODES.EVENT, label: "Event Attendance", eyebrow: "Events", icon: "calendar" },
+  { key: GATE_MODES.GUEST, label: "Guest Appointment", eyebrow: "Visitors", icon: "user" },
 ];
 
 function formatSchedule(start, end) {
@@ -199,6 +199,7 @@ export default function GatePortal({ onExit }) {
                 role="tab"
                 aria-selected={gateMode === item.key}
               >
+                <span className="gate-side-link-icon" aria-hidden="true">{renderGateIcon(item.icon)}</span>
                 <span className="gate-side-link-copy">
                   <span className="gate-side-link-eyebrow">{item.eyebrow}</span>
                   <span className="gate-side-link-label">{item.label}</span>
@@ -553,6 +554,25 @@ function getPreferredName(user, fallback) {
     user?.user?.username ||
     "";
   return String(candidate || "").trim() || fallback;
+}
+
+function renderGateIcon(name) {
+  const common = {
+    width: 18,
+    height: 18,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.9,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  };
+  const icons = {
+    users: <><path d="M16 20v-1.5A3.5 3.5 0 0 0 12.5 15h-5A3.5 3.5 0 0 0 4 18.5V20" /><circle cx="10" cy="8" r="3" /><path d="M20 20v-1.2a3 3 0 0 0-2-2.8" /><path d="M17 5.3a3 3 0 0 1 0 5.4" /></>,
+    calendar: <><path d="M7 3v4" /><path d="M17 3v4" /><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M4 10h16" /></>,
+    user: <><circle cx="12" cy="8" r="4" /><path d="M5 21a7 7 0 0 1 14 0" /></>,
+  };
+  return <svg {...common}>{icons[name] || icons.user}</svg>;
 }
 
 function ModeShell({ title, subtitle, controls, badgeLabel, metaItems, latestEntries, children }) {

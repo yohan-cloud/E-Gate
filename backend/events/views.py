@@ -44,6 +44,8 @@ from .gate_services import (
     validate_face_upload,
     validate_resident_gate_profile,
 )
+from accounts.gate_audit import gate_audit_log
+from accounts.models import GateAuditLog
 from common.audit import audit_log
 from .archive import archive_event
 
@@ -151,6 +153,36 @@ def _emit(event_type: str, aggregate: str, aggregate_id, payload):
 def _actor_user_or_none(request):
     user = getattr(request, "user", None)
     return user if getattr(user, "is_authenticated", False) else None
+
+
+def _log_gate_scan_activity(request, response, *, method="qr", manual=False, metadata=None):
+    actor = _actor_user_or_none(request)
+    gate_actor = actor if getattr(actor, "is_gate_operator", False) else None
+    data = getattr(response, "data", {}) or {}
+    is_success = getattr(response, "status_code", 500) < 400
+    action_type = GateAuditLog.ActionType.MANUAL_ENTRY if manual else (
+        GateAuditLog.ActionType.QR_SCAN_SUCCESS if is_success else GateAuditLog.ActionType.QR_SCAN_DENIED
+    )
+    status_value = GateAuditLog.Status.SUCCESS if is_success else GateAuditLog.Status.DENIED
+    details = data.get("message") or data.get("error") or ("Gate scan recorded." if is_success else "Gate scan denied.")
+    gate_audit_log(
+        request,
+        action_type=action_type,
+        status=status_value,
+        details=details,
+        gate_user=gate_actor,
+        gate_username=getattr(gate_actor, "username", "") if gate_actor else "",
+        gate_full_name=(gate_actor.get_full_name().strip() if gate_actor else "") or (getattr(gate_actor, "username", "") if gate_actor else ""),
+        performed_by=actor,
+        metadata={
+            "method": method,
+            "result_code": data.get("result_code", ""),
+            "resident_username": data.get("resident_username") or data.get("username") or request.data.get("username"),
+            "event_id": data.get("event_id") or request.data.get("event_id"),
+            **(metadata or {}),
+        },
+    )
+    return response
 
 
 def _resolve_registration_from_request(request):
@@ -910,7 +942,8 @@ def _mark_attendance_impl(request, user):
 @api_view(['POST'])
 @permission_classes([IsGateAccessAllowed])
 def gate_mark_attendance(request):
-    return _mark_attendance_impl(request, _actor_user_or_none(request))
+    response = _mark_attendance_impl(request, _actor_user_or_none(request))
+    return _log_gate_scan_activity(request, response, method="qr")
 
 
 @api_view(["POST"])
@@ -921,13 +954,14 @@ def gate_mark_resident_log(request):
         username=request.data.get("username"),
     )
     if profile is None:
-        return _resident_gate_error_response(
+        response = _resident_gate_error_response(
             "Resident profile not found.",
             "not_found",
             status.HTTP_404_NOT_FOUND,
         )
+        return _log_gate_scan_activity(request, response, method="qr", metadata={"mode": "resident_log"})
     actor = _actor_user_or_none(request)
-    return _record_resident_gate_entry(
+    response = _record_resident_gate_entry(
         profile,
         request,
         method="qr",
@@ -939,6 +973,7 @@ def gate_mark_resident_log(request):
             "mode": "resident_log",
         },
     )
+    return _log_gate_scan_activity(request, response, method="qr", metadata={"mode": "resident_log"})
 
 
 @api_view(["POST"])
@@ -947,7 +982,8 @@ def gate_mark_resident_log_face(request):
     image = request.FILES.get("image") or request.FILES.get("face") or request.FILES.get("face_image")
     error = validate_face_upload(image)
     if error:
-        return _resident_gate_error_response(error, "invalid_image", status.HTTP_400_BAD_REQUEST)
+        response = _resident_gate_error_response(error, "invalid_image", status.HTTP_400_BAD_REQUEST)
+        return _log_gate_scan_activity(request, response, method="face", metadata={"mode": "resident_log"})
 
     tolerance = parse_tolerance(request.data.get("tolerance") or request.query_params.get("tolerance"))
     fallback_username = request.data.get("username") or request.query_params.get("username")
@@ -957,15 +993,17 @@ def gate_mark_resident_log_face(request):
         fallback_username=fallback_username,
     )
     if match_error:
-        return _resident_gate_error_response(match_error, "invalid_face", status.HTTP_400_BAD_REQUEST)
+        response = _resident_gate_error_response(match_error, "invalid_face", status.HTTP_400_BAD_REQUEST)
+        return _log_gate_scan_activity(request, response, method="face", metadata={"mode": "resident_log"})
     if profile is None:
-        return _resident_gate_error_response(
+        response = _resident_gate_error_response(
             "No matching verified resident found.",
             "not_found",
             status.HTTP_404_NOT_FOUND,
         )
+        return _log_gate_scan_activity(request, response, method="face", metadata={"mode": "resident_log"})
     actor = _actor_user_or_none(request)
-    return _record_resident_gate_entry(
+    response = _record_resident_gate_entry(
         profile,
         request,
         method="face",
@@ -979,6 +1017,7 @@ def gate_mark_resident_log_face(request):
             "fallback_username": fallback_username or None,
         },
     )
+    return _log_gate_scan_activity(request, response, method="face", metadata={"mode": "resident_log"})
 
 
 # Admin: Mark attendance via face match (upload an image and event_id)
@@ -1030,7 +1069,8 @@ def mark_attendance_face(request):
 @api_view(['POST'])
 @permission_classes([IsGateAccessAllowed])
 def gate_mark_attendance_face(request):
-    return _mark_attendance_face_impl(request, _actor_user_or_none(request))
+    response = _mark_attendance_face_impl(request, _actor_user_or_none(request))
+    return _log_gate_scan_activity(request, response, method="face")
 
 
 def _mark_attendance_face_impl(request, user):

@@ -10,6 +10,8 @@ from rest_framework.response import Response
 from django.db import transaction
 
 from accounts.permissions import IsAdminOrGateOperatorRole, IsAdminUserRole, IsGateAccessAllowed
+from accounts.gate_audit import gate_audit_log
+from accounts.models import GateAuditLog
 
 from .archive import archive_guest_appointment
 from .models import AdminSetting, AuditLog, GuestAppointment, GuestAppointmentScanLog
@@ -180,6 +182,34 @@ def _handle_guest_scan(guest, direction="time_in", actor=None, method="qr", manu
         ),
         status=status.HTTP_201_CREATED,
     )
+
+
+def _log_guest_gate_activity(request, response, *, method="qr", manual=False, appointment_id=None):
+    actor = request.user if getattr(request.user, "is_authenticated", False) else None
+    gate_actor = actor if getattr(actor, "is_gate_operator", False) else None
+    data = getattr(response, "data", {}) or {}
+    is_success = getattr(response, "status_code", 500) < 400
+    action_type = GateAuditLog.ActionType.MANUAL_ENTRY if manual else (
+        GateAuditLog.ActionType.QR_SCAN_SUCCESS if is_success else GateAuditLog.ActionType.QR_SCAN_DENIED
+    )
+    gate_audit_log(
+        request,
+        action_type=action_type,
+        status=GateAuditLog.Status.SUCCESS if is_success else GateAuditLog.Status.DENIED,
+        details=data.get("message") or data.get("error") or ("Guest gate scan recorded." if is_success else "Guest gate scan denied."),
+        gate_user=gate_actor,
+        gate_username=getattr(gate_actor, "username", "") if gate_actor else "",
+        gate_full_name=(gate_actor.get_full_name().strip() if gate_actor else "") or (getattr(gate_actor, "username", "") if gate_actor else ""),
+        performed_by=actor,
+        metadata={
+            "method": method,
+            "result_code": data.get("result_code", ""),
+            "appointment_id": data.get("appointment_id") or appointment_id,
+            "guest_name": data.get("guest_name", ""),
+            "mode": "guest_appointment",
+        },
+    )
+    return response
 
 
 class GuestAppointmentListCreateView(generics.ListCreateAPIView):
@@ -379,14 +409,16 @@ def gate_scan_guest_appointment(request):
     token = (request.data.get("token") or "").strip()
     direction = (request.data.get("direction") or "auto").strip().lower()
     if not token:
-        return Response({"error": "QR token is required.", "result_code": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+        response = Response({"error": "QR token is required.", "result_code": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+        return _log_guest_gate_activity(request, response, method="qr")
 
     guest = GuestAppointment.objects.filter(qr_token=token).first()
     if not guest:
-        return Response({"error": "Guest appointment QR was not found.", "result_code": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+        response = Response({"error": "Guest appointment QR was not found.", "result_code": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+        return _log_guest_gate_activity(request, response, method="qr")
 
     _, response = _handle_guest_scan(guest, direction=direction, actor=None, method="qr", manual_override=False)
-    return response
+    return _log_guest_gate_activity(request, response, method="qr", appointment_id=guest.id)
 
 
 @api_view(["POST"])
@@ -395,18 +427,20 @@ def gate_manual_guest_scan(request):
     guest_id = request.data.get("appointment_id") or request.data.get("id")
     direction = (request.data.get("direction") or "auto").strip().lower()
     if not guest_id:
-        return Response({"error": "Appointment ID is required.", "result_code": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+        response = Response({"error": "Appointment ID is required.", "result_code": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+        return _log_guest_gate_activity(request, response, method="manual", manual=True)
 
     guest = _today_guest_queryset().filter(pk=guest_id).first()
     if not guest:
-        return Response(
+        response = Response(
             {"error": "Today's guest appointment was not found.", "result_code": "not_found"},
             status=status.HTTP_404_NOT_FOUND,
         )
+        return _log_guest_gate_activity(request, response, method="manual", manual=True, appointment_id=guest_id)
 
     actor = request.user if getattr(request.user, "is_authenticated", False) else None
     _, response = _handle_guest_scan(guest, direction=direction, actor=actor, method="manual", manual_override=True)
-    return response
+    return _log_guest_gate_activity(request, response, method="manual", manual=True, appointment_id=guest.id)
 
 
 class GuestAppointmentGateLogListView(generics.ListAPIView):
@@ -479,7 +513,8 @@ def admin_manual_guest_scan(request, pk):
     with transaction.atomic():
         guest = GuestAppointment.objects.select_for_update().filter(pk=pk).first()
         if not guest:
-            return Response({"error": "Guest appointment not found.", "result_code": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+            response = Response({"error": "Guest appointment not found.", "result_code": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+            return _log_guest_gate_activity(request, response, method="manual", manual=True, appointment_id=pk)
         _, response = _handle_guest_scan(
             guest,
             direction=request.data.get("direction") or "time_in",
@@ -487,4 +522,4 @@ def admin_manual_guest_scan(request, pk):
             method="manual",
             manual_override=True,
         )
-        return response
+        return _log_guest_gate_activity(request, response, method="manual", manual=True, appointment_id=guest.id)

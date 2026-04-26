@@ -4,6 +4,7 @@ import ConfirmDialog from "../common/ConfirmDialog";
 import { api } from "../../api";
 import toast, { formatApiError } from "../../lib/toast";
 import userAddIcon from "../../assets/user-add.png";
+import { DEFAULT_GATE_AUDIT_FILTERS, GATE_AUDIT_ACTIONS, GATE_AUDIT_STATUS_OPTIONS, GateAuditTable } from "./GateAuditLogs";
 
 const DEFAULT_FORM = {
   full_name: "",
@@ -20,6 +21,14 @@ const DEACTIVATION_REASONS = [
   "Security concern",
   "Other",
 ];
+
+const DEFAULT_LOG_FILTERS = {
+  ...DEFAULT_GATE_AUDIT_FILTERS,
+  account: "",
+  performed_by: "",
+  date_from: "",
+  date_to: "",
+};
 
 export default function GateAccounts() {
   const [gateForm, setGateForm] = useState(DEFAULT_FORM);
@@ -45,6 +54,14 @@ export default function GateAccounts() {
     customReason: "",
   });
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [logsModal, setLogsModal] = useState({
+    open: false,
+    account: null,
+    rows: [],
+    loading: false,
+    error: "",
+    filters: DEFAULT_LOG_FILTERS,
+  });
 
   const loadAccounts = async (query = "") => {
     setLoadingAccounts(true);
@@ -223,6 +240,70 @@ export default function GateAccounts() {
     await loadAccounts(search);
   };
 
+  const loadAccountLogs = async (account, filters = DEFAULT_LOG_FILTERS) => {
+    if (!account?.id) return;
+    setLogsModal((current) => ({
+      ...current,
+      open: true,
+      account,
+      loading: true,
+      error: "",
+      filters,
+    }));
+    try {
+      const params = Object.fromEntries(
+        Object.entries(filters).filter(([, value]) => value && String(value).trim())
+      );
+      const response = await api.get(`/accounts/gate-operators/${account.id}/audit-logs/`, { params });
+      setLogsModal((current) => ({
+        ...current,
+        open: true,
+        account,
+        rows: Array.isArray(response.data) ? response.data : response.data?.results || [],
+        loading: false,
+        error: "",
+        filters,
+      }));
+    } catch (error) {
+      setLogsModal((current) => ({
+        ...current,
+        open: true,
+        account,
+        rows: [],
+        loading: false,
+        error: formatApiError(error, "Failed to load gate audit logs."),
+        filters,
+      }));
+    }
+  };
+
+  const openLogsModal = async (account) => {
+    await loadAccountLogs(account, DEFAULT_LOG_FILTERS);
+  };
+
+  const closeLogsModal = () => {
+    setLogsModal({ open: false, account: null, rows: [], loading: false, error: "", filters: DEFAULT_LOG_FILTERS });
+  };
+
+  const updateLogFilter = (key, value) => {
+    setLogsModal((current) => ({
+      ...current,
+      filters: {
+        ...current.filters,
+        [key]: value,
+      },
+    }));
+  };
+
+  const submitLogFilters = async (event) => {
+    event.preventDefault();
+    await loadAccountLogs(logsModal.account, logsModal.filters);
+  };
+
+  const clearLogFilters = async () => {
+    await loadAccountLogs(logsModal.account, DEFAULT_LOG_FILTERS);
+  };
+
   return (
     <div className="card gate-account-card">
       <div className="gate-account-header">
@@ -389,6 +470,9 @@ export default function GateAccounts() {
                         <button type="button" disabled={busyId === account.id} onClick={() => openResetModal(account)}>
                           Reset Password
                         </button>
+                        <button type="button" disabled={busyId === account.id} onClick={() => openLogsModal(account)}>
+                          View Logs
+                        </button>
                         {account.is_active ? (
                           <button type="button" disabled={busyId === account.id} onClick={() => openDeactivateModal(account)}>
                             Deactivate
@@ -540,6 +624,69 @@ export default function GateAccounts() {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={() => deleteAccount(deleteTarget?.id)}
       />
+
+      {logsModal.open ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="gate-account-logs-title"
+          style={wideOverlayStyle}
+          onClick={closeLogsModal}
+        >
+          <div style={widePanelStyle} onClick={(event) => event.stopPropagation()}>
+            <div style={wideHeaderStyle}>
+              <div>
+                <div style={eyebrowStyle("#0f766e")}>Gate Security</div>
+                <h3 id="gate-account-logs-title" style={titleStyle}>Recent Gate Audit Logs</h3>
+                <p style={copyStyle}>
+                  Showing recent activity for <strong>{logsModal.account?.full_name || logsModal.account?.username || "this gate account"}</strong>.
+                </p>
+              </div>
+              <div style={logsHeaderToolsStyle}>
+                <form onSubmit={submitLogFilters} style={logFilterFormStyle}>
+                  <input
+                    value={logsModal.filters.q}
+                    onChange={(event) => updateLogFilter("q", event.target.value)}
+                    placeholder="Search logs"
+                    style={smallFilterInputStyle}
+                  />
+                  <select
+                    value={logsModal.filters.action_type}
+                    onChange={(event) => updateLogFilter("action_type", event.target.value)}
+                    style={smallFilterSelectStyle}
+                  >
+                    {GATE_AUDIT_ACTIONS.map((action) => (
+                      <option key={action.value || "all"} value={action.value}>{action.label}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={logsModal.filters.status}
+                    onChange={(event) => updateLogFilter("status", event.target.value)}
+                    style={smallFilterSelectStyle}
+                  >
+                    {GATE_AUDIT_STATUS_OPTIONS.map((statusOption) => (
+                      <option key={statusOption.value || "all"} value={statusOption.value}>{statusOption.label}</option>
+                    ))}
+                  </select>
+                  <button type="submit" className="btn-primary" style={smallFilterButtonStyle} disabled={logsModal.loading}>Filter</button>
+                  <button type="button" style={smallClearButtonStyle} onClick={clearLogFilters} disabled={logsModal.loading}>Clear</button>
+                </form>
+                <button type="button" onClick={closeLogsModal} style={closeButtonStyle} aria-label="Close gate audit logs dialog">X</button>
+              </div>
+            </div>
+
+            {logsModal.loading ? (
+              <div className="gate-account-empty">Loading recent logs...</div>
+            ) : logsModal.error ? (
+              <div className="gate-account-error">{logsModal.error}</div>
+            ) : logsModal.rows.length === 0 ? (
+              <div className="gate-account-empty">No audit logs found for this gate account yet.</div>
+            ) : (
+              <GateAuditTable rows={logsModal.rows} compact />
+            )}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -561,6 +708,12 @@ const overlayStyle = {
   zIndex: 1000,
 };
 
+const wideOverlayStyle = {
+  ...overlayStyle,
+  alignItems: "start",
+  overflowY: "auto",
+};
+
 const panelStyle = {
   width: "min(100%, 460px)",
   background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
@@ -570,12 +723,75 @@ const panelStyle = {
   padding: 20,
 };
 
+const widePanelStyle = {
+  ...panelStyle,
+  width: "min(100%, 1120px)",
+  margin: "28px auto",
+};
+
 const headerStyle = {
   display: "flex",
   justifyContent: "space-between",
   gap: 12,
   alignItems: "flex-start",
   marginBottom: 14,
+};
+
+const wideHeaderStyle = {
+  ...headerStyle,
+  flexWrap: "wrap",
+};
+
+const logsHeaderToolsStyle = {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "flex-end",
+  gap: 10,
+  marginLeft: "auto",
+  maxWidth: "100%",
+};
+
+const logFilterFormStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-end",
+  gap: 8,
+  flexWrap: "wrap",
+};
+
+const smallFilterInputStyle = {
+  width: 180,
+  minHeight: 34,
+  padding: "8px 10px",
+  borderRadius: 10,
+  border: "1px solid #cbd5e1",
+  background: "#fff",
+  color: "#0f172a",
+};
+
+const smallFilterSelectStyle = {
+  width: 150,
+  minHeight: 34,
+  padding: "8px 10px",
+  borderRadius: 10,
+  border: "1px solid #cbd5e1",
+  background: "#fff",
+  color: "#0f172a",
+};
+
+const smallFilterButtonStyle = {
+  minHeight: 34,
+  padding: "7px 12px",
+  borderRadius: 10,
+};
+
+const smallClearButtonStyle = {
+  minHeight: 34,
+  padding: "7px 12px",
+  borderRadius: 10,
+  border: "1px solid #cbd5e1",
+  background: "#fff",
+  color: "#0f172a",
 };
 
 const titleStyle = {

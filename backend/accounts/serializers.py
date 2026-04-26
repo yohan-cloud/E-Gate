@@ -18,6 +18,7 @@ import re
 from residents.models import ResidentProfile, VerificationRequest
 from accounts.face_utils import extract_embedding, average_embeddings, validate_face_image, FaceLibNotAvailable
 from django.core.validators import RegexValidator
+from accounts.models import GateAuditLog
 
 User = get_user_model()
 
@@ -396,3 +397,30 @@ class LoginSerializer(serializers.Serializer):
     """
     username = serializers.CharField(required=True)
     password = serializers.CharField(write_only=True, required=True)
+
+
+class GateAuditLogSerializer(serializers.ModelSerializer):
+    action_label = serializers.CharField(source="get_action_type_display", read_only=True)
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+    performed_by_username = serializers.CharField(source="performed_by.username", read_only=True, default="")
+
+    class Meta:
+        model = GateAuditLog
+        fields = [
+            "id",
+            "created_at",
+            "gate_user",
+            "gate_username",
+            "gate_full_name",
+            "action_type",
+            "action_label",
+            "status",
+            "status_label",
+            "performed_by",
+            "performed_by_username",
+            "performed_by_label",
+            "details",
+            "ip_address",
+            "metadata",
+        ]
+        read_only_fields = fields

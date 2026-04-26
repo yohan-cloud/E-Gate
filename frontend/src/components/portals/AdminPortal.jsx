@@ -17,19 +17,19 @@ import VenueManagement from "../dashboard/VenueManagement";
 import VerificationRequests from "../dashboard/VerificationRequests";
 
 const ADMIN_NAV_ITEMS = [
-  { key: "overview", label: "Dashboard", eyebrow: "Home" },
-  { key: "scanner", label: "Scanner", eyebrow: "Access" },
-  { key: "verifications", label: "Verifications", eyebrow: "Review" },
-  { key: "dashboard", label: "Manage Events", eyebrow: "Events" },
-  { key: "venues", label: "Venues", eyebrow: "Facilities" },
-  { key: "analytics", label: "Analytics", eyebrow: "Reports" },
-  { key: "residents", label: "Residents", eyebrow: "Records" },
-  { key: "audit", label: "Audit Trail", eyebrow: "Security" },
-  { key: "createEvent", label: "Event Creation", eyebrow: "New" },
-  { key: "createResident", label: "Resident Registration", eyebrow: "Onboard" },
-  { key: "gateAccounts", label: "Gate Accounts", eyebrow: "Access" },
-  { key: "guests", label: "Guest Appointment", eyebrow: "Visitors" },
-  { key: "settings", label: "Settings", eyebrow: "System" },
+  { key: "overview", label: "Dashboard", eyebrow: "Home", icon: "home" },
+  { key: "scanner", label: "Scanner", eyebrow: "Access", icon: "scan" },
+  { key: "verifications", label: "Verifications", eyebrow: "Review", icon: "shield" },
+  { key: "dashboard", label: "Manage Events", eyebrow: "Events", icon: "calendar" },
+  { key: "venues", label: "Venues", eyebrow: "Facilities", icon: "building" },
+  { key: "analytics", label: "Analytics", eyebrow: "Reports", icon: "chart" },
+  { key: "residents", label: "Residents", eyebrow: "Records", icon: "users" },
+  { key: "audit", label: "Audit Trail", eyebrow: "Security", icon: "shield" },
+  { key: "createEvent", label: "Event Creation", eyebrow: "New", icon: "plus" },
+  { key: "createResident", label: "Resident Registration", eyebrow: "Onboard", icon: "userPlus" },
+  { key: "gateAccounts", label: "Gate Accounts", eyebrow: "Access", icon: "key" },
+  { key: "guests", label: "Guest Appointment", eyebrow: "Visitors", icon: "user" },
+  { key: "settings", label: "Settings", eyebrow: "System", icon: "settings" },
 ];
 
 function formatSchedule(start, end) {
@@ -133,6 +133,7 @@ export default function AdminPortal({ onLogout }) {
                 role="tab"
                 aria-selected={viewMode === item.key}
               >
+                <span className="admin-side-link-icon" aria-hidden="true">{renderAdminIcon(item.icon)}</span>
                 <span className="admin-side-link-copy">
                   <span className="admin-side-link-eyebrow">{item.eyebrow}</span>
                   <span className="admin-side-link-label">{item.label}</span>
@@ -239,6 +240,35 @@ function getPreferredName(user, fallback) {
     user?.user?.username ||
     "";
   return String(candidate || "").trim() || fallback;
+}
+
+function renderAdminIcon(name) {
+  const common = {
+    width: 18,
+    height: 18,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.9,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  };
+  const icons = {
+    home: <><path d="M3 11.5 12 4l9 7.5" /><path d="M5.5 10.5V20h13v-9.5" /><path d="M9.5 20v-5h5v5" /></>,
+    scan: <><path d="M7 4H5a1 1 0 0 0-1 1v2" /><path d="M17 4h2a1 1 0 0 1 1 1v2" /><path d="M7 20H5a1 1 0 0 1-1-1v-2" /><path d="M17 20h2a1 1 0 0 0 1-1v-2" /><path d="M8 12h8" /><path d="M12 8v8" /></>,
+    shield: <><path d="M12 21s7-3.5 7-10V6l-7-3-7 3v5c0 6.5 7 10 7 10Z" /><path d="m9.5 12 1.7 1.7 3.5-4" /></>,
+    calendar: <><path d="M7 3v4" /><path d="M17 3v4" /><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M4 10h16" /></>,
+    building: <><path d="M4 21h16" /><path d="M6 21V7l7-3v17" /><path d="M13 9h5v12" /><path d="M8.5 10h1" /><path d="M8.5 14h1" /><path d="M15.5 13h1" /><path d="M15.5 17h1" /></>,
+    chart: <><path d="M4 19h16" /><path d="M6 16a6 6 0 1 1 12 0" /><path d="m12 13 4-5" /></>,
+    users: <><path d="M16 20v-1.5A3.5 3.5 0 0 0 12.5 15h-5A3.5 3.5 0 0 0 4 18.5V20" /><circle cx="10" cy="8" r="3" /><path d="M20 20v-1.2a3 3 0 0 0-2-2.8" /><path d="M17 5.3a3 3 0 0 1 0 5.4" /></>,
+    plus: <><circle cx="12" cy="12" r="8" /><path d="M12 8v8" /><path d="M8 12h8" /></>,
+    userPlus: <><path d="M15 20v-1.5A3.5 3.5 0 0 0 11.5 15h-4A3.5 3.5 0 0 0 4 18.5V20" /><circle cx="9.5" cy="8" r="3" /><path d="M18 8v6" /><path d="M15 11h6" /></>,
+    key: <><circle cx="7.5" cy="14.5" r="3.5" /><path d="m10 12 8-8" /><path d="m15 7 2 2" /><path d="m13 9 2 2" /></>,
+    clipboard: <><rect x="6" y="4" width="12" height="17" rx="2" /><path d="M9 4.5A2 2 0 0 1 11 3h2a2 2 0 0 1 2 1.5" /><path d="M9 10h6" /><path d="M9 14h6" /><path d="M9 18h4" /></>,
+    user: <><circle cx="12" cy="8" r="4" /><path d="M5 21a7 7 0 0 1 14 0" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2 3.4-.2-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V22h-4v-.5a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.2.1-2-3.4.1-.1A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.5-1H3v-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9L4.2 7l2-3.4.2.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V2h4v.5a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.2-.1 2 3.4-.1.1A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.5 1h.1v4h-.1a1.7 1.7 0 0 0-1.5 1Z" /></>,
+  };
+  return <svg {...common}>{icons[name] || icons.home}</svg>;
 }
 
 function ScannerWorkspace({

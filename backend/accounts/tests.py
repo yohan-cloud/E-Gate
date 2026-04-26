@@ -13,7 +13,7 @@ from unittest.mock import patch
 from types import SimpleNamespace
 
 from accounts.face_utils import HAS_FACE_LIB, get_image_match_threshold, match_embedding
-from accounts.models import PasswordResetCode
+from accounts.models import GateAuditLog, PasswordResetCode
 from accounts.serializers import ResidentRegisterSerializer
 from residents.models import ResidentProfile, VerificationRequest
 
@@ -97,9 +97,20 @@ class AccountsFlowTests(TestCase):
         )
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data.get("meta", {}).get("role"), "GateOperator")
+        self.assertIsNotNone(res.data.get("user", {}).get("last_login"))
         tokens = res.data.get("tokens", {})
         self.assertIn("access", tokens)
         self.assertIn("refresh", tokens)
+
+        gate_user = get_user_model().objects.get(username="gate_test")
+        self.assertIsNotNone(gate_user.last_login)
+
+        self.client.force_authenticate(user=self.admin)
+        list_res = self.client.get("/api/accounts/gate-operators/")
+        self.assertEqual(list_res.status_code, status.HTTP_200_OK)
+        gate_row = next(row for row in list_res.data if row["username"] == "gate_test")
+        self.assertIsNotNone(gate_row["last_login"])
+        self.assertTrue(GateAuditLog.objects.filter(gate_username="gate_test", action_type="login_success").exists())
 
     def test_unified_login_routes_admin_to_administrator_role(self):
         self.client.force_authenticate(user=None)
@@ -154,6 +165,15 @@ class AccountsFlowTests(TestCase):
         managed_row = next(row for row in list_res.data if row["username"] == "gate_manage")
         self.assertEqual(managed_row["full_name"], "Gate Manage")
         self.assertEqual(managed_row["contact_number"], "09171234562")
+
+        logs_res = self.client.get(f"/api/accounts/gate-operators/{gate_id}/audit-logs/")
+        self.assertEqual(logs_res.status_code, status.HTTP_200_OK)
+        self.assertTrue(any(row["action_type"] == "account_created" for row in logs_res.data))
+
+        self.client.force_authenticate(user=get_user_model().objects.get(id=gate_id))
+        denied_logs_res = self.client.get("/api/accounts/gate-audit-logs/")
+        self.assertEqual(denied_logs_res.status_code, status.HTTP_403_FORBIDDEN)
+        self.client.force_authenticate(user=self.admin)
 
         reset_res = self.client.post(
             f"/api/accounts/gate-operators/{gate_id}/reset-password/",

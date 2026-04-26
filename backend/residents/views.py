@@ -148,6 +148,8 @@ def login_resident(request):
             'voter_status': p.voter_status,
         }
 
+    user.last_login = timezone.now()
+    user.save(update_fields=["last_login"])
     resp = generate_token_response(
         user,
         message='Resident login successful',
