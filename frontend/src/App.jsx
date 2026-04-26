@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
-import { AUTH_STATE_CHANGED_EVENT, clearStoredAuth } from "./api";
+import { AUTH_STATE_CHANGED_EVENT, clearStoredAuth, logoutStoredSession } from "./api";
 import ToastContainer from "./components/common/ToastContainer";
 import AdminPortal from "./components/portals/AdminPortal";
 import GatePortal from "./components/portals/GatePortal";
@@ -33,6 +33,16 @@ function ProtectedRoute({ isLoggedIn, role, allowedRoles, children }) {
   return children;
 }
 
+function LoginRoute({ isLoggedIn, onClearAuth, onLogin }) {
+  useEffect(() => {
+    if (isLoggedIn) {
+      onClearAuth();
+    }
+  }, [isLoggedIn, onClearAuth]);
+
+  return <UnifiedLogin onLogin={onLogin} />;
+}
+
 export default function App() {
   const navigate = useNavigate();
   const [{ token, role }, setAuthState] = useState(readStoredAuth);
@@ -40,6 +50,11 @@ export default function App() {
 
   const syncAuthState = () => {
     setAuthState(readStoredAuth());
+  };
+
+  const clearAuthState = () => {
+    clearStoredAuth();
+    setAuthState({ token: "", role: "" });
   };
 
   useEffect(() => {
@@ -55,13 +70,11 @@ export default function App() {
     };
   }, []);
 
-  const handleLogout = () => {
-    clearStoredAuth();
+  const handleLogout = async () => {
     try {
-      localStorage.removeItem("user");
-      localStorage.removeItem("username");
+      await logoutStoredSession();
+      clearAuthState();
     } finally {
-      setAuthState({ token: "", role: "" });
       navigate("/login", { replace: true });
     }
   };
@@ -75,7 +88,7 @@ export default function App() {
         <Route path="/" element={<Navigate to={isLoggedIn ? defaultDashboard : "/login"} replace />} />
         <Route
           path="/login"
-          element={isLoggedIn ? <Navigate to={defaultDashboard} replace /> : <UnifiedLogin onLogin={syncAuthState} />}
+          element={<LoginRoute isLoggedIn={isLoggedIn} onClearAuth={clearAuthState} onLogin={syncAuthState} />}
         />
 
         <Route path="/admin/login" element={<Navigate to="/login" replace />} />

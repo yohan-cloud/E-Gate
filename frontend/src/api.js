@@ -54,6 +54,19 @@ export function clearStoredAuth() {
   }
 }
 
+export async function logoutStoredSession() {
+  const refreshToken = localStorage.getItem("refresh_token");
+  try {
+    if (refreshToken) {
+      await api.post("/accounts/logout/", { refresh_token: refreshToken });
+    }
+  } catch {
+    // Local logout should still complete even if the server already rejected the token.
+  } finally {
+    clearStoredAuth();
+  }
+}
+
 async function refreshAccessTokenWithFetch() {
   const refresh = localStorage.getItem("refresh_token");
   if (!refresh) {

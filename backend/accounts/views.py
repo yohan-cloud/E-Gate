@@ -51,8 +51,22 @@ class PasswordResetAnonThrottle(AnonRateThrottle):
         return super().parse_rate(rate)
 
 
+class LoginAnonThrottle(AnonRateThrottle):
+    scope = "login_anon"
+    rate = "8/min"
+
+
+class LoginUserThrottle(UserRateThrottle):
+    scope = "login_user"
+    rate = "12/min"
+
+
 def password_reset_throttles():
     return [] if settings.DEBUG else [PasswordResetUserThrottle, PasswordResetAnonThrottle]
+
+
+def login_throttles():
+    return [] if settings.DEBUG else [LoginUserThrottle, LoginAnonThrottle]
 
 
 def find_user_by_username_case_insensitive(raw_username, **filters):
@@ -372,6 +386,7 @@ def delete_gate_operator(request, user_id):
 
 # Login Resident
 @api_view(["POST"])
+@throttle_classes(login_throttles())
 def login_resident(request):
     """
     Authenticates a resident and returns access/refresh tokens.
@@ -401,6 +416,7 @@ def login_resident(request):
 
 # Login Admin (also allows Gate Operators with limited role)
 @api_view(["POST"])
+@throttle_classes(login_throttles())
 def login_admin(request):
     """
     Authenticates an admin or gate operator and returns access/refresh tokens.
@@ -428,6 +444,7 @@ def login_admin(request):
 
 
 @api_view(["POST"])
+@throttle_classes(login_throttles())
 def login_user(request):
     """
     Authenticates any supported account type using a single username/password login flow.
