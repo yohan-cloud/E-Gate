@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 
 import { api, getAuthHeaders } from "../api";
 import toast from "../lib/toast";
@@ -56,6 +56,15 @@ function parseResidentBarangayId(decodedText) {
   return text.split("Barangay ID: ")[1]?.split("\n")[0]?.trim() || "";
 }
 
+function createFastQrConfig() {
+  return {
+    fps: 15,
+    qrbox: { width: 340, height: 340 },
+    aspectRatio: 1,
+    disableFlip: false,
+  };
+}
+
 export default function QrScanner({
   eventId,
   onScanResult,
@@ -69,13 +78,15 @@ export default function QrScanner({
   tip = "Tip: Allow camera permission and ensure lighting is adequate.",
   scope = "scanner",
 }) {
-  const resumeDelayMs = 1800;
+  const resumeDelayMs = 900;
   const [message, setMessage] = useState("");
   const [flash, setFlash] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [cameraFacing, setCameraFacing] = useState("environment");
   const scannerRef = useRef(null);
   const scanLockRef = useRef(false);
+  const submitScanRef = useRef(null);
+  const canvasRef = useRef(null);
   const resumeTimerRef = useRef(null);
   const lastTextRef = useRef("");
   const lastTimeRef = useRef(0);
@@ -196,6 +207,50 @@ export default function QrScanner({
   }, [basePath, buildPayload, direction, emitResult, eventId, scope, submitPath]);
 
   useEffect(() => {
+    submitScanRef.current = submitScan;
+  }, [submitScan]);
+
+  const captureQrFrame = useCallback(async () => {
+    if (!streaming || scanLockRef.current) return;
+    const scanner = scannerRef.current;
+    const canvas = canvasRef.current;
+    const reader = document.getElementById(readerIdRef.current);
+    const video = reader?.querySelector("video");
+    if (!scanner || !canvas || !video || !video.videoWidth || !video.videoHeight) {
+      setMessage("Camera frame not ready");
+      return;
+    }
+
+    scanLockRef.current = true;
+    setMessage("Capturing QR...");
+    try {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext("2d");
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+      if (!blob) throw new Error("Unable to capture camera frame.");
+      const file = new File([blob], "qr-capture.jpg", { type: "image/jpeg" });
+      const result = await scanner.scanFileV2(file, false);
+      const decodedText = result?.decodedText || "";
+      if (!decodedText) throw new Error("No QR code detected in capture.");
+      await submitScanRef.current?.(decodedText);
+    } catch (error) {
+      const captureMessage = error?.message || "No QR code detected in capture.";
+      setMessage(captureMessage);
+      setFlash("error");
+      toast.error(captureMessage, scope);
+      playBeep("error");
+      setTimeout(() => setFlash(""), 300);
+    } finally {
+      resumeTimerRef.current = window.setTimeout(() => {
+        scanLockRef.current = false;
+        setMessage(readyMessage || "Ready");
+      }, resumeDelayMs);
+    }
+  }, [readyMessage, resumeDelayMs, scope, streaming]);
+
+  useEffect(() => {
     if (typeof window === "undefined" || typeof document === "undefined") return undefined;
     if (!navigator.mediaDevices?.getUserMedia) {
       setMessage("Camera not supported");
@@ -232,7 +287,14 @@ export default function QrScanner({
 
     const startScanner = async () => {
       await stopScanner();
-      const scanner = new Html5Qrcode(readerIdRef.current, { verbose: false });
+      const scanner = new Html5Qrcode(readerIdRef.current, {
+        verbose: false,
+        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+        useBarCodeDetectorIfSupported: true,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true,
+        },
+      });
       scannerRef.current = scanner;
       setStreaming(false);
       setMessage("Starting camera...");
@@ -245,19 +307,14 @@ export default function QrScanner({
         lastTimeRef.current = now;
         scanLockRef.current = true;
         setMessage("Processing scan...");
-        await submitScan(decodedText);
+        await submitScanRef.current?.(decodedText);
         resumeTimerRef.current = window.setTimeout(() => {
           scanLockRef.current = false;
           setMessage(readyMessage || "Ready");
         }, resumeDelayMs);
       };
 
-      const config = {
-        fps: 15,
-        qrbox: { width: 340, height: 340 },
-        aspectRatio: 1,
-        disableFlip: false,
-      };
+      const config = createFastQrConfig();
 
       let startError = null;
       try {
@@ -293,6 +350,10 @@ export default function QrScanner({
               facingMode: { ideal: cameraFacing },
               width: { ideal: 1280 },
               height: { ideal: 720 },
+              advanced: [
+                { focusMode: "continuous" },
+                { exposureMode: "continuous" },
+              ],
             },
             config,
             onScanSuccess,
@@ -324,7 +385,7 @@ export default function QrScanner({
       setStreaming(false);
       stopScanner();
     };
-  }, [cameraFacing, eventId, readyMessage, requireEvent, scope, submitScan]);
+  }, [cameraFacing, eventId, readyMessage, requireEvent, scope]);
 
   const borderColor = flash === "success" ? "#22c55e" : flash === "error" ? "#ef4444" : "#e5e7eb";
   return (
@@ -332,14 +393,18 @@ export default function QrScanner({
       <ToastContainer scope={scope} position="bottom-center" />
       <h2 style={{ marginTop: 0 }}>{title}</h2>
       <div className="scanner-camera-shell">
-        <div id={readerIdRef.current} style={{ width: 420, height: 420, margin: "12px auto" }} />
+        <div id={readerIdRef.current} style={{ width: 450, height: 450, margin: "12px auto" }} />
         <div className="scanner-frame-overlay" aria-hidden="true" />
       </div>
       <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+        <button type="button" onClick={captureQrFrame} disabled={!streaming}>
+          Capture QR
+        </button>
         <button type="button" onClick={() => setCameraFacing((current) => (current === "environment" ? "user" : "environment"))} disabled={!streaming}>
           Switch Camera
         </button>
       </div>
+      <canvas ref={canvasRef} style={{ display: "none" }} />
       <p style={{ marginTop: 8 }}><b>Status:</b> {message || readyMessage || "Ready"}</p>
       <p style={{ fontSize: 12, opacity: 0.8 }}><b>Camera:</b> {cameraFacing === "environment" ? "Rear camera" : "Front camera"}</p>
       <p style={{ fontSize: 12, opacity: 0.7 }}>{tip}</p>
