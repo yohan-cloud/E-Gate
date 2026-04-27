@@ -8,11 +8,23 @@ import GatePortal from "./components/portals/GatePortal";
 import ResidentPortal from "./components/portals/ResidentPortal";
 import UnifiedLogin from "./components/UnifiedLogin";
 
+const ADMIN_UI_SETTINGS_KEY = "admin_ui_settings";
+
 function readStoredAuth() {
   return {
     token: localStorage.getItem("access_token") || "",
     role: localStorage.getItem("role") || "",
   };
+}
+
+function syncStoredTheme() {
+  try {
+    const raw = localStorage.getItem(ADMIN_UI_SETTINGS_KEY);
+    const settings = raw ? JSON.parse(raw) : null;
+    document.documentElement.dataset.theme = settings?.nightMode ? "dark" : "light";
+  } catch {
+    document.documentElement.dataset.theme = "light";
+  }
 }
 
 function dashboardForRole(role) {
@@ -58,15 +70,25 @@ export default function App() {
   };
 
   useEffect(() => {
+    syncStoredTheme();
+
     const handleAuthChanged = () => {
       setAuthState(readStoredAuth());
     };
 
+    const handleThemeChanged = () => {
+      syncStoredTheme();
+    };
+
     window.addEventListener("storage", handleAuthChanged);
+    window.addEventListener("storage", handleThemeChanged);
     window.addEventListener(AUTH_STATE_CHANGED_EVENT, handleAuthChanged);
+    window.addEventListener("admin-ui-settings-changed", handleThemeChanged);
     return () => {
       window.removeEventListener("storage", handleAuthChanged);
+      window.removeEventListener("storage", handleThemeChanged);
       window.removeEventListener(AUTH_STATE_CHANGED_EVENT, handleAuthChanged);
+      window.removeEventListener("admin-ui-settings-changed", handleThemeChanged);
     };
   }, []);
 

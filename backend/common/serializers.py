@@ -6,7 +6,7 @@ from rest_framework import serializers
 
 import json
 
-from .models import AdminSetting, AuditLog, GuestAppointment, GuestAppointmentScanLog
+from .models import AdminSetting, AuditLog, GuestAppointment, GuestAppointmentScanLog, ResidentAppointment
 
 PHONE_VALUE_RE = re.compile(r"^[0-9+\-() ]*$")
 
@@ -213,6 +213,78 @@ class GuestAppointmentGateLookupSerializer(serializers.ModelSerializer):
 
     def get_is_checked_out(self, obj):
         return bool(obj.checked_out_at)
+
+
+class ResidentAppointmentSerializer(serializers.ModelSerializer):
+    resident_name = serializers.SerializerMethodField()
+    resident_username = serializers.CharField(source="resident.username", read_only=True)
+    resident_contact = serializers.SerializerMethodField()
+    reviewed_by_name = serializers.CharField(source="reviewed_by.username", read_only=True)
+
+    class Meta:
+        model = ResidentAppointment
+        fields = [
+            "id",
+            "resident",
+            "resident_name",
+            "resident_username",
+            "resident_contact",
+            "purpose",
+            "appointment_at",
+            "resident_note",
+            "admin_note",
+            "status",
+            "reviewed_by",
+            "reviewed_by_name",
+            "created_at",
+            "updated_at",
+            "reviewed_at",
+            "cancelled_at",
+        ]
+        read_only_fields = [
+            "resident",
+            "resident_name",
+            "resident_username",
+            "resident_contact",
+            "reviewed_by",
+            "reviewed_by_name",
+            "created_at",
+            "updated_at",
+            "reviewed_at",
+            "cancelled_at",
+        ]
+
+    def validate_purpose(self, value):
+        value = (value or "").strip()
+        if len(value) < 3:
+            raise serializers.ValidationError("Purpose must be at least 3 characters.")
+        return value
+
+    def validate_appointment_at(self, value):
+        if value and value < timezone.now() - timedelta(minutes=1):
+            raise serializers.ValidationError("Appointment schedule cannot be in the past.")
+        return value
+
+    def validate_resident_note(self, value):
+        return (value or "").strip()
+
+    def validate_admin_note(self, value):
+        return (value or "").strip()
+
+    def get_resident_name(self, obj):
+        user = getattr(obj, "resident", None)
+        if not user:
+            return ""
+        full_name = user.get_full_name().strip()
+        profile = getattr(user, "profile", None)
+        return full_name or getattr(profile, "full_name", "") or user.username
+
+    def get_resident_contact(self, obj):
+        user = getattr(obj, "resident", None)
+        if not user:
+            return ""
+        profile = getattr(user, "profile", None)
+        return getattr(profile, "phone_number", "") or getattr(user, "contact_number", "") or ""
 
 
 class AdminSettingSerializer(serializers.ModelSerializer):

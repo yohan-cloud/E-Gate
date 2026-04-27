@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { api } from "../../api";
+import NightModeIconButton from "../common/NightModeIconButton";
+import Appointments from "../resident/Appointments";
 import BrowseEvents from "../resident/BrowseEvents";
 import MyRegistrations from "../resident/MyRegistrations";
 import ProfileCard from "../resident/ProfileCard";
@@ -9,6 +11,7 @@ import VerificationTab from "../resident/VerificationTab";
 const RESIDENT_NAV_ITEMS = [
   { key: "browse", label: "Browse Events", eyebrow: "Explore", icon: "calendar" },
   { key: "mine", label: "My Registrations", eyebrow: "Activity", icon: "clipboard" },
+  { key: "appointments", label: "Appointments", eyebrow: "Services", icon: "calendarCheck" },
   { key: "verification", label: "ID Reverification", eyebrow: "Identity", icon: "shield" },
   { key: "profile", label: "Profile", eyebrow: "Account", icon: "user" },
 ];
@@ -232,6 +235,7 @@ export default function ResidentPortal({ onLogout }) {
             <div className="resident-main-title">{mustChangePassword ? "Change Password" : activeItem.label}</div>
           </div>
           <div className="resident-main-meta">
+            <NightModeIconButton />
             <div className="user-chip">
               <div className="user-name">{greeting}, {name}</div>
               <div className="user-role">{role || "Resident"}</div>
@@ -291,6 +295,7 @@ export default function ResidentPortal({ onLogout }) {
           />
         )}
         {!mustChangePassword && viewMode === "mine" && <MyRegistrations />}
+        {!mustChangePassword && viewMode === "appointments" && <Appointments />}
         {!mustChangePassword && viewMode === "profile" && <ProfileCard />}
         {!mustChangePassword && viewMode === "verification" && (
           <VerificationTab
@@ -339,6 +344,7 @@ function renderPortalIcon(name) {
   };
   const icons = {
     calendar: <><path d="M7 3v4" /><path d="M17 3v4" /><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M4 10h16" /></>,
+    calendarCheck: <><path d="M7 3v4" /><path d="M17 3v4" /><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M4 10h16" /><path d="m9 15 2 2 4-5" /></>,
     clipboard: <><rect x="6" y="4" width="12" height="17" rx="2" /><path d="M9 4.5A2 2 0 0 1 11 3h2a2 2 0 0 1 2 1.5" /><path d="M9 10h6" /><path d="M9 14h6" /><path d="M9 18h4" /></>,
     shield: <><path d="M12 21s7-3.5 7-10V6l-7-3-7 3v5c0 6.5 7 10 7 10Z" /><path d="m9.5 12 1.7 1.7 3.5-4" /></>,
     user: <><circle cx="12" cy="8" r="4" /><path d="M5 21a7 7 0 0 1 14 0" /></>,

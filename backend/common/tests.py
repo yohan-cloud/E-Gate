@@ -11,6 +11,7 @@ from rest_framework.test import APIClient
 
 from .views import ADMIN_UI_DEFAULTS
 from common.models import AuditLog
+from residents.models import ResidentProfile
 
 
 @override_settings(
@@ -37,6 +38,19 @@ class CommonApiTests(TestCase):
             username="gate_common",
             password="pass1234",
             is_gate_operator=True,
+        )
+        self.resident = User.objects.create_user(
+            username="resident_common",
+            password="pass1234",
+            first_name="Maria",
+            last_name="Santos",
+            is_resident=True,
+        )
+        ResidentProfile.objects.create(
+            user=self.resident,
+            address="Zone 1",
+            birthdate="2000-01-01",
+            phone_number="09175550000",
         )
 
     def auth(self, user):
@@ -170,6 +184,162 @@ class CommonApiTests(TestCase):
         )
         self.assertEqual(invalid_eta.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("eta", invalid_eta.data)
+
+    def test_resident_can_request_and_admin_can_review_appointment(self):
+        self.auth(self.resident)
+        create = self.client.post(
+            "/api/common/resident-appointments/",
+            {
+                "purpose": "Barangay certificate",
+                "appointment_at": (timezone.now() + timedelta(days=1)).isoformat(),
+                "resident_note": "Need it for school requirements.",
+            },
+            format="json",
+        )
+        self.assertEqual(create.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(create.data["status"], "pending")
+        self.assertEqual(create.data["resident_name"], "Maria Santos")
+
+        appointment_id = create.data["id"]
+        self.auth(self.admin)
+        review = self.client.patch(
+            f"/api/common/resident-appointments/{appointment_id}/",
+            {
+                "status": "approved",
+                "admin_note": "Bring a valid ID.",
+                "appointment_at": (timezone.now() + timedelta(days=2)).isoformat(),
+            },
+            format="json",
+        )
+        self.assertEqual(review.status_code, status.HTTP_200_OK)
+        self.assertEqual(review.data["status"], "approved")
+        self.assertIn("approved", review.data["admin_note"])
+        self.assertIn("Bring a valid ID.", review.data["admin_note"])
+        self.assertEqual(review.data["reviewed_by_name"], self.admin.username)
+
+        self.auth(self.resident)
+        mine = self.client.get("/api/common/resident-appointments/")
+        self.assertEqual(mine.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mine.data), 1)
+        self.assertEqual(mine.data[0]["status"], "approved")
+
+    def test_resident_can_change_active_appointment_for_review(self):
+        self.auth(self.resident)
+        create = self.client.post(
+            "/api/common/resident-appointments/",
+            {
+                "purpose": "Barangay certificate",
+                "appointment_at": (timezone.now() + timedelta(days=1)).isoformat(),
+            },
+            format="json",
+        )
+        appointment_id = create.data["id"]
+
+        self.auth(self.admin)
+        review = self.client.patch(
+            f"/api/common/resident-appointments/{appointment_id}/",
+            {
+                "status": "approved",
+                "admin_note": "Bring a valid ID.",
+            },
+            format="json",
+        )
+        self.assertEqual(review.status_code, status.HTTP_200_OK)
+        self.assertEqual(review.data["status"], "approved")
+        self.assertEqual(review.data["reviewed_by_name"], self.admin.username)
+
+        self.auth(self.resident)
+        change = self.client.patch(
+            f"/api/common/resident-appointments/{appointment_id}/",
+            {
+                "purpose": "Barangay certificate pickup",
+                "appointment_at": (timezone.now() + timedelta(days=3)).isoformat(),
+                "resident_note": "Requesting a later schedule.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(change.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(change.data["error"], "This appointment can no longer be changed.")
+
+    def test_resident_can_only_cancel_pending_appointment(self):
+        self.auth(self.resident)
+        create = self.client.post(
+            "/api/common/resident-appointments/",
+            {
+                "purpose": "Barangay certificate",
+                "appointment_at": (timezone.now() + timedelta(days=1)).isoformat(),
+            },
+            format="json",
+        )
+        appointment_id = create.data["id"]
+
+        self.auth(self.admin)
+        review = self.client.patch(
+            f"/api/common/resident-appointments/{appointment_id}/",
+            {"status": "approved", "admin_note": "Approved by admin."},
+            format="json",
+        )
+        self.assertEqual(review.status_code, status.HTTP_200_OK)
+
+        self.auth(self.resident)
+        cancel = self.client.patch(
+            f"/api/common/resident-appointments/{appointment_id}/",
+            {"status": "cancelled"},
+            format="json",
+        )
+        self.assertEqual(cancel.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(cancel.data["error"], "This appointment can no longer be cancelled.")
+
+    def test_admin_can_create_resident_appointment_for_resident(self):
+        self.auth(self.admin)
+        create = self.client.post(
+            "/api/common/resident-appointments/",
+            {
+                "resident": self.resident.id,
+                "purpose": "Senior citizen record update",
+                "appointment_at": (timezone.now() + timedelta(days=1)).isoformat(),
+                "status": "pending",
+                "admin_note": "Admin assisted booking.",
+            },
+            format="json",
+        )
+        self.assertEqual(create.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(create.data["resident"], self.resident.id)
+        self.assertEqual(create.data["status"], "approved")
+        self.assertEqual(create.data["reviewed_by_name"], self.admin.username)
+
+        self.auth(self.resident)
+        mine = self.client.get("/api/common/resident-appointments/")
+        self.assertEqual(mine.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mine.data), 1)
+        self.assertEqual(mine.data[0]["purpose"], "Senior citizen record update")
+
+    def test_admin_can_reject_pending_resident_appointment_with_note(self):
+        self.auth(self.resident)
+        create = self.client.post(
+            "/api/common/resident-appointments/",
+            {
+                "purpose": "Barangay certificate",
+                "appointment_at": (timezone.now() + timedelta(days=1)).isoformat(),
+            },
+            format="json",
+        )
+        self.assertEqual(create.status_code, status.HTTP_201_CREATED)
+
+        self.auth(self.admin)
+        review = self.client.patch(
+            f"/api/common/resident-appointments/{create.data['id']}/",
+            {
+                "status": "rejected",
+                "admin_note": "Please complete your resident profile first.",
+            },
+            format="json",
+        )
+        self.assertEqual(review.status_code, status.HTTP_200_OK)
+        self.assertEqual(review.data["status"], "rejected")
+        self.assertIn("rejected", review.data["admin_note"])
+        self.assertIn("Please complete your resident profile first.", review.data["admin_note"])
 
     def test_guest_list_all_is_not_implicitly_limited_to_today(self):
         with override_settings(ARCHIVE_ROOT=Path(self.tempdir.name)):

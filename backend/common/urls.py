@@ -15,5 +15,7 @@ urlpatterns = [
     path("guests/<int:pk>/manual-scan/", views.admin_manual_guest_scan, name="guest_appointment_manual_scan"),
     path("guests/<int:pk>/unarchive/", views.unarchive_guest, name="guest_appointment_unarchive"),
     path("guests/<int:pk>/", views.GuestAppointmentDetailView.as_view(), name="guest_appointment_detail"),
+    path("resident-appointments/", views.ResidentAppointmentListCreateView.as_view(), name="resident_appointments"),
+    path("resident-appointments/<int:pk>/", views.ResidentAppointmentDetailView.as_view(), name="resident_appointment_detail"),
     path("settings/admin-ui/", views.admin_ui_settings, name="admin_ui_settings"),
 ]

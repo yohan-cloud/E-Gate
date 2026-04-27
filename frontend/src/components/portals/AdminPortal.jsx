@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import NightModeIconButton from "../common/NightModeIconButton";
 import EventSelector from "../EventSelector";
 import FaceScanner from "../FaceScanner";
 import QrScanner from "../QrScanner";
@@ -28,7 +29,7 @@ const ADMIN_NAV_ITEMS = [
   { key: "createEvent", label: "Event Creation", eyebrow: "New", icon: "plus" },
   { key: "createResident", label: "Resident Registration", eyebrow: "Onboard", icon: "userPlus" },
   { key: "gateAccounts", label: "Gate Accounts", eyebrow: "Access", icon: "key" },
-  { key: "guests", label: "Guest Appointment", eyebrow: "Visitors", icon: "user" },
+  { key: "guests", label: "Appointments", eyebrow: "Visitors", icon: "user" },
   { key: "settings", label: "Settings", eyebrow: "System", icon: "settings" },
 ];
 
@@ -172,6 +173,7 @@ export default function AdminPortal({ onLogout }) {
             <div className="admin-main-title">{activeItem.label}</div>
           </div>
           <div className="admin-main-meta">
+            <NightModeIconButton />
             <div className="user-chip">
               <div className="user-name">{greeting}, {adminName}</div>
               <div className="user-role">Administrator</div>

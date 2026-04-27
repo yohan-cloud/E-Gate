@@ -624,6 +624,330 @@ body {
   padding: 10px 16px !important;
 }
 
+.appointment-module {
+  display: grid;
+  gap: 16px;
+}
+
+.appointment-module-head {
+  margin-bottom: 0;
+}
+
+.appointment-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 340px);
+  gap: 12px;
+  align-items: center;
+}
+
+.appointment-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.appointment-tab-count {
+  display: inline-grid;
+  min-width: 22px;
+  height: 22px;
+  margin-left: 6px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.appointment-search {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #d8e3dc;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.appointment-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #183126;
+  font-weight: 600;
+}
+
+.appointment-list {
+  display: grid;
+  gap: 12px;
+}
+
+.appointment-row {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.appointment-row-controls {
+  align-items: start;
+}
+
+.appointment-review-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.appointment-alert {
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.appointment-alert-error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.appointment-alert-success {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.appointment-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.46);
+}
+
+.appointment-modal-panel {
+  box-sizing: border-box;
+  width: min(720px, calc(100vw - 32px));
+  max-height: min(86vh, 820px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid rgba(146, 181, 157, 0.72);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
+  padding: 20px;
+}
+
+.appointment-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.appointment-modal-head h3 {
+  margin: 2px 0 0;
+  color: #183126;
+}
+
+.appointment-modal-eyebrow {
+  color: #2f8f5b;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.appointment-modal-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  padding: 0 !important;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.appointment-type-switch {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.appointment-modal-form {
+  margin-top: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.appointment-modal-form > *,
+.appointment-modal-form .form-group,
+.appointment-modal-form .guest-input-shell {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.appointment-modal-form .guest-form-input,
+.appointment-modal-form .picker-trigger,
+.appointment-modal-form select,
+.appointment-modal-form input,
+.appointment-modal-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 50px;
+  max-width: 100%;
+}
+
+.appointment-modal-form .guest-input-shell .guest-form-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.appointment-modal-form .picker-field-datetime {
+  grid-column: auto !important;
+}
+
+.appointment-modal-form .guest-form-textarea {
+  grid-column: 1 / -1;
+  min-height: 84px;
+}
+
+.appointment-modal-form .guest-form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.appointment-modal-form .guest-form-submit,
+.appointment-modal-form .guest-form-cancel {
+  min-width: 150px;
+  width: auto;
+}
+
+.appointment-modal-form .picker-panel {
+  max-width: 100%;
+}
+
+.appointment-modal-form .picker-panel-datetime {
+  width: min(540px, calc(100vw - 72px));
+}
+
+.appointment-review-mode {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.appointment-review-mode button {
+  min-height: 42px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(146, 181, 157, 0.48);
+  background: rgba(248, 255, 249, 0.96);
+  color: #183126;
+  font-weight: 800;
+}
+
+.appointment-review-mode button.active {
+  border-color: #238452;
+  background: #238452;
+  color: #ffffff;
+}
+
+@media (max-width: 640px) {
+  .appointment-modal-backdrop {
+    padding: 12px;
+  }
+
+  .appointment-modal-panel {
+    width: 100%;
+    padding: 16px;
+  }
+
+  .appointment-modal-form {
+    grid-template-columns: 1fr !important;
+  }
+
+  .appointment-modal-form .picker-field-datetime,
+  .appointment-modal-form .guest-form-textarea,
+  .appointment-modal-form .guest-form-actions {
+    grid-column: 1 / -1 !important;
+  }
+
+  .appointment-modal-form .guest-form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+.appointment-modal-form .guest-form-submit,
+.appointment-modal-form .guest-form-cancel {
+  width: 100%;
+  }
+}
+
+:root[data-theme="dark"] .appointment-module,
+:root[data-theme="dark"] .appointment-row,
+:root[data-theme="dark"] .appointment-modal-panel {
+  border-color: rgba(113, 113, 122, 0.58) !important;
+  background: #09090b !important;
+  color: #f8fafc !important;
+}
+
+:root[data-theme="dark"] .appointment-module h3,
+:root[data-theme="dark"] .appointment-modal-head h3,
+:root[data-theme="dark"] .appointment-modal-eyebrow,
+:root[data-theme="dark"] .appointment-row .guest-record-name,
+:root[data-theme="dark"] .appointment-row .guest-info-value,
+:root[data-theme="dark"] .appointment-row .guest-detail-notes-body {
+  color: #f8fafc !important;
+}
+
+:root[data-theme="dark"] .appointment-module [style*="color: #4f6b5d"],
+:root[data-theme="dark"] .appointment-row .guest-record-contact,
+:root[data-theme="dark"] .appointment-row .guest-info-label,
+:root[data-theme="dark"] .appointment-row .guest-info-subvalue,
+:root[data-theme="dark"] .appointment-row .guest-detail-section-title {
+  color: #cbd5e1 !important;
+}
+
+:root[data-theme="dark"] .appointment-search,
+:root[data-theme="dark"] .appointment-modal-form .guest-form-input,
+:root[data-theme="dark"] .appointment-modal-form input,
+:root[data-theme="dark"] .appointment-modal-form select,
+:root[data-theme="dark"] .appointment-modal-form textarea,
+:root[data-theme="dark"] .appointment-modal-form .picker-trigger {
+  border-color: rgba(113, 113, 122, 0.62) !important;
+  background: #000000 !important;
+  color: #f8fafc !important;
+}
+
+:root[data-theme="dark"] .appointment-search input,
+:root[data-theme="dark"] .appointment-modal-form input::placeholder,
+:root[data-theme="dark"] .appointment-modal-form textarea::placeholder,
+:root[data-theme="dark"] .appointment-modal-form .picker-trigger.placeholder {
+  color: #f8fafc !important;
+  opacity: 1;
+}
+
+:root[data-theme="dark"] .appointment-modal-close,
+:root[data-theme="dark"] .appointment-modal-form .guest-form-cancel,
+:root[data-theme="dark"] .appointment-review-mode button {
+  border-color: rgba(113, 113, 122, 0.62) !important;
+  background: #18181b !important;
+  color: #f8fafc !important;
+}
+
+:root[data-theme="dark"] .appointment-review-mode button.active {
+  border-color: #22c55e !important;
+  background: #166534 !important;
+  color: #ffffff !important;
+}
+
 /* Form layout utilities */
 .form-grid {
   display: grid;
@@ -2425,6 +2749,467 @@ tr:hover {
 .audit-apply-button:hover,
 .audit-clear-button:hover {
   filter: brightness(0.98);
+}
+
+:root[data-theme="dark"] body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .card,
+:root[data-theme="dark"] .event-create-card,
+:root[data-theme="dark"] .guest-card-panel,
+:root[data-theme="dark"] .guest-form-card,
+:root[data-theme="dark"] .guest-table-card,
+:root[data-theme="dark"] .venue-management-head,
+:root[data-theme="dark"] .venue-management-grid,
+:root[data-theme="dark"] .venue-form,
+:root[data-theme="dark"] .venue-table-shell,
+:root[data-theme="dark"] .confirm-dialog-panel,
+:root[data-theme="dark"] .modern-select-panel,
+:root[data-theme="dark"] .admin-overview-stat-card,
+:root[data-theme="dark"] .admin-overview-feed-card,
+:root[data-theme="dark"] .admin-analytics-stat-card,
+:root[data-theme="dark"] .admin-analytics-kpi-card,
+:root[data-theme="dark"] .admin-analytics-attendee-row,
+:root[data-theme="dark"] .verification-stat-card,
+:root[data-theme="dark"] .admin-resident-row,
+:root[data-theme="dark"] .admin-guest-row,
+:root[data-theme="dark"] .verification-request-card,
+:root[data-theme="dark"] .audit-item {
+  border-color: var(--border) !important;
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  box-shadow: var(--shadow);
+}
+
+:root[data-theme="dark"] .card input,
+:root[data-theme="dark"] .card select,
+:root[data-theme="dark"] .card textarea,
+:root[data-theme="dark"] .venue-form input,
+:root[data-theme="dark"] .guest-form-input,
+:root[data-theme="dark"] .guest-form-grid .picker-trigger,
+:root[data-theme="dark"] .audit-filter-input,
+:root[data-theme="dark"] .verification-search-box,
+:root[data-theme="dark"] .verification-search-input,
+:root[data-theme="dark"] .modern-select-trigger {
+  border-color: var(--border) !important;
+  background: rgba(0, 0, 0, 0.92) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea,
+:root[data-theme="dark"] .guest-form-input,
+:root[data-theme="dark"] .guest-search-row input,
+:root[data-theme="dark"] .gate-audit-filter-grid input,
+:root[data-theme="dark"] .gate-audit-filter-grid select,
+:root[data-theme="dark"] .gate-account-search input,
+:root[data-theme="dark"] .gate-account-password-wrap input,
+:root[data-theme="dark"] .modern-select-option {
+  border-color: rgba(113, 113, 122, 0.62) !important;
+  background: #000000 !important;
+  color: #f4f4f5 !important;
+}
+
+:root[data-theme="dark"] input::placeholder,
+:root[data-theme="dark"] textarea::placeholder,
+:root[data-theme="dark"] .guest-form-input::placeholder {
+  color: #e4e4e7 !important;
+  opacity: 1;
+}
+
+:root[data-theme="dark"] .form-group label,
+:root[data-theme="dark"] .guest-filter-field,
+:root[data-theme="dark"] .guest-sort-field,
+:root[data-theme="dark"] .gate-account-label,
+:root[data-theme="dark"] .modern-select-option-copy small {
+  color: #d4d4d8 !important;
+}
+
+:root[data-theme="dark"] .modern-select-option:hover,
+:root[data-theme="dark"] .modern-select-option:focus-visible,
+:root[data-theme="dark"] .modern-select-option.selected {
+  background: #27272a !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] .segmented-pill {
+  border-color: rgba(113, 113, 122, 0.62) !important;
+  background: rgba(24, 24, 27, 0.92) !important;
+  color: #d4d4d8 !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .segmented-pill:hover,
+:root[data-theme="dark"] .segmented-pill:focus-visible {
+  border-color: rgba(134, 239, 172, 0.56) !important;
+  background: rgba(39, 39, 42, 0.96) !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] .segmented-pill.selected {
+  border-color: #86efac !important;
+  background: rgba(34, 197, 94, 0.22) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(134, 239, 172, 0.18) !important;
+}
+
+:root[data-theme="dark"] .muted,
+:root[data-theme="dark"] .card small,
+:root[data-theme="dark"] .guest-form-subtitle,
+:root[data-theme="dark"] .guest-info-label,
+:root[data-theme="dark"] .resident-info-label,
+:root[data-theme="dark"] .verification-request-meta,
+:root[data-theme="dark"] .admin-overview-activity-copy,
+:root[data-theme="dark"] .admin-overview-activity-time {
+  color: var(--muted) !important;
+}
+
+:root[data-theme="dark"] h1,
+:root[data-theme="dark"] h2,
+:root[data-theme="dark"] h3,
+:root[data-theme="dark"] h4,
+:root[data-theme="dark"] .guest-form-title,
+:root[data-theme="dark"] .guest-record-name,
+:root[data-theme="dark"] .guest-info-value,
+:root[data-theme="dark"] .resident-info-value {
+  color: var(--text) !important;
+}
+
+:root[data-theme="dark"] .admin-main [style*="color: #0f172a"],
+:root[data-theme="dark"] .admin-main [style*="color:#0f172a"],
+:root[data-theme="dark"] .admin-main [style*="color: #183126"],
+:root[data-theme="dark"] .admin-main [style*="color:#183126"],
+:root[data-theme="dark"] .admin-main [style*="color: #1f2937"],
+:root[data-theme="dark"] .admin-main [style*="color:#1f2937"],
+:root[data-theme="dark"] .admin-main [style*="color: #334155"],
+:root[data-theme="dark"] .admin-main [style*="color:#334155"],
+:root[data-theme="dark"] .admin-main [style*="color: #355745"],
+:root[data-theme="dark"] .admin-main [style*="color:#355745"],
+:root[data-theme="dark"] .admin-main [style*="color: rgb(15, 23, 42)"],
+:root[data-theme="dark"] .admin-main [style*="color: rgb(24, 49, 38)"],
+:root[data-theme="dark"] .admin-main [style*="color: rgb(31, 41, 55)"],
+:root[data-theme="dark"] .admin-main [style*="color: rgb(51, 65, 85)"],
+:root[data-theme="dark"] .admin-main strong,
+:root[data-theme="dark"] .admin-main b {
+  color: var(--text) !important;
+}
+
+:root[data-theme="dark"] .admin-main [style*="color: #475569"],
+:root[data-theme="dark"] .admin-main [style*="color:#475569"],
+:root[data-theme="dark"] .admin-main [style*="color: #4f6b5d"],
+:root[data-theme="dark"] .admin-main [style*="color:#4f6b5d"],
+:root[data-theme="dark"] .admin-main [style*="color: #64748b"],
+:root[data-theme="dark"] .admin-main [style*="color:#64748b"],
+:root[data-theme="dark"] .admin-main [style*="color: #6b7280"],
+:root[data-theme="dark"] .admin-main [style*="color:#6b7280"],
+:root[data-theme="dark"] .admin-main [style*="color: #94a3b8"],
+:root[data-theme="dark"] .admin-main [style*="color:#94a3b8"],
+:root[data-theme="dark"] .admin-main [style*="color: rgb(71, 85, 105)"],
+:root[data-theme="dark"] .admin-main [style*="color: rgb(79, 107, 93)"],
+:root[data-theme="dark"] .admin-main [style*="color: rgb(100, 116, 139)"],
+:root[data-theme="dark"] .admin-main [style*="color: rgb(107, 114, 128)"],
+:root[data-theme="dark"] .admin-main [style*="color: rgb(148, 163, 184)"] {
+  color: var(--muted) !important;
+}
+
+:root[data-theme="dark"] .admin-main [style*="background: #fff"],
+:root[data-theme="dark"] .admin-main [style*="background:#fff"],
+:root[data-theme="dark"] .admin-main [style*="background: white"],
+:root[data-theme="dark"] .admin-main [style*="background: #f8fafc"],
+:root[data-theme="dark"] .admin-main [style*="background:#f8fafc"],
+:root[data-theme="dark"] .admin-main [style*="background-color: #fff"],
+:root[data-theme="dark"] .admin-main [style*="background-color:#fff"],
+:root[data-theme="dark"] .admin-main [style*="background-color: white"],
+:root[data-theme="dark"] .admin-main [style*="background-color: #f8fafc"],
+:root[data-theme="dark"] .admin-main [style*="background-color:#f8fafc"],
+:root[data-theme="dark"] .admin-main [style*="background: rgb(255, 255, 255)"],
+:root[data-theme="dark"] .admin-main [style*="background: rgb(248, 250, 252)"],
+:root[data-theme="dark"] .admin-main [style*="background-color: rgb(248, 250, 252)"],
+:root[data-theme="dark"] .admin-main [style*="background-color: rgb(255, 255, 255)"] {
+  background: var(--panel-strong) !important;
+}
+
+:root[data-theme="dark"] .admin-main [style*="border: 1px solid #e5e7eb"],
+:root[data-theme="dark"] .admin-main [style*="border-bottom: 1px solid #e5e7eb"],
+:root[data-theme="dark"] .admin-main [style*="border: 1px solid #cbd5e1"],
+:root[data-theme="dark"] .admin-main [style*="border-bottom: 1px solid #cbd5e1"],
+:root[data-theme="dark"] .admin-main [style*="border: 1px solid rgb(229, 231, 235)"],
+:root[data-theme="dark"] .admin-main [style*="border: 1px solid rgb(203, 213, 225)"],
+:root[data-theme="dark"] .admin-main [style*="border-bottom: 1px solid rgb(203, 213, 225)"],
+:root[data-theme="dark"] .admin-main [style*="border-bottom: 1px solid rgb(229, 231, 235)"] {
+  border-color: var(--border) !important;
+}
+
+:root[data-theme="dark"] .residents-records-card .resident-summary-line,
+:root[data-theme="dark"] .residents-records-card .resident-summary-line span,
+:root[data-theme="dark"] .residents-records-card .resident-summary-line span::before {
+  color: #cbd5e1 !important;
+}
+
+:root[data-theme="dark"] .residents-records-card .resident-details-toggle {
+  color: #86efac !important;
+}
+
+:root[data-theme="dark"] .residents-records-card .admin-resident-row {
+  border-color: rgba(113, 113, 122, 0.52) !important;
+  background: rgba(9, 9, 11, 0.96) !important;
+}
+
+:root[data-theme="dark"] .residents-records-card .admin-resident-main > div:first-child {
+  background: #18181b !important;
+  color: #e4e4e7 !important;
+}
+
+:root[data-theme="dark"] .residents-records-card input[type="search"] {
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] table,
+:root[data-theme="dark"] th,
+:root[data-theme="dark"] td {
+  color: var(--text);
+  border-color: rgba(113, 113, 122, 0.34);
+}
+
+:root[data-theme="dark"] th {
+  background: rgba(39, 39, 42, 0.92);
+}
+
+:root[data-theme="dark"] tr:hover {
+  background: rgba(39, 39, 42, 0.58);
+}
+
+:root[data-theme="dark"] .resident-action-neutral,
+:root[data-theme="dark"] .audit-refresh-button,
+:root[data-theme="dark"] .audit-clear-button,
+:root[data-theme="dark"] .guest-form-cancel,
+:root[data-theme="dark"] .guest-detail-actions .btn-primary,
+:root[data-theme="dark"] .resident-action-button,
+:root[data-theme="dark"] .gate-account-search button,
+:root[data-theme="dark"] .gate-account-secondary,
+:root[data-theme="dark"] .gate-account-actions button:not(.danger),
+:root[data-theme="dark"] .gate-account-password-toggle,
+:root[data-theme="dark"] .venue-form-actions .secondary-btn,
+:root[data-theme="dark"] .venue-row-actions button {
+  border-color: var(--border) !important;
+  background: var(--panel-strong) !important;
+  color: var(--text) !important;
+}
+
+:root[data-theme="dark"] .audit-apply-button,
+:root[data-theme="dark"] .guest-form-submit,
+:root[data-theme="dark"] .gate-account-submit,
+:root[data-theme="dark"] .gate-account-add-toggle,
+:root[data-theme="dark"] .resident-action-save {
+  border-color: #3b82f6 !important;
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] .guest-status-badge,
+:root[data-theme="dark"] .venue-status,
+:root[data-theme="dark"] .gate-account-status,
+:root[data-theme="dark"] .gate-audit-status {
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .venue-management-head p {
+  color: #d4d4d8 !important;
+}
+
+:root[data-theme="dark"] .venue-toggle {
+  color: #f4f4f5 !important;
+}
+
+:root[data-theme="dark"] .venue-table th {
+  background: #27272a !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] .venue-table td {
+  color: #f4f4f5 !important;
+}
+
+:root[data-theme="dark"] .venue-status.active {
+  background: rgba(34, 197, 94, 0.18) !important;
+  color: #86efac !important;
+  border: 1px solid rgba(74, 222, 128, 0.42);
+}
+
+:root[data-theme="dark"] .venue-status.inactive {
+  background: rgba(148, 163, 184, 0.16) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+}
+
+:root[data-theme="dark"] .gate-account-status.active {
+  background: rgba(34, 197, 94, 0.18) !important;
+  color: #86efac !important;
+  border: 1px solid rgba(74, 222, 128, 0.42);
+}
+
+:root[data-theme="dark"] .gate-account-status.inactive {
+  background: rgba(248, 113, 113, 0.16) !important;
+  color: #fecaca !important;
+  border: 1px solid rgba(248, 113, 113, 0.36);
+}
+
+:root[data-theme="dark"] .verification-filter-bar {
+  background: rgba(24, 24, 27, 0.92) !important;
+  border: 1px solid rgba(113, 113, 122, 0.42);
+}
+
+:root[data-theme="dark"] .verification-filter-chip {
+  border-color: rgba(113, 113, 122, 0.52) !important;
+  background: rgba(39, 39, 42, 0.92) !important;
+  color: #d4d4d8 !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .verification-filter-chip[style*="2px solid"] {
+  border-color: #86efac !important;
+  background: rgba(20, 83, 45, 0.34) !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] .verification-filter-chip span {
+  color: inherit !important;
+}
+
+:root[data-theme="dark"] .verification-filter-chip span:last-child {
+  background: rgba(148, 163, 184, 0.22) !important;
+  color: #f4f4f5 !important;
+}
+
+:root[data-theme="dark"] .verification-stat-icon {
+  background: rgba(39, 39, 42, 0.92) !important;
+  border: 1px solid rgba(113, 113, 122, 0.42);
+}
+
+:root[data-theme="dark"] .event-search-shell {
+  border-color: rgba(113, 113, 122, 0.42) !important;
+  background: rgba(24, 24, 27, 0.86) !important;
+}
+
+:root[data-theme="dark"] .event-section {
+  border-color: rgba(113, 113, 122, 0.46) !important;
+  background: rgba(18, 18, 18, 0.82) !important;
+}
+
+:root[data-theme="dark"] .event-section-title {
+  color: #f4f4f5 !important;
+}
+
+:root[data-theme="dark"] .event-section-subtitle,
+:root[data-theme="dark"] .event-accordion-meta,
+:root[data-theme="dark"] .event-accordion-content [style*="color: #475569"] {
+  color: #cbd5e1 !important;
+}
+
+:root[data-theme="dark"] .event-section-count {
+  border: 1px solid rgba(74, 222, 128, 0.34);
+  background: rgba(34, 197, 94, 0.14) !important;
+  color: #86efac !important;
+}
+
+:root[data-theme="dark"] .event-section-empty {
+  border-color: rgba(113, 113, 122, 0.5) !important;
+  background: rgba(24, 24, 27, 0.78) !important;
+  color: #d4d4d8 !important;
+}
+
+:root[data-theme="dark"] .event-accordion {
+  border-color: rgba(113, 113, 122, 0.5) !important;
+  background: rgba(9, 9, 11, 0.74) !important;
+}
+
+:root[data-theme="dark"] .event-accordion.open {
+  border-color: rgba(134, 239, 172, 0.42) !important;
+  box-shadow: 0 0 0 1px rgba(134, 239, 172, 0.1);
+}
+
+:root[data-theme="dark"] .event-accordion-summary {
+  background: rgba(18, 18, 18, 0.62) !important;
+  color: #f4f4f5 !important;
+}
+
+:root[data-theme="dark"] .event-accordion-icon {
+  background: rgba(37, 99, 235, 0.18) !important;
+  color: #bfdbfe !important;
+}
+
+:root[data-theme="dark"] .event-accordion-chevron {
+  background: rgba(37, 99, 235, 0.16) !important;
+  color: #93c5fd !important;
+}
+
+:root[data-theme="dark"] .event-progress-track {
+  background: rgba(63, 63, 70, 0.88) !important;
+}
+
+:root[data-theme="dark"] .event-status-pill.live {
+  background: rgba(34, 197, 94, 0.16) !important;
+  color: #86efac !important;
+}
+
+:root[data-theme="dark"] .event-status-pill.upcoming {
+  background: rgba(14, 165, 233, 0.16) !important;
+  color: #7dd3fc !important;
+}
+
+:root[data-theme="dark"] .event-status-pill.ended,
+:root[data-theme="dark"] .event-status-pill.archived {
+  background: rgba(148, 163, 184, 0.16) !important;
+  color: #cbd5e1 !important;
+}
+
+:root[data-theme="dark"] .event-accordion-panel {
+  border-color: rgba(113, 113, 122, 0.42) !important;
+  background: rgba(12, 12, 12, 0.72) !important;
+}
+
+:root[data-theme="dark"] .gate-account-card,
+:root[data-theme="dark"] .gate-account-list-section,
+:root[data-theme="dark"] .gate-account-table-wrap,
+:root[data-theme="dark"] .gate-audit-table-wrap {
+  border-color: rgba(113, 113, 122, 0.52) !important;
+  background: rgba(5, 5, 5, 0.96) !important;
+  color: #f4f4f5 !important;
+}
+
+:root[data-theme="dark"] .gate-account-copy,
+:root[data-theme="dark"] .gate-account-hint,
+:root[data-theme="dark"] .gate-audit-account-cell span {
+  color: #d4d4d8 !important;
+}
+
+:root[data-theme="dark"] .gate-account-table th,
+:root[data-theme="dark"] .gate-account-table thead th,
+:root[data-theme="dark"] .gate-audit-table th {
+  border-color: rgba(113, 113, 122, 0.52) !important;
+  background: #27272a !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] .gate-account-table td,
+:root[data-theme="dark"] .gate-audit-table td {
+  border-color: rgba(113, 113, 122, 0.38) !important;
+  background: #09090b !important;
+  color: #f4f4f5 !important;
+}
+
+:root[data-theme="dark"] .gate-account-table tr:hover td,
+:root[data-theme="dark"] .gate-audit-table tr:hover td {
+  background: #18181b !important;
+}
+
+:root[data-theme="dark"] .gate-account-actions button {
+  border-color: rgba(113, 113, 122, 0.64) !important;
+  background: #000000 !important;
+  color: #ffffff !important;
 }
 
 .audit-summary-pill {

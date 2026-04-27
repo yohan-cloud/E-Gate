@@ -3,6 +3,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 import { api } from "../../api";
+import NightModeIconButton from "../common/NightModeIconButton";
 import EventSelector from "../EventSelector";
 import FaceScanner from "../FaceScanner";
 import GuestAppointmentLookup from "../GuestAppointmentLookup";
@@ -242,6 +243,7 @@ export default function GatePortal({ onExit }) {
             </div>
           </div>
           <div className="gate-main-meta">
+            <NightModeIconButton />
             <div className="user-chip">
               <div className="user-name">{greeting}, {displayName}</div>
               <div className="user-role">{isAuthenticatedGateUser ? activeRole : "Public gate mode"}</div>

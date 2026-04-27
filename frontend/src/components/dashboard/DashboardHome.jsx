@@ -163,7 +163,7 @@ export default function DashboardHome() {
           <button onClick={() => setEventFilter("active")} className={`top-pill ${eventFilter === "active" ? "active" : ""}`}>Active Events</button>
           <button onClick={() => setEventFilter("archived")} className={`top-pill ${eventFilter === "archived" ? "active" : ""}`}>Archived Events</button>
         </div>
-        <div style={{ background: "#f8fafc", borderRadius: 8, padding: "10px 12px", border: "1px solid #e5e7eb" }}>
+        <div className="event-search-shell" style={{ background: "#f8fafc", borderRadius: 8, padding: "10px 12px", border: "1px solid #e5e7eb" }}>
           <input
             type="search"
             placeholder="Search events by title or location..."
@@ -214,7 +214,7 @@ export default function DashboardHome() {
                               <div className="event-accordion-content">
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                   <div style={{ fontWeight: 700, fontSize: 17 }}>{ev.title}</div>
-                                  <span style={statusPill[status]}>
+                                  <span className={`event-status-pill ${ev.is_archived ? "archived" : status}`} style={statusPill[status]}>
                                     {ev.is_archived ? "archived" : status}
                                   </span>
                                 </div>
@@ -225,7 +225,7 @@ export default function DashboardHome() {
                                   <span>Venue: {ev.venue || "TBD"}</span>
                                   <span>Registrants: {registered} / {capacity || "No limit"}</span>
                                 </div>
-                                <div style={{ marginTop: 8, height: 6, background: "#e5e7eb", borderRadius: 999, overflow: "hidden" }}>
+                                <div className="event-progress-track" style={{ marginTop: 8, height: 6, background: "#e5e7eb", borderRadius: 999, overflow: "hidden" }}>
                                   <div style={{ width: `${pct}%`, height: "100%", background: "#2563eb" }} />
                                 </div>
                               </div>

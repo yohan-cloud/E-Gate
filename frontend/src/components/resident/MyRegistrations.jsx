@@ -91,6 +91,7 @@ export default function MyRegistrations() {
         }}
       >
         <div
+          className="resident-events-search-shell"
           style={{
             flex: "1 1 240px",
             background: "#f8fafc",
@@ -152,6 +153,7 @@ export default function MyRegistrations() {
           return (
             <div
               key={r.id}
+              className="resident-event-card"
               style={{
                 background: "#fff",
                 border: "1px solid #e5e7eb",
@@ -165,7 +167,7 @@ export default function MyRegistrations() {
             >
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-                  <div style={{ fontWeight: 700, fontSize: 18, flex: "1 1 180px" }}>
+                  <div className="resident-event-card-title" style={{ fontWeight: 700, fontSize: 18, flex: "1 1 180px" }}>
                     {r.event_title || `Event #${eventId}`}
                   </div>
                   <span
@@ -194,10 +196,10 @@ export default function MyRegistrations() {
                     </span>
                   )}
                 </div>
-                <div style={{ color: "#475569", marginBottom: 8, fontSize: 14, lineHeight: 1.45, minHeight: 40 }}>
+                <div className="resident-event-card-description" style={{ color: "#475569", marginBottom: 8, fontSize: 14, lineHeight: 1.45, minHeight: 40 }}>
                   {r.event_description || "No description provided."}
                 </div>
-                <div style={{ display: "grid", gap: 6, color: "#475569", marginBottom: 10, fontSize: 14 }}>
+                <div className="resident-event-card-meta" style={{ display: "grid", gap: 6, color: "#475569", marginBottom: 10, fontSize: 14 }}>
                   <div>📅 {dateStr}</div>
                   <div>⏰ {timeStr}</div>
                   <div>📍 {r.event_venue || "TBD"}</div>
@@ -206,10 +208,10 @@ export default function MyRegistrations() {
                 </div>
               </div>
               <div style={{ marginTop: "auto" }}>
-                <div style={{ height: 8, background: "#e5e7eb", borderRadius: 999, overflow: "hidden", marginBottom: 8 }}>
+                <div className="resident-event-progress" style={{ height: 8, background: "#e5e7eb", borderRadius: 999, overflow: "hidden", marginBottom: 8 }}>
                   <div style={{ width: `${pct}%`, height: "100%", background: "#2563eb" }} />
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, color: "#475569", fontSize: 13 }}>
+                <div className="resident-event-capacity" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, color: "#475569", fontSize: 13 }}>
                   <span>{capacity ? `${Math.max(0, capacity - registeredCount)} spots left` : "No capacity limit"}</span>
                   <span>{registeredCount} registered</span>
                 </div>

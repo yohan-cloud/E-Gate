@@ -122,6 +122,50 @@ class GuestAppointmentScanLog(models.Model):
         return f"GuestAppointmentScanLog({self.appointment_id}, {self.direction}, {self.created_at})"
 
 
+class ResidentAppointment(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        RESCHEDULED = "rescheduled", "Rescheduled"
+        COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    resident = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="resident_appointments",
+    )
+    purpose = models.CharField(max_length=160)
+    appointment_at = models.DateTimeField()
+    resident_note = models.TextField(blank=True)
+    admin_note = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="resident_appointments_reviewed",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-appointment_at", "-created_at"]
+        indexes = [
+            models.Index(fields=["resident", "created_at"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["appointment_at"]),
+            models.Index(fields=["created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.resident_id} - {self.purpose} @ {self.appointment_at}"
+
+
 class AdminSetting(models.Model):
     key = models.CharField(max_length=64)
     user = models.ForeignKey(

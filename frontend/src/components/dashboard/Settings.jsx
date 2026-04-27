@@ -11,9 +11,27 @@ const defaults = {
   rememberFilters: true,
 };
 
+function readCurrentNightMode() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const settings = raw ? JSON.parse(raw) : null;
+    return Boolean(settings?.nightMode);
+  } catch {
+    return document.documentElement.dataset.theme === "dark";
+  }
+}
+
+function withCurrentNightMode(value) {
+  return {
+    ...value,
+    nightMode: readCurrentNightMode(),
+  };
+}
+
 function saveLocalSettings(value) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+    window.dispatchEvent(new Event("admin-ui-settings-changed"));
     return true;
   } catch {
     return false;
@@ -32,7 +50,7 @@ export default function Settings() {
       try {
         const resp = await api.get("/common/settings/admin-ui/");
         if (!active) return;
-        const next = { ...defaults, ...(resp?.data?.value || {}) };
+        const next = withCurrentNightMode({ ...defaults, ...(resp?.data?.value || {}) });
         setSettings(next);
         saveLocalSettings(next);
         setSource("server");
@@ -40,7 +58,8 @@ export default function Settings() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
           if (raw && active) {
-            setSettings({ ...defaults, ...JSON.parse(raw) });
+            const next = { ...defaults, ...JSON.parse(raw) };
+            setSettings(next);
           }
           if (active) {
             setSource("local");
@@ -67,7 +86,6 @@ export default function Settings() {
     const next = { ...settings, [key]: value };
     setSettings(next);
     saveLocalSettings(next);
-
     try {
       await api.put("/common/settings/admin-ui/", { key: "admin_ui", value: next });
       setSource("server");
@@ -81,10 +99,11 @@ export default function Settings() {
   };
 
   const reset = async () => {
-    setSettings(defaults);
-    saveLocalSettings(defaults);
+    const next = withCurrentNightMode(defaults);
+    setSettings(next);
+    saveLocalSettings(next);
     try {
-      await api.put("/common/settings/admin-ui/", { key: "admin_ui", value: defaults });
+      await api.put("/common/settings/admin-ui/", { key: "admin_ui", value: next });
       setSource("server");
       setError("");
     } catch {
@@ -103,17 +122,17 @@ export default function Settings() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
         <div>
           <h2 style={{ margin: 0 }}>Application Settings</h2>
-          <div style={{ color: "#475569", fontSize: 14, marginTop: 2 }}>
+          <div style={{ color: "var(--muted)", fontSize: 14, marginTop: 2 }}>
             Admin preferences stored per account when the API is available.
           </div>
         </div>
         <button onClick={reset} style={{ padding: "8px 12px" }}>Reset to defaults</button>
       </div>
 
-      <div style={{ marginTop: 8, color: source === "server" ? "#166534" : "#854d0e", fontSize: 14 }}>
+      <div style={{ marginTop: 8, color: source === "server" ? "var(--primary-600)" : "#b45309", fontSize: 14 }}>
         Storage: {source === "server" ? "Server-backed" : "Browser-local fallback"}
       </div>
-      {error && <div style={{ marginTop: 4, color: "#b91c1c", fontSize: 14 }}>{error}</div>}
+      {error && <div style={{ marginTop: 4, color: "#ef4444", fontSize: 14 }}>{error}</div>}
 
       <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
         <SettingRow
@@ -149,7 +168,7 @@ export default function Settings() {
       </div>
 
       {saved && (
-        <div style={{ marginTop: 8, color: "#16a34a", fontSize: 14 }}>Saved</div>
+        <div style={{ marginTop: 8, color: "var(--primary-600)", fontSize: 14 }}>Saved</div>
       )}
     </div>
   );
@@ -157,10 +176,10 @@ export default function Settings() {
 
 function SettingRow({ label, description, value, onChange }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, borderBottom: "1px solid #e5e7eb", padding: "0 0 8px" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, borderBottom: "1px solid var(--border)", padding: "0 0 8px" }}>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontWeight: 600 }}>{label}</div>
-        <div style={{ color: "#475569", fontSize: 13, marginTop: 2 }}>{description}</div>
+        <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>{description}</div>
       </div>
       <div style={{ display: "inline-flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
         <span
@@ -169,7 +188,7 @@ function SettingRow({ label, description, value, onChange }) {
             textAlign: "right",
             fontSize: 12,
             fontWeight: 700,
-            color: value ? "#166534" : "#64748b",
+            color: value ? "var(--primary-600)" : "var(--muted)",
             letterSpacing: 0.4,
           }}
         >

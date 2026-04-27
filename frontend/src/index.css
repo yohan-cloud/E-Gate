@@ -41,6 +41,16 @@ body {
   overflow-y: auto;
 }
 
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] body {
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.88)),
+    url("/bg.jpg") center / cover no-repeat fixed;
+}
+
 .app-wrapper {
   background: transparent;
   box-shadow: none;

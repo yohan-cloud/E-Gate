@@ -8,19 +8,21 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db import transaction
+from django.contrib.auth import get_user_model
 
-from accounts.permissions import IsAdminOrGateOperatorRole, IsAdminUserRole, IsGateAccessAllowed
+from accounts.permissions import IsAdminOrGateOperatorRole, IsAdminUserRole, IsGateAccessAllowed, IsResidentUserRole
 from accounts.gate_audit import gate_audit_log
 from accounts.models import GateAuditLog
 
 from .archive import archive_guest_appointment
-from .models import AdminSetting, AuditLog, GuestAppointment, GuestAppointmentScanLog
+from .models import AdminSetting, AuditLog, GuestAppointment, GuestAppointmentScanLog, ResidentAppointment
 from .serializers import (
     AdminSettingSerializer,
     AuditLogSerializer,
     GuestAppointmentGateLookupSerializer,
     GuestAppointmentScanLogSerializer,
     GuestAppointmentSerializer,
+    ResidentAppointmentSerializer,
 )
 
 
@@ -271,8 +273,11 @@ class GuestAppointmentDetailView(generics.RetrieveUpdateDestroyAPIView):
         return [IsAuthenticated(), IsAdminUserRole()]
 
     def perform_update(self, serializer):
-        if getattr(serializer.instance, "archived_at", None):
+        instance = serializer.instance
+        if getattr(instance, "archived_at", None):
             raise ValidationError("Archived guest appointments cannot be modified.")
+        if instance.status == GuestAppointment.Status.COMPLETED or instance.checked_out_at:
+            raise ValidationError("Completed guest appointments cannot be modified.")
         serializer.save(updated_by=self.request.user)
 
 
@@ -462,6 +467,176 @@ class GuestAppointmentGateLogListView(generics.ListAPIView):
         if direction:
             qs = qs.filter(direction=direction)
         return qs.order_by("-created_at")[:30]
+
+
+class ResidentAppointmentListCreateView(generics.ListCreateAPIView):
+    serializer_class = ResidentAppointmentSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = ResidentAppointment.objects.select_related("resident", "resident__profile", "reviewed_by")
+        if getattr(user, "is_admin", False):
+            status_filter = (self.request.query_params.get("status") or "").strip().lower()
+            query = (self.request.query_params.get("q") or "").strip()
+            if status_filter:
+                qs = qs.filter(status=status_filter)
+            if query:
+                qs = qs.filter(
+                    Q(purpose__icontains=query)
+                    | Q(resident_note__icontains=query)
+                    | Q(admin_note__icontains=query)
+                    | Q(resident__username__icontains=query)
+                    | Q(resident__first_name__icontains=query)
+                    | Q(resident__last_name__icontains=query)
+                    | Q(resident__profile__phone_number__icontains=query)
+                )
+            return qs
+        if getattr(user, "is_resident", False):
+            return qs.filter(resident=user)
+        return ResidentAppointment.objects.none()
+
+    def create(self, request, *args, **kwargs):
+        if getattr(request.user, "is_admin", False):
+            resident_id = request.data.get("resident") or request.data.get("resident_id")
+            if not resident_id:
+                return Response({"resident": ["Resident is required."]}, status=status.HTTP_400_BAD_REQUEST)
+            User = get_user_model()
+            resident = User.objects.filter(
+                id=resident_id,
+                is_resident=True,
+                profile__archived_at__isnull=True,
+                profile__deactivated_at__isnull=True,
+            ).first()
+            if not resident:
+                return Response({"resident": ["Active resident not found."]}, status=status.HTTP_400_BAD_REQUEST)
+
+            data = request.data.copy()
+            data.pop("resident", None)
+            data.pop("resident_id", None)
+            data["status"] = ResidentAppointment.Status.APPROVED
+            serializer = self.get_serializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(
+                resident=resident,
+                reviewed_by=request.user,
+                reviewed_at=timezone.now(),
+            )
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+        if not IsResidentUserRole().has_permission(request, self):
+            return Response({"error": "Only residents can request appointments."}, status=status.HTTP_403_FORBIDDEN)
+        return super().create(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        serializer.save(resident=self.request.user, status=ResidentAppointment.Status.PENDING)
+
+
+class ResidentAppointmentDetailView(generics.RetrieveUpdateAPIView):
+    serializer_class = ResidentAppointmentSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = ResidentAppointment.objects.select_related("resident", "resident__profile", "reviewed_by")
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if getattr(user, "is_admin", False):
+            return qs
+        if getattr(user, "is_resident", False):
+            return qs.filter(resident=user)
+        return qs.none()
+
+    def update(self, request, *args, **kwargs):
+        appointment = self.get_object()
+        user = request.user
+        data = request.data.copy()
+
+        if getattr(user, "is_admin", False):
+            allowed = {"status", "appointment_at", "admin_note"}
+            data = {key: value for key, value in data.items() if key in allowed}
+            next_status = data.get("status")
+            if next_status and next_status not in ResidentAppointment.Status.values:
+                return Response({"status": ["Invalid appointment status."]}, status=status.HTTP_400_BAD_REQUEST)
+            if "appointment_at" in data and not next_status:
+                data["status"] = ResidentAppointment.Status.RESCHEDULED
+                next_status = data["status"]
+            if next_status == ResidentAppointment.Status.RESCHEDULED and "appointment_at" not in data:
+                return Response(
+                    {"appointment_at": ["New appointment schedule is required when rescheduling."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            note = (data.get("admin_note") or "").strip()
+            requires_note = next_status in {
+                ResidentAppointment.Status.APPROVED,
+                ResidentAppointment.Status.REJECTED,
+                ResidentAppointment.Status.RESCHEDULED,
+            } or "appointment_at" in data
+            if requires_note and not note:
+                return Response(
+                    {"admin_note": ["Admin note is required for approve, reject, or reschedule actions."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if note:
+                action_label = "updated"
+                if next_status == ResidentAppointment.Status.APPROVED:
+                    action_label = "approved"
+                elif next_status == ResidentAppointment.Status.REJECTED:
+                    action_label = "rejected"
+                elif next_status == ResidentAppointment.Status.RESCHEDULED or "appointment_at" in data:
+                    action_label = "rescheduled"
+                audit_note = f"[{timezone.localtime(timezone.now()).strftime('%Y-%m-%d %H:%M')}] {user.username} {action_label}: {note}"
+                data["admin_note"] = f"{appointment.admin_note}\n{audit_note}".strip() if appointment.admin_note else audit_note
+            serializer = self.get_serializer(appointment, data=data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            save_kwargs = {"reviewed_by": user}
+            if next_status and next_status != appointment.status:
+                save_kwargs["reviewed_at"] = timezone.now()
+            serializer.save(**save_kwargs)
+            return Response(serializer.data)
+
+        if getattr(user, "is_resident", False) and appointment.resident_id == user.id:
+            requested_status = data.get("status")
+            if requested_status == ResidentAppointment.Status.CANCELLED:
+                if appointment.status != ResidentAppointment.Status.PENDING:
+                    return Response(
+                        {"error": "This appointment can no longer be cancelled."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                appointment.status = ResidentAppointment.Status.CANCELLED
+                appointment.cancelled_at = timezone.now()
+                appointment.save(update_fields=["status", "cancelled_at", "updated_at"])
+                serializer = self.get_serializer(appointment)
+                return Response(serializer.data)
+
+            locked_statuses = {
+                ResidentAppointment.Status.APPROVED,
+                ResidentAppointment.Status.RESCHEDULED,
+                ResidentAppointment.Status.COMPLETED,
+                ResidentAppointment.Status.REJECTED,
+                ResidentAppointment.Status.CANCELLED,
+            }
+            if appointment.status in locked_statuses:
+                return Response(
+                    {"error": "This appointment can no longer be changed."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            allowed = {"purpose", "appointment_at", "resident_note"}
+            data = {key: value for key, value in data.items() if key in allowed}
+            serializer = self.get_serializer(appointment, data=data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            save_kwargs = {}
+            if appointment.status != ResidentAppointment.Status.PENDING:
+                save_kwargs = {
+                    "status": ResidentAppointment.Status.PENDING,
+                    "reviewed_by": None,
+                    "reviewed_at": None,
+                }
+            serializer.save(**save_kwargs)
+            return Response(serializer.data)
+
+        return Response({"error": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
 
 
 class AuditLogListView(generics.ListAPIView):
