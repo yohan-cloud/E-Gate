@@ -204,10 +204,10 @@ export default function Appointments() {
   return (
     <div className="resident-appointments-page resident-appointments-table-page">
       <div className="resident-appointment-stat-grid">
-        <StatCard label="Total appointments" value={stats.total} icon="A" />
-        <StatCard label="Pending" value={stats.pending} icon="P" />
-        <StatCard label="Approved" value={stats.approved} icon="✓" />
-        <StatCard label="Rejected" value={stats.rejected} icon="R" />
+        <StatCard label="Total appointments" value={stats.total} icon="calendar" />
+        <StatCard label="Pending" value={stats.pending} icon="clock" />
+        <StatCard label="Approved" value={stats.approved} icon="check" />
+        <StatCard label="Rejected" value={stats.rejected} icon="x" />
       </div>
 
       <section className="resident-appointment-table-card">
@@ -378,11 +378,31 @@ export default function Appointments() {
 function StatCard({ label, value, icon }) {
   return (
     <div className="resident-appointment-stat-card">
-      <div className="resident-appointment-stat-icon">{icon}</div>
+      <div className="resident-appointment-stat-icon" aria-hidden="true">{renderAppointmentStatIcon(icon)}</div>
       <div>
         <span>{label}</span>
         <strong>{value}</strong>
       </div>
     </div>
   );
+}
+
+function renderAppointmentStatIcon(name) {
+  const common = {
+    width: 22,
+    height: 22,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  };
+  const icons = {
+    calendar: <><path d="M7 3v4" /><path d="M17 3v4" /><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M4 10h16" /></>,
+    clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+    check: <><circle cx="12" cy="12" r="9" /><path d="m8.5 12.5 2.2 2.2 4.8-5.4" /></>,
+    x: <><circle cx="12" cy="12" r="9" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></>,
+  };
+  return <svg {...common}>{icons[name] || icons.calendar}</svg>;
 }

@@ -1241,6 +1241,23 @@ input[type="date"] { color-scheme: dark; }
 
 .resident-events-filters {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.resident-events-search-shell {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.resident-events-search-shell input,
+.resident-events-search-input {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .resident-event-card {
@@ -1549,6 +1566,11 @@ input[type="date"] { color-scheme: dark; }
   background: linear-gradient(180deg, #2f8f5b, #166534);
   color: #ffffff;
   font-weight: 900;
+}
+
+.resident-appointment-stat-icon svg {
+  width: 22px;
+  height: 22px;
 }
 
 .resident-appointment-stat-card span {

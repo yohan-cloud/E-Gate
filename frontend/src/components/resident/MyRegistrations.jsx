@@ -101,6 +101,7 @@ export default function MyRegistrations() {
           }}
         >
           <input
+            className="resident-events-search-input"
             placeholder="Search by event title"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
