@@ -14,25 +14,12 @@ const DEFAULT_GUEST_FORM = {
   notes: "",
 };
 
-const DEFAULT_RESIDENT_FORM = {
-  resident: "",
-  purpose: "",
-  appointment_at: "",
-  status: "approved",
-  admin_note: "",
-};
-
 const FILTER_TABS = [
   { value: "all", label: "All" },
-  { value: "pending", label: "Pending" },
+  { value: "expected", label: "Expected" },
   { value: "approved", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
+  { value: "cancelled", label: "Cancelled" },
   { value: "archived", label: "Archived" },
-];
-
-const APPOINTMENT_TYPES = [
-  { value: "guest", label: "Guest" },
-  { value: "resident", label: "Resident" },
 ];
 
 const GUEST_STATUS_OPTIONS = [
@@ -40,11 +27,6 @@ const GUEST_STATUS_OPTIONS = [
   { value: "arrived", label: "Arrived" },
   { value: "completed", label: "Completed" },
   { value: "cancelled", label: "Cancelled" },
-];
-
-const RESIDENT_REVIEW_STATUS_OPTIONS = [
-  { value: "approved", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
 ];
 
 const CONTACT_ALLOWED_PATTERN = /^[0-9+\-() ]*$/;
@@ -82,14 +64,9 @@ function formatDateParts(value) {
 
 function getAppointmentStatusMeta(item) {
   if (item.isArchived) return { key: "archived", label: "Archived", background: "#e2e8f0", color: "#475569" };
-  if (item.type === "guest") {
-    if (item.raw.status === "cancelled") return { key: "rejected", label: "Cancelled", background: "#fee2e2", color: "#991b1b" };
-    return { key: "approved", label: "Approved", background: "#dcfce7", color: "#166534" };
-  }
-  if (item.raw.status === "approved") return { key: "approved", label: "Approved", background: "#dcfce7", color: "#166534" };
-  if (item.raw.status === "rejected") return { key: "rejected", label: "Rejected", background: "#fee2e2", color: "#991b1b" };
-  if (item.raw.status === "cancelled") return { key: "rejected", label: "Cancelled", background: "#f1f5f9", color: "#475569" };
-  return { key: "pending", label: "Pending", background: "#fef3c7", color: "#92400e" };
+  if (item.raw.status === "cancelled") return { key: "cancelled", label: "Cancelled", background: "#fee2e2", color: "#991b1b" };
+  if (item.raw.status === "expected") return { key: "expected", label: "Expected", background: "#fef3c7", color: "#92400e" };
+  return { key: "approved", label: "Approved", background: "#dcfce7", color: "#166534" };
 }
 
 function getGateStatusMeta(status) {
@@ -97,6 +74,25 @@ function getGateStatusMeta(status) {
   if (status === "completed") return "Completed";
   if (status === "cancelled") return "Cancelled";
   return "Expected";
+}
+
+function getApiErrorMessage(error, fallback = "Failed to save appointment.") {
+  const data = error?.response?.data;
+  if (!data) return error?.message || fallback;
+  if (typeof data === "string") return data;
+  if (data.error) return Array.isArray(data.error) ? data.error.join(" ") : data.error;
+  if (data.detail) return Array.isArray(data.detail) ? data.detail.join(" ") : data.detail;
+
+  const messages = Object.entries(data)
+    .flatMap(([field, value]) => {
+      const text = Array.isArray(value) ? value.join(" ") : String(value || "");
+      if (!text) return [];
+      if (field === "eta") return `Please choose a valid appointment schedule.`;
+      if (field === "no_of_participants") return `Number of participants: ${text}`;
+      return `${field.replaceAll("_", " ")}: ${text}`;
+    });
+
+  return messages[0] || fallback;
 }
 
 function matchesSearch(item, search) {
@@ -108,8 +104,6 @@ function matchesSearch(item, search) {
     item.purpose,
     item.organization,
     item.notes,
-    item.raw.resident_note,
-    item.raw.admin_note,
   ]
     .filter(Boolean)
     .some((value) => String(value).toLowerCase().includes(q));
@@ -126,8 +120,6 @@ function sortAppointments(a, b) {
 
 export default function Guests() {
   const [guests, setGuests] = useState([]);
-  const [residentAppointments, setResidentAppointments] = useState([]);
-  const [residents, setResidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [archivingId, setArchivingId] = useState(null);
@@ -135,13 +127,10 @@ export default function Guests() {
   const [qrBusyId, setQrBusyId] = useState("");
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [residentQuery, setResidentQuery] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [guestForm, setGuestForm] = useState(DEFAULT_GUEST_FORM);
-  const [residentForm, setResidentForm] = useState(DEFAULT_RESIDENT_FORM);
   const [modal, setModal] = useState({ open: false, mode: "create", type: "guest", item: null });
-  const [residentReviewAction, setResidentReviewAction] = useState("review");
   const [actionMenuId, setActionMenuId] = useState(null);
   const [numericOnlyNotice, setNumericOnlyNotice] = useState({ contact: false, participants: false });
 
@@ -149,12 +138,8 @@ export default function Guests() {
     setLoading(true);
     setError("");
     try {
-      const [guestData, residentRes] = await Promise.all([
-        fetchJson("/common/guests/?include_archived=true"),
-        api.get("/common/resident-appointments/"),
-      ]);
+      const guestData = await fetchJson("/common/guests/?include_archived=true");
       setGuests(Array.isArray(guestData) ? guestData : []);
-      setResidentAppointments(Array.isArray(residentRes?.data) ? residentRes.data : []);
     } catch (e) {
       setError(e?.response?.data?.error || e?.message || "Failed to load appointments.");
     } finally {
@@ -162,28 +147,9 @@ export default function Guests() {
     }
   };
 
-  const fetchResidents = async () => {
-    try {
-      const params = {};
-      if (residentQuery.trim()) params.q = residentQuery.trim();
-      const res = await api.get("/residents/list/", { params });
-      setResidents(Array.isArray(res?.data) ? res.data : []);
-    } catch {
-      setResidents([]);
-    }
-  };
-
   useEffect(() => {
     fetchAppointments();
-    fetchResidents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(fetchResidents, 250);
-    return () => window.clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [residentQuery]);
 
   useEffect(() => {
     if (!numericOnlyNotice.contact && !numericOnlyNotice.participants) return undefined;
@@ -193,20 +159,8 @@ export default function Guests() {
     return () => window.clearTimeout(timeout);
   }, [numericOnlyNotice]);
 
-  const residentOptions = residents
-    .map((profile) => {
-      const user = profile?.user || {};
-      const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ").trim();
-      return {
-        id: user.id,
-        label: fullName || user.username || `Resident #${user.id}`,
-        detail: profile.phone_number || user.username || "",
-      };
-    })
-    .filter((item) => item.id);
-
   const unifiedAppointments = useMemo(() => {
-    const guestItems = guests.map((guest) => ({
+    return guests.map((guest) => ({
       key: `guest-${guest.id}`,
       id: guest.id,
       type: "guest",
@@ -218,24 +172,8 @@ export default function Guests() {
       notes: guest.notes || "",
       isArchived: Boolean(guest.is_archived || guest.archived_at),
       raw: guest,
-    }));
-
-    const residentItems = residentAppointments.map((appointment) => ({
-      key: `resident-${appointment.id}`,
-      id: appointment.id,
-      type: "resident",
-      title: appointment.resident_name || appointment.resident_username || "Resident",
-      contact: appointment.resident_contact || appointment.resident_username || "No contact number",
-      organization: "Resident request",
-      purpose: appointment.purpose || "",
-      schedule: appointment.appointment_at,
-      notes: appointment.resident_note || "",
-      isArchived: false,
-      raw: appointment,
-    }));
-
-    return [...guestItems, ...residentItems].sort(sortAppointments);
-  }, [guests, residentAppointments]);
+    })).sort(sortAppointments);
+  }, [guests]);
 
   const counts = useMemo(() => {
     return unifiedAppointments.reduce(
@@ -245,7 +183,7 @@ export default function Guests() {
         acc[meta.key] = (acc[meta.key] || 0) + 1;
         return acc;
       },
-      { all: 0, pending: 0, approved: 0, rejected: 0, archived: 0 },
+      { all: 0, expected: 0, approved: 0, cancelled: 0, archived: 0 },
     );
   }, [unifiedAppointments]);
 
@@ -259,10 +197,9 @@ export default function Guests() {
       .filter((item) => matchesSearch(item, search));
   }, [filter, search, unifiedAppointments]);
 
-  const openCreateModal = (type = "guest") => {
+  const openCreateModal = () => {
     setGuestForm(DEFAULT_GUEST_FORM);
-    setResidentForm(DEFAULT_RESIDENT_FORM);
-    setModal({ open: true, mode: "create", type, item: null });
+    setModal({ open: true, mode: "create", type: "guest", item: null });
     setError("");
     setSuccess("");
   };
@@ -284,37 +221,10 @@ export default function Guests() {
     setSuccess("");
   };
 
-  const openResidentReviewModal = (appointment, nextStatus = appointment.status || "approved") => {
-    const normalizedStatus = nextStatus === "rejected" ? "rejected" : "approved";
-    setResidentForm({
-      resident: appointment.resident ? String(appointment.resident) : "",
-      purpose: appointment.purpose || "",
-      appointment_at: toLocalInputValue(appointment.appointment_at),
-      status: normalizedStatus,
-      admin_note: "",
-    });
-    setResidentReviewAction("review");
-    setModal({ open: true, mode: "review", type: "resident", item: appointment });
-    setError("");
-    setSuccess("");
-  };
-
-  const startResidentReschedule = () => {
-    setResidentReviewAction("reschedule");
-    setResidentForm((prev) => ({ ...prev, status: "rescheduled" }));
-  };
-
   const closeModal = (force = false) => {
     if (saving && !force) return;
     setModal({ open: false, mode: "create", type: "guest", item: null });
     setGuestForm(DEFAULT_GUEST_FORM);
-    setResidentForm(DEFAULT_RESIDENT_FORM);
-    setResidentReviewAction("review");
-  };
-
-  const setModalType = (type) => {
-    if (modal.mode !== "create") return;
-    setModal((current) => ({ ...current, type }));
   };
 
   const onGuestChange = (e) => {
@@ -340,19 +250,21 @@ export default function Guests() {
     const contact = guestForm.contact.trim();
     const participantCount = Number(guestForm.no_of_participants || 1);
     if (contact && !CONTACT_ALLOWED_PATTERN.test(contact)) {
-      setError("Contact number can only contain numbers and phone symbols.");
-      return;
+      throw new Error("Contact number can only contain numbers and phone symbols.");
     }
     if (!Number.isInteger(participantCount) || participantCount < 1) {
-      setError("Number of participants must be at least 1.");
-      return;
+      throw new Error("Number of participants must be at least 1.");
+    }
+    const appointmentSchedule = toOffsetIso(guestForm.eta);
+    if (!appointmentSchedule) {
+      throw new Error("Please choose a valid appointment schedule.");
     }
 
     const payload = {
       ...guestForm,
       contact,
       no_of_participants: participantCount,
-      eta: toOffsetIso(guestForm.eta),
+      eta: appointmentSchedule,
     };
 
     if (modal.mode === "edit" && modal.item?.id) {
@@ -364,57 +276,17 @@ export default function Guests() {
     }
   };
 
-  const submitResident = async () => {
-    const adminNote = residentForm.admin_note.trim();
-
-    if (modal.mode === "review" && modal.item?.id) {
-      if (!adminNote) {
-        throw new Error(residentReviewAction === "reschedule" ? "Admin note is required when rescheduling." : "Admin note is required when reviewing.");
-      }
-      const payload = {
-        status: residentReviewAction === "reschedule" ? "rescheduled" : residentForm.status,
-        admin_note: adminNote,
-      };
-      if (residentReviewAction === "reschedule") {
-        payload.appointment_at = toOffsetIso(residentForm.appointment_at);
-      }
-      await api.patch(`/common/resident-appointments/${modal.item.id}/`, payload);
-      setSuccess("Resident appointment review saved.");
-      return;
-    }
-
-    const payload = {
-      purpose: residentForm.purpose.trim(),
-      appointment_at: toOffsetIso(residentForm.appointment_at),
-      admin_note: adminNote,
-    };
-
-    if (!residentForm.resident) {
-      throw new Error("Select a resident first.");
-    }
-    await api.post("/common/resident-appointments/", {
-      ...payload,
-      resident: residentForm.resident,
-    });
-    setSuccess("Resident appointment created and approved.");
-  };
-
   const submitModal = async (e) => {
     e.preventDefault();
     setSaving(true);
     setError("");
     setSuccess("");
     try {
-      if (modal.type === "guest") {
-        await submitGuest();
-      } else {
-        await submitResident();
-      }
+      await submitGuest();
       closeModal(true);
       await fetchAppointments();
     } catch (e) {
-      const data = e?.response?.data;
-      setError(data?.error || data?.detail || JSON.stringify(data) || e?.message || "Failed to save appointment.");
+      setError(getApiErrorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -538,74 +410,9 @@ export default function Guests() {
     </>
   );
 
-  const renderResidentFields = () => {
-    const isReview = modal.mode === "review";
-    const isRescheduling = isReview && residentReviewAction === "reschedule";
-    const scheduleDisplay = modal.item?.appointment_at ? formatDateParts(modal.item.appointment_at) : null;
-    return (
-      <>
-        {isReview ? (
-          <input className="guest-form-input" value={modal.item?.resident_name || modal.item?.resident_username || "Resident"} disabled />
-        ) : (
-          <>
-            <input className="guest-form-input" placeholder="Search resident..." value={residentQuery} onChange={(e) => setResidentQuery(e.target.value)} />
-            <select className="guest-form-input" value={residentForm.resident} onChange={(e) => setResidentForm((prev) => ({ ...prev, resident: e.target.value }))} required>
-              <option value="">Select resident</option>
-              {residentOptions.map((item) => (
-                <option key={item.id} value={item.id}>{item.label}{item.detail ? ` - ${item.detail}` : ""}</option>
-              ))}
-            </select>
-          </>
-        )}
-        <input className="guest-form-input" placeholder="Purpose" value={residentForm.purpose} onChange={(e) => setResidentForm((prev) => ({ ...prev, purpose: e.target.value }))} required disabled={isReview} />
-        {isReview && !isRescheduling ? (
-          <input className="guest-form-input" value={scheduleDisplay ? `${scheduleDisplay.date} ${scheduleDisplay.time}` : "No schedule"} disabled />
-        ) : (
-          <DateTimeField
-            id={isReview ? "appointment-resident-review-at" : "appointment-resident-create-at"}
-            name="appointment_at"
-            label=""
-            value={residentForm.appointment_at}
-            onChange={(e) => setResidentForm((prev) => ({ ...prev, appointment_at: e.target.value }))}
-            required
-            placeholder="Appointment schedule"
-            panelInFlow
-            disablePastDates
-          />
-        )}
-        {isReview ? (
-          <select className="guest-form-input" value={residentForm.status} onChange={(e) => setResidentForm((prev) => ({ ...prev, status: e.target.value }))} disabled={isRescheduling}>
-            {RESIDENT_REVIEW_STATUS_OPTIONS.map((item) => (
-              <option key={item.value} value={item.value}>{item.label}</option>
-            ))}
-          </select>
-        ) : null}
-        {isReview ? (
-          <div className="appointment-review-mode">
-            <button type="button" className={residentReviewAction === "review" ? "active" : ""} onClick={() => { setResidentReviewAction("review"); setResidentForm((prev) => ({ ...prev, status: prev.status === "rejected" ? "rejected" : "approved", appointment_at: toLocalInputValue(modal.item?.appointment_at) })); }}>
-              Review
-            </button>
-            <button type="button" className={isRescheduling ? "active" : ""} onClick={startResidentReschedule}>
-              Reschedule
-            </button>
-          </div>
-        ) : null}
-        <textarea
-          className="guest-form-input guest-form-textarea"
-          placeholder={isRescheduling ? "Admin note is required when rescheduling" : isReview ? "Admin note is required for approval or rejection" : "Admin note"}
-          value={residentForm.admin_note}
-          onChange={(e) => setResidentForm((prev) => ({ ...prev, admin_note: e.target.value }))}
-          required={isReview}
-        />
-      </>
-    );
-  };
-
   const modalTitle = modal.mode === "edit"
     ? "Edit Guest Appointment"
-    : modal.mode === "review"
-      ? "Review Resident Appointment"
-      : "Create Appointment";
+    : "Create Guest Appointment";
 
   return (
     <div className="guest-card-shell">
@@ -613,9 +420,9 @@ export default function Guests() {
         <div className="guest-card-head appointment-module-head">
           <div>
             <h3 style={{ margin: 0 }}>Appointments</h3>
-            <div style={{ color: "#4f6b5d", marginTop: 4 }}>Guest visits and resident requests in one queue</div>
+            <div style={{ color: "#4f6b5d", marginTop: 4 }}>Guest visits and appointment schedules</div>
           </div>
-          <button className="btn-primary" type="button" onClick={() => openCreateModal("guest")}>Create Appointment</button>
+          <button className="btn-primary" type="button" onClick={openCreateModal}>Create Appointment</button>
         </div>
 
         <div className="appointment-toolbar">
@@ -636,7 +443,7 @@ export default function Guests() {
           </div>
         </div>
 
-        {error ? <div className="appointment-alert appointment-alert-error">{error}</div> : null}
+        {error && !modal.open ? <div className="appointment-alert appointment-alert-error">{error}</div> : null}
         {success ? <div className="appointment-alert appointment-alert-success">{success}</div> : null}
         {loading ? <p style={{ color: "#475569" }}>Loading appointments...</p> : null}
 
@@ -656,7 +463,6 @@ export default function Guests() {
                 manualActionId={manualActionId}
                 qrBusyId={qrBusyId}
                 onEditGuest={openGuestEditModal}
-                onReviewResident={openResidentReviewModal}
                 onManualScan={manualScan}
                 onDownloadQr={downloadGuestQr}
                 onArchiveGuest={archiveGuest}
@@ -671,31 +477,23 @@ export default function Guests() {
 
       {modal.open ? (
         <div className="appointment-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
-          <div className="appointment-modal-panel" role="dialog" aria-modal="true" aria-labelledby="appointment-modal-title">
+          <div className={`appointment-modal-panel ${error ? "has-error" : ""}`} role="dialog" aria-modal="true" aria-labelledby="appointment-modal-title">
             <div className="appointment-modal-head">
               <div>
-                <div className="appointment-modal-eyebrow">{modal.type === "guest" ? "Guest" : "Resident"}</div>
+                <div className="appointment-modal-eyebrow">Guest</div>
                 <h3 id="appointment-modal-title">{modalTitle}</h3>
               </div>
               <button type="button" className="appointment-modal-close" onClick={closeModal} aria-label="Close">x</button>
             </div>
 
-            {modal.mode === "create" ? (
-              <div className="appointment-type-switch" role="tablist" aria-label="Appointment type">
-                {APPOINTMENT_TYPES.map((item) => (
-                  <button key={item.value} type="button" className={`top-pill ${modal.type === item.value ? "active" : ""}`} onClick={() => setModalType(item.value)}>
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+            {error ? <div className="appointment-alert appointment-alert-error appointment-modal-error" role="alert">{error}</div> : null}
 
             <form className="guest-form-grid appointment-modal-form" onSubmit={submitModal}>
-              {modal.type === "guest" ? renderGuestFields() : renderResidentFields()}
+              {renderGuestFields()}
               <div className="guest-form-actions">
                 <button className="guest-form-cancel" type="button" onClick={closeModal}>Cancel</button>
                 <button className="btn-primary guest-form-submit" type="submit" disabled={saving}>
-                  {saving ? "Saving..." : modal.mode === "review" ? "Save Review" : "Save Appointment"}
+                  {saving ? "Saving..." : "Save Appointment"}
                 </button>
               </div>
             </form>
@@ -714,7 +512,6 @@ function AppointmentRow({
   manualActionId,
   qrBusyId,
   onEditGuest,
-  onReviewResident,
   onManualScan,
   onDownloadQr,
   onArchiveGuest,
@@ -724,19 +521,16 @@ function AppointmentRow({
 }) {
   const statusMeta = getAppointmentStatusMeta(item);
   const schedule = formatDateParts(item.schedule);
-  const created = formatDateParts(item.raw.created_at);
   const checkIn = formatDateParts(item.raw.checked_in_at);
   const checkOut = formatDateParts(item.raw.checked_out_at);
   const isMenuOpen = actionMenuId === item.key;
-  const isGuest = item.type === "guest";
   const guest = item.raw;
-  const resident = item.raw;
 
   return (
     <div className="admin-guest-row guest-detail-card appointment-row">
       <div className="guest-record-header">
         <div className="guest-record-identity">
-          <div className="guest-record-avatar">{isGuest ? "G" : "R"}</div>
+          <div className="guest-record-avatar">G</div>
           <div className="guest-record-name-block">
             <div className="guest-record-title-line">
               <div className="guest-record-name">{item.title}</div>
@@ -746,57 +540,41 @@ function AppointmentRow({
         </div>
         <div className="guest-record-controls appointment-row-controls">
           <StatusPill meta={statusMeta} />
-          {isGuest ? (
-            <GuestActions
-              guest={guest}
-              itemKey={item.key}
-              isMenuOpen={isMenuOpen}
-              setActionMenuId={setActionMenuId}
-              archivingId={archivingId}
-              manualActionId={manualActionId}
-              qrBusyId={qrBusyId}
-              onEditGuest={onEditGuest}
-              onManualScan={onManualScan}
-              onDownloadQr={onDownloadQr}
-              onArchiveGuest={onArchiveGuest}
-              onUnarchiveGuest={onUnarchiveGuest}
-              onCancelGuest={onCancelGuest}
-              onRemoveGuest={onRemoveGuest}
-            />
-          ) : (
-            <ResidentActions
-              appointment={resident}
-              itemKey={item.key}
-              isMenuOpen={isMenuOpen}
-              setActionMenuId={setActionMenuId}
-              onReviewResident={onReviewResident}
-            />
-          )}
+          <GuestActions
+            guest={guest}
+            itemKey={item.key}
+            isMenuOpen={isMenuOpen}
+            setActionMenuId={setActionMenuId}
+            archivingId={archivingId}
+            manualActionId={manualActionId}
+            qrBusyId={qrBusyId}
+            onEditGuest={onEditGuest}
+            onManualScan={onManualScan}
+            onDownloadQr={onDownloadQr}
+            onArchiveGuest={onArchiveGuest}
+            onUnarchiveGuest={onUnarchiveGuest}
+            onCancelGuest={onCancelGuest}
+            onRemoveGuest={onRemoveGuest}
+          />
         </div>
       </div>
 
       <div className="guest-detail-section">
         <div className="guest-detail-section-title">Appointment Details</div>
         <div className="guest-detail-grid guest-detail-grid-compact">
-          <Info label="Type" value={isGuest ? "Guest" : "Resident"} />
+          <Info label="Type" value="Guest" />
           <Info label="Purpose" value={item.purpose || "-"} />
           <Info label="Schedule" value={schedule.date} subvalue={schedule.time} />
-          {isGuest ? <Info label="Organization" value={item.organization || "-"} /> : <Info label="Requested" value={created.date} subvalue={created.time} />}
-          {isGuest ? <Info label="Participants" value={guest.no_of_participants ?? 1} /> : <Info label="Reviewed By" value={resident.reviewed_by_name || "-"} />}
-          {isGuest ? <Info label="Gate Status" value={getGateStatusMeta(guest.status)} /> : <Info label="Status" value={statusMeta.label} />}
-          {isGuest ? <Info label="Check In" value={checkIn.date} subvalue={checkIn.time} /> : null}
-          {isGuest ? <Info label="Check Out" value={checkOut.date} subvalue={checkOut.time} /> : null}
+          <Info label="Organization" value={item.organization || "-"} />
+          <Info label="Participants" value={guest.no_of_participants ?? 1} />
+          <Info label="Gate Status" value={getGateStatusMeta(guest.status)} />
+          <Info label="Check In" value={checkIn.date} subvalue={checkIn.time} />
+          <Info label="Check Out" value={checkOut.date} subvalue={checkOut.time} />
         </div>
         <div className="guest-detail-notes">
-          <div className="guest-detail-section-title">{isGuest ? "Notes" : "Resident Note"}</div>
-          <div className="guest-detail-notes-body">{isGuest ? guest.notes || "No notes added" : resident.resident_note || "No resident note"}</div>
+          <div className="guest-detail-section-title">Notes</div>
+          <div className="guest-detail-notes-body">{guest.notes || "No notes added"}</div>
         </div>
-        {!isGuest ? (
-          <div className="guest-detail-notes">
-            <div className="guest-detail-section-title">Admin Note</div>
-            <div className="guest-detail-notes-body">{resident.admin_note || "No admin note added"}</div>
-          </div>
-        ) : null}
         {item.isArchived ? (
           <div style={{ color: "#6b7280", fontSize: 12, marginTop: 8 }}>
             Archived {guest.archived_at ? new Date(guest.archived_at).toLocaleString() : ""}
@@ -871,50 +649,6 @@ function GuestActions({
           </div>
         ) : null}
       </div>
-    </div>
-  );
-}
-
-function ResidentActions({ appointment, itemKey, isMenuOpen, setActionMenuId, onReviewResident }) {
-  if (appointment.status !== "pending") {
-    return (
-      <div className="resident-menu-wrap guest-menu-wrap">
-        <button
-          className="resident-action-button resident-action-neutral resident-more-button"
-          type="button"
-          aria-label="More resident appointment actions"
-          aria-expanded={isMenuOpen}
-          onClick={() => setActionMenuId(isMenuOpen ? null : itemKey)}
-        >
-          ...
-        </button>
-        {isMenuOpen ? (
-          <div className="resident-action-menu guest-action-menu">
-            <button
-              className="resident-action-button resident-action-neutral"
-              type="button"
-              onClick={() => {
-                setActionMenuId(null);
-                onReviewResident(appointment, appointment.status || "approved");
-              }}
-            >
-              View Review
-            </button>
-            <button className="resident-action-button resident-action-neutral" type="button" disabled>
-              {appointment.status === "approved" ? "Approved" : appointment.status === "rejected" ? "Rejected" : "Reviewed"}
-            </button>
-            <button className="resident-action-button resident-action-neutral" type="button" disabled>
-              No further action
-            </button>
-          </div>
-        ) : null}
-      </div>
-    );
-  }
-  return (
-    <div className="appointment-review-actions">
-      <button className="btn-primary" type="button" onClick={() => onReviewResident(appointment, "approved")}>Approve</button>
-      <button className="guest-form-cancel" type="button" onClick={() => onReviewResident(appointment, "rejected")}>Reject</button>
     </div>
   );
 }

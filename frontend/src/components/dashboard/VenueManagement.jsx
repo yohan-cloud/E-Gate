@@ -19,6 +19,7 @@ export default function VenueManagement() {
   const [saving, setSaving] = useState(false);
   const [showInactive, setShowInactive] = useState(true);
   const [confirmAction, setConfirmAction] = useState(null);
+  const [openActionMenuId, setOpenActionMenuId] = useState(null);
 
   const activeCount = useMemo(() => venues.filter((venue) => venue.is_active).length, [venues]);
 
@@ -187,42 +188,84 @@ export default function VenueManagement() {
               <tbody>
                 {venues.map((venue) => (
                   <tr key={venue.id}>
-                    <td>{venue.name}</td>
-                    <td>{venue.max_capacity}</td>
-                    <td>
+                    <td data-label="Venue">{venue.name}</td>
+                    <td data-label="Max Capacity">{venue.max_capacity}</td>
+                    <td data-label="Status">
                       <span className={`venue-status ${venue.is_active ? "active" : "inactive"}`}>
                         {venue.is_active ? "Active" : "Inactive"}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <div className="venue-row-actions">
-                        <button type="button" onClick={() => editVenue(venue)}>
-                          Edit
-                        </button>
-                        {venue.is_active ? (
+                        <div className="row-action-inline">
+                          <button type="button" onClick={() => editVenue(venue)}>
+                            Edit
+                          </button>
+                          {venue.is_active ? (
+                            <button
+                              type="button"
+                              className="warning-btn"
+                              onClick={() => setConfirmAction({ type: "deactivate", venue })}
+                            >
+                              Deactivate
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="secondary-btn"
+                              onClick={() => setConfirmAction({ type: "reactivate", venue })}
+                            >
+                              Reactivate
+                            </button>
+                          )}
                           <button
                             type="button"
-                            className="warning-btn"
-                            onClick={() => setConfirmAction({ type: "deactivate", venue })}
+                            className="danger-btn"
+                            onClick={() => setConfirmAction({ type: "remove", venue })}
                           >
-                            Deactivate
+                            Remove
                           </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="secondary-btn"
-                            onClick={() => setConfirmAction({ type: "reactivate", venue })}
-                          >
-                            Reactivate
-                          </button>
-                        )}
+                        </div>
                         <button
                           type="button"
-                          className="danger-btn"
-                          onClick={() => setConfirmAction({ type: "remove", venue })}
+                          className="row-action-menu-trigger"
+                          aria-label={`More actions for ${venue.name}`}
+                          aria-expanded={openActionMenuId === venue.id}
+                          onClick={() => setOpenActionMenuId((current) => (current === venue.id ? null : venue.id))}
                         >
-                          Remove
+                          ...
                         </button>
+                        {openActionMenuId === venue.id ? (
+                          <div className="row-action-menu">
+                            <button type="button" onClick={() => { setOpenActionMenuId(null); editVenue(venue); }}>
+                              Edit
+                            </button>
+                            {venue.is_active ? (
+                              <button
+                                type="button"
+                                className="warning-btn"
+                                onClick={() => { setOpenActionMenuId(null); setConfirmAction({ type: "deactivate", venue }); }}
+                              >
+                                Deactivate
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="secondary-btn"
+                                onClick={() => { setOpenActionMenuId(null); setConfirmAction({ type: "reactivate", venue }); }}
+                              >
+                                Reactivate
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="danger-btn"
+                              onClick={() => { setOpenActionMenuId(null); setConfirmAction({ type: "remove", venue }); }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
                     </td>
                   </tr>

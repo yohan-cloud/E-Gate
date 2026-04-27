@@ -710,6 +710,12 @@ body {
   color: #b91c1c;
 }
 
+.appointment-modal-error {
+  margin: 0 0 14px;
+  border: 1px solid #fecaca;
+  box-shadow: 0 10px 24px rgba(185, 28, 28, 0.14);
+}
+
 .appointment-alert-success {
   background: #f0fdf4;
   color: #166534;
@@ -736,6 +742,24 @@ body {
   background: #ffffff;
   box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
   padding: 20px;
+}
+
+.appointment-modal-panel.has-error {
+  border-color: #ef4444;
+  box-shadow: 0 30px 80px rgba(185, 28, 28, 0.34);
+  animation: appointment-error-pop 180ms ease-out;
+}
+
+@keyframes appointment-error-pop {
+  0% {
+    transform: scale(0.985);
+  }
+  70% {
+    transform: scale(1.01);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .appointment-modal-head {
@@ -1118,6 +1142,51 @@ body {
   background: #fef3c7;
   color: #92400e;
   border-color: #f59e0b;
+}
+
+.venue-row-actions,
+.gate-account-actions {
+  position: relative;
+  justify-content: flex-start;
+}
+
+.row-action-inline {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.row-action-menu-trigger {
+  display: none;
+  width: 44px !important;
+  min-width: 44px;
+  min-height: 38px;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.row-action-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  min-width: 180px;
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid rgba(146, 181, 157, 0.52);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+}
+
+.row-action-menu button {
+  width: 100% !important;
+  justify-content: flex-start;
+  min-height: 38px;
 }
 
 .venue-table-shell {
@@ -3212,6 +3281,12 @@ tr:hover {
   color: #ffffff !important;
 }
 
+:root[data-theme="dark"] .row-action-menu {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.38);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.32);
+}
+
 .audit-summary-pill {
   min-height: 40px;
   padding: 8px 12px;
@@ -3369,9 +3444,147 @@ tr:hover {
 }
 
 @media (max-width: 640px) {
+  .appointment-toolbar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .appointment-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .appointment-tabs .top-pill {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .appointment-search {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
   .gate-account-form,
   .gate-account-table-wrap {
     border-radius: 16px;
+  }
+
+  .venue-table-shell,
+  .gate-account-table-wrap {
+    overflow-x: visible;
+    padding: 8px;
+  }
+
+  .venue-table,
+  .gate-account-table {
+    min-width: 0;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+    margin-top: 0;
+  }
+
+  .venue-table thead,
+  .gate-account-table thead {
+    display: none;
+  }
+
+  .venue-table tbody,
+  .venue-table tr,
+  .venue-table td,
+  .gate-account-table tbody,
+  .gate-account-table tr,
+  .gate-account-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .venue-table tr,
+  .gate-account-table tr {
+    padding: 12px;
+    border: 1px solid rgba(146, 181, 157, 0.42);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.86);
+  }
+
+  .venue-table td,
+  .gate-account-table td {
+    display: grid;
+    grid-template-columns: minmax(98px, 0.42fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(146, 181, 157, 0.18);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .venue-table td::before,
+  .gate-account-table td::before {
+    content: attr(data-label);
+    color: #4f6b5d;
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .venue-table td:last-child,
+  .gate-account-table td:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .venue-table td[data-label="Actions"],
+  .gate-account-table td[data-label="Actions"] {
+    grid-template-columns: minmax(98px, 0.42fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+  }
+
+  .venue-table td[data-label="Actions"]::before,
+  .gate-account-table td[data-label="Actions"]::before {
+    margin-bottom: 2px;
+  }
+
+  .venue-row-actions,
+  .gate-account-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0;
+    width: 100%;
+  }
+
+  .row-action-inline {
+    display: none;
+  }
+
+  .row-action-menu-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px !important;
+    min-width: 44px !important;
+    min-height: 40px;
+  }
+
+  .row-action-menu {
+    right: 0;
+    width: min(230px, calc(100vw - 56px));
+    min-width: 0;
+  }
+
+  .row-action-menu button {
+    width: 100% !important;
+    justify-content: flex-start;
+    white-space: normal;
+  }
+
+  .venue-status,
+  .gate-account-status {
+    justify-self: start;
   }
 
   .gate-account-toolbar {
@@ -3559,8 +3772,9 @@ tr:hover {
 
   .guest-record-controls {
     width: 100%;
-    grid-template-columns: 1fr auto;
-    align-items: center;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 10px;
   }
 
   .guest-record-status-slot {
@@ -3568,9 +3782,23 @@ tr:hover {
   }
 
   .guest-detail-actions {
-    width: auto;
+    width: 100%;
+    justify-self: stretch;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  .guest-action-primary {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .guest-menu-wrap {
     justify-self: end;
-    grid-template-columns: auto auto;
   }
 
   .guest-inline-grid {
@@ -3685,8 +3913,17 @@ tr:hover {
 
   .admin-analytics-toolbar input,
   .admin-analytics-toolbar button {
-    width: 100% !important;
     min-width: 0 !important;
+  }
+
+  .admin-analytics-toolbar input {
+    width: 100% !important;
+  }
+
+  .admin-analytics-toolbar button {
+    width: auto !important;
+    min-height: 38px;
+    padding: 8px 12px !important;
   }
 
   .admin-analytics-kpi-row > * {
@@ -3900,6 +4137,11 @@ tr:hover {
   .guest-detail-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px !important;
+  }
+
+  .appointment-row .guest-detail-actions {
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
   }
 
   .admin-resident-main > div:last-child > div:nth-child(3) {

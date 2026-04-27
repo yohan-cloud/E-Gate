@@ -40,6 +40,7 @@ export default function GateAccounts() {
   const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [openActionMenuId, setOpenActionMenuId] = useState(null);
   const [resetModal, setResetModal] = useState({
     open: false,
     account: null,
@@ -454,37 +455,71 @@ export default function GateAccounts() {
               <tbody>
                 {accounts.map((account) => (
                   <tr key={account.id}>
-                    <td>{account.full_name || account.username}</td>
-                    <td>{account.username}</td>
-                    <td>{account.email || "No email"}</td>
-                    <td>{account.contact_number || "No contact"}</td>
-                    <td>
+                    <td data-label="Full Name">{account.full_name || account.username}</td>
+                    <td data-label="Username">{account.username}</td>
+                    <td data-label="Email">{account.email || "No email"}</td>
+                    <td data-label="Contact">{account.contact_number || "No contact"}</td>
+                    <td data-label="Status">
                       <span className={`gate-account-status ${account.is_active ? "active" : "inactive"}`}>
                         {account.is_active ? "Active" : "Inactive"}
                       </span>
                     </td>
-                    <td>{formatDate(account.date_joined)}</td>
-                    <td>{account.last_login ? formatDate(account.last_login, true) : "Never"}</td>
-                    <td>
+                    <td data-label="Created">{formatDate(account.date_joined)}</td>
+                    <td data-label="Last Login">{account.last_login ? formatDate(account.last_login, true) : "Never"}</td>
+                    <td data-label="Actions">
                       <div className="gate-account-actions">
-                        <button type="button" disabled={busyId === account.id} onClick={() => openResetModal(account)}>
-                          Reset Password
-                        </button>
-                        <button type="button" disabled={busyId === account.id} onClick={() => openLogsModal(account)}>
-                          View Logs
-                        </button>
-                        {account.is_active ? (
-                          <button type="button" disabled={busyId === account.id} onClick={() => openDeactivateModal(account)}>
-                            Deactivate
+                        <div className="row-action-inline">
+                          <button type="button" disabled={busyId === account.id} onClick={() => openResetModal(account)}>
+                            Reset Password
                           </button>
-                        ) : (
-                          <button type="button" disabled={busyId === account.id} onClick={() => reactivateAccount(account)}>
-                            Activate
+                          <button type="button" disabled={busyId === account.id} onClick={() => openLogsModal(account)}>
+                            View Logs
                           </button>
-                        )}
-                        <button type="button" disabled={busyId === account.id} className="danger" onClick={() => setDeleteTarget(account)}>
-                          Delete
+                          {account.is_active ? (
+                            <button type="button" disabled={busyId === account.id} onClick={() => openDeactivateModal(account)}>
+                              Deactivate
+                            </button>
+                          ) : (
+                            <button type="button" disabled={busyId === account.id} onClick={() => reactivateAccount(account)}>
+                              Activate
+                            </button>
+                          )}
+                          <button type="button" disabled={busyId === account.id} className="danger" onClick={() => setDeleteTarget(account)}>
+                            Delete
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          className="row-action-menu-trigger"
+                          aria-label={`More actions for ${account.username}`}
+                          aria-expanded={openActionMenuId === account.id}
+                          disabled={busyId === account.id}
+                          onClick={() => setOpenActionMenuId((current) => (current === account.id ? null : account.id))}
+                        >
+                          ...
                         </button>
+                        {openActionMenuId === account.id ? (
+                          <div className="row-action-menu">
+                            <button type="button" disabled={busyId === account.id} onClick={() => { setOpenActionMenuId(null); openResetModal(account); }}>
+                              Reset Password
+                            </button>
+                            <button type="button" disabled={busyId === account.id} onClick={() => { setOpenActionMenuId(null); openLogsModal(account); }}>
+                              View Logs
+                            </button>
+                            {account.is_active ? (
+                              <button type="button" disabled={busyId === account.id} onClick={() => { setOpenActionMenuId(null); openDeactivateModal(account); }}>
+                                Deactivate
+                              </button>
+                            ) : (
+                              <button type="button" disabled={busyId === account.id} onClick={() => { setOpenActionMenuId(null); reactivateAccount(account); }}>
+                                Activate
+                              </button>
+                            )}
+                            <button type="button" disabled={busyId === account.id} className="danger" onClick={() => { setOpenActionMenuId(null); setDeleteTarget(account); }}>
+                              Delete
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
                     </td>
                   </tr>

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 
 import { api } from "../../api";
 import NightModeIconButton from "../common/NightModeIconButton";
-import Appointments from "../resident/Appointments";
 import BrowseEvents from "../resident/BrowseEvents";
 import MyRegistrations from "../resident/MyRegistrations";
 import ProfileCard from "../resident/ProfileCard";
@@ -11,7 +10,6 @@ import VerificationTab from "../resident/VerificationTab";
 const RESIDENT_NAV_ITEMS = [
   { key: "browse", label: "Browse Events", eyebrow: "Explore", icon: "calendar" },
   { key: "mine", label: "My Registrations", eyebrow: "Activity", icon: "clipboard" },
-  { key: "appointments", label: "Appointments", eyebrow: "Services", icon: "calendarCheck" },
   { key: "verification", label: "ID Reverification", eyebrow: "Identity", icon: "shield" },
   { key: "profile", label: "Profile", eyebrow: "Account", icon: "user" },
 ];
@@ -295,7 +293,6 @@ export default function ResidentPortal({ onLogout }) {
           />
         )}
         {!mustChangePassword && viewMode === "mine" && <MyRegistrations />}
-        {!mustChangePassword && viewMode === "appointments" && <Appointments />}
         {!mustChangePassword && viewMode === "profile" && <ProfileCard />}
         {!mustChangePassword && viewMode === "verification" && (
           <VerificationTab
