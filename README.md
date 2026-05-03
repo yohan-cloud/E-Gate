@@ -99,6 +99,7 @@ EC2 Notes
   - `npm ci`
   - `npm run build`
 - Use [deploy/ec2/nginx.conf](/c:/Users/Yohan/OneDrive%20-%20adamson.edu.ph/Desktop/E-Gate/deploy/ec2/nginx.conf) as the site template when `/` should serve the React app and `/api/` plus `/admin/` should stay on Django.
+- If TLS/SSL is installed, prefer [deploy/ec2/nginx-https.conf.example](/c:/Users/Yohan/OneDrive%20-%20adamson.edu.ph/Desktop/E-Gate/deploy/ec2/nginx-https.conf.example): it redirects HTTP to HTTPS and serves the app only from the HTTPS server block.
 - If the Ubuntu welcome page appears at `http://<ec2-ip>/`, disable the default site and enable the app site:
   - `sudo rm -f /etc/nginx/sites-enabled/default`
   - `sudo ln -sf /etc/nginx/sites-available/egate /etc/nginx/sites-enabled/egate`
