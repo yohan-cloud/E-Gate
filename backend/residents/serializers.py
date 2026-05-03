@@ -3,6 +3,7 @@ from .models import ResidentProfile, User, VerificationRequest
 import re
 from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
+from django.urls import reverse
 
 class UserSerializer(serializers.ModelSerializer):
     email = serializers.SerializerMethodField()
@@ -291,6 +292,7 @@ class VerificationRequestSerializer(serializers.ModelSerializer):
             "reviewed_at",
             "reviewed_by",
         ]
+        extra_kwargs = {"document": {"write_only": True}}
         read_only_fields = ["status", "admin_note", "created_at", "reviewed_at", "reviewed_by", "user", "document_url"]
 
     def get_document_url(self, obj):
@@ -298,7 +300,7 @@ class VerificationRequestSerializer(serializers.ModelSerializer):
             if not obj.document:
                 return None
             request = self.context.get("request")
-            url = obj.document.url
+            url = reverse("verification_request_document", kwargs={"request_id": obj.id})
             return request.build_absolute_uri(url) if request else url
         except Exception:
             return None

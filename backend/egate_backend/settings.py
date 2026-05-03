@@ -23,6 +23,8 @@ DEBUG = os.getenv('DJANGO_DEBUG', 'false').lower() == 'true'
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY') or ('dev-insecure-key' if DEBUG else None)
 if not SECRET_KEY:
     raise ValueError("DJANGO_SECRET_KEY must be set when DJANGO_DEBUG is false.")
+if not DEBUG and SECRET_KEY.strip().lower() in {'dev-insecure-key', 'change-me', 'change-me-in-production'}:
+    raise ValueError("DJANGO_SECRET_KEY must be replaced with a strong unique value in production.")
 
 # Secure by default: only enable public gate/kiosk mode when explicitly requested.
 ALLOW_PUBLIC_GATE = os.getenv('ALLOW_PUBLIC_GATE', 'false').lower() == 'true'
@@ -97,6 +99,7 @@ MIDDLEWARE += [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'egate_backend.security.SecurityHeadersMiddleware',
 ]
 
 # CORS configuration
@@ -361,6 +364,30 @@ SECURE_HSTS_PRELOAD = env_bool('SECURE_HSTS_PRELOAD', False)
 SECURE_CONTENT_TYPE_NOSNIFF = env_bool('SECURE_CONTENT_TYPE_NOSNIFF', True)
 SECURE_REFERRER_POLICY = os.getenv('SECURE_REFERRER_POLICY', 'same-origin')
 X_FRAME_OPTIONS = os.getenv('X_FRAME_OPTIONS', 'DENY')
+SECURITY_CSP_ENABLED = env_bool('SECURITY_CSP_ENABLED', True)
+SECURITY_CSP_REPORT_ONLY = env_bool('SECURITY_CSP_REPORT_ONLY', False)
+SECURITY_CSP_EXEMPT_PATHS = tuple(
+    path.strip()
+    for path in os.getenv('SECURITY_CSP_EXEMPT_PATHS', '/api/docs,/api/redoc,/django-admin').split(',')
+    if path.strip()
+)
+CONTENT_SECURITY_POLICY = os.getenv(
+    'CONTENT_SECURITY_POLICY',
+    "default-src 'self'; "
+    "script-src 'self'; "
+    "style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data: blob: https:; "
+    "font-src 'self' data:; "
+    "connect-src 'self'; "
+    "object-src 'none'; "
+    "base-uri 'self'; "
+    "form-action 'self'; "
+    "frame-ancestors 'none'; "
+    "upgrade-insecure-requests",
+)
+CLAMAV_SCAN_ENABLED = env_bool('CLAMAV_SCAN_ENABLED', False)
+CLAMAV_SCAN_COMMAND = os.getenv('CLAMAV_SCAN_COMMAND', 'clamscan')
+CLAMAV_SCAN_TIMEOUT_SECONDS = int(os.getenv('CLAMAV_SCAN_TIMEOUT_SECONDS', '15'))
 
 # AWS S3 storage (optional)
 AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME', '').strip()

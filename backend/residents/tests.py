@@ -1,5 +1,6 @@
 from datetime import timedelta
 from pathlib import Path
+from io import BytesIO
 from tempfile import TemporaryDirectory
 from unittest.mock import patch as mock_patch
 
@@ -13,10 +14,14 @@ from rest_framework.test import APIClient
 from common.models import AuditLog
 from events.models import Event, EventRegistration
 from residents.models import ResidentProfile, VerificationRequest
+from PIL import Image
 
 
 def make_verification_upload(name="verification.jpg"):
-    return SimpleUploadedFile(name, b"fake-image-content", content_type="image/jpeg")
+    image = Image.new("RGB", (160, 160), color=(10, 90, 160))
+    buf = BytesIO()
+    image.save(buf, format="JPEG")
+    return SimpleUploadedFile(name, buf.getvalue(), content_type="image/jpeg")
 
 
 @override_settings(
@@ -348,6 +353,43 @@ class ResidentReverificationFlowTests(TestCase):
         self.assertEqual(res.data["status"], "pending")
         self.assertEqual(res.data["request_kind"], "reverification")
         self.assertTrue(res.data["is_expired"])
+        self.assertIn(f"/api/residents/verification/{res.data['id']}/document/", res.data["document_url"])
+        self.assertNotIn("/media/verifications/", res.data["document_url"])
+
+    def test_verification_upload_rejects_spoofed_image_content(self):
+        self.client.force_authenticate(user=self.resident)
+
+        res = self.client.post(
+            "/api/residents/verification/",
+            {
+                "document": SimpleUploadedFile(
+                    "spoof.jpg",
+                    b"not actually an image",
+                    content_type="image/jpeg",
+                )
+            },
+        )
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Invalid image", res.data["error"])
+
+    def test_verification_document_download_requires_owner_or_admin(self):
+        verification = VerificationRequest.objects.create(
+            user=self.resident,
+            document=make_verification_upload("private-doc.jpg"),
+        )
+        User = get_user_model()
+        other = User.objects.create_user(username="other_resident", password="pass1234", is_resident=True)
+
+        self.client.force_authenticate(user=other)
+        forbidden = self.client.get(f"/api/residents/verification/{verification.id}/document/")
+        self.assertEqual(forbidden.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=self.resident)
+        owner_res = self.client.get(f"/api/residents/verification/{verification.id}/document/")
+        self.assertEqual(owner_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(owner_res["X-Content-Type-Options"], "nosniff")
+        self.assertIn("attachment", owner_res["Content-Disposition"])
 
     def test_active_verified_resident_cannot_submit_reverification_request_early(self):
         self.profile.expiry_date = timezone.localdate() + timedelta(days=30)

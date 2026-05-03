@@ -9,6 +9,7 @@ urlpatterns = [
     path('profile/photo/', views.update_profile_photo, name='resident_profile_photo'),
     path('virtual-id/', views.resident_virtual_id, name='resident_virtual_id'),
     path('verification/', views.resident_verification_request, name='resident_verification_request'),
+    path('verification/<int:request_id>/document/', views.verification_request_document, name='verification_request_document'),
     path('face/enroll/', views.enroll_face, name='resident_face_enroll'),
     path('renew/', views.renew_resident_id, name='resident_id_renew'),
     path('list/', views.ResidentListView.as_view(), name='resident_list_admin'),

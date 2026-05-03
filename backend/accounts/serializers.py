@@ -19,6 +19,7 @@ from residents.models import ResidentProfile, VerificationRequest
 from accounts.face_utils import extract_embedding, average_embeddings, validate_face_image, FaceLibNotAvailable
 from django.core.validators import RegexValidator
 from accounts.models import GateAuditLog
+from common.upload_validation import DOCUMENT_TYPES, IMAGE_TYPES, UploadPolicy, validate_upload
 
 User = get_user_model()
 
@@ -104,14 +105,28 @@ class ResidentRegisterSerializer(serializers.ModelSerializer):
         return normalized
 
     def validate_id_document(self, value):
+        error = validate_upload(value, UploadPolicy(DOCUMENT_TYPES, max_size_mb=5))
+        if error:
+            raise serializers.ValidationError(error)
+        return value
+
+    def validate_photo(self, value):
         if not value:
             return value
-        allowed_types = {'image/jpeg', 'image/png', 'image/webp', 'application/pdf'}
-        content_type = getattr(value, 'content_type', None)
-        if content_type not in allowed_types:
-            raise serializers.ValidationError("Unsupported file type. Use JPG, PNG, WEBP, or PDF.")
-        if getattr(value, 'size', None) and value.size > 5 * 1024 * 1024:
-            raise serializers.ValidationError("File too large. Max 5MB.")
+        error = validate_upload(
+            value,
+            UploadPolicy(IMAGE_TYPES, max_size_mb=5, require_image_dimensions=True, min_width=128, min_height=128),
+        )
+        if error:
+            raise serializers.ValidationError(error)
+        return value
+
+    def validate_face_image(self, value):
+        if not value:
+            return value
+        error = validate_upload(value, UploadPolicy(IMAGE_TYPES, max_size_mb=5))
+        if error:
+            raise serializers.ValidationError(error)
         return value
 
     def validate(self, attrs):
@@ -166,6 +181,10 @@ class ResidentRegisterSerializer(serializers.ModelSerializer):
             single_face_file = request.FILES.get('face_image')
             if single_face_file:
                 face_files = [single_face_file]
+        for face_file in face_files:
+            error = validate_upload(face_file, UploadPolicy(IMAGE_TYPES, max_size_mb=5))
+            if error:
+                raise serializers.ValidationError({"face_images": error})
         # Compute username if omitted: CamelCase from full_name (no dashes), then dedupe with numeric suffix
         username = (validated_data.get("username") or "").strip()
         if not username:

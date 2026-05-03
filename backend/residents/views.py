@@ -26,10 +26,13 @@ except Exception:  # pragma: no cover - fallback for older Pillow
     PilResampling = None  # type: ignore
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.http import FileResponse, Http404
 import os
+import mimetypes
 from io import BytesIO
 from typing import Any, cast
 from accounts.face_utils import extract_embedding, average_embeddings, validate_face_image, FaceLibNotAvailable
+from common.upload_validation import DOCUMENT_TYPES, IMAGE_TYPES, UploadPolicy, validate_upload
 from datetime import date, timedelta
 from rest_framework import generics
 from django.utils import timezone
@@ -282,11 +285,9 @@ def resident_verification_request(request):
     file = request.FILES.get('document') or request.FILES.get('id_image') or request.FILES.get('file')
     if not file:
         return Response({"error": "Upload your ID under field 'document'."}, status=status.HTTP_400_BAD_REQUEST)
-    allowed_types = {'image/jpeg', 'image/png', 'image/webp', 'application/pdf'}
-    if getattr(file, 'content_type', None) not in allowed_types:
-        return Response({"error": "Unsupported file type. Use JPG, PNG, WEBP, or PDF."}, status=status.HTTP_400_BAD_REQUEST)
-    if getattr(file, 'size', None) and file.size > 5 * 1024 * 1024:
-        return Response({"error": "File too large. Max 5MB."}, status=status.HTTP_400_BAD_REQUEST)
+    upload_error = validate_upload(file, UploadPolicy(DOCUMENT_TYPES, max_size_mb=5))
+    if upload_error:
+        return Response({"error": upload_error}, status=status.HTTP_400_BAD_REQUEST)
 
     note = (request.data.get('note') or '').strip()
     vr = VerificationRequest.objects.create(user=user, document=file, note=note)
@@ -298,6 +299,31 @@ def resident_verification_request(request):
     )
     serializer = VerificationRequestSerializer(vr, context={'request': request})
     return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def verification_request_document(request, request_id):
+    vr = VerificationRequest.objects.select_related('user').filter(id=request_id).first()
+    if not vr or not vr.document:
+        raise Http404("Verification document not found.")
+
+    is_owner = getattr(vr.user, "id", None) == getattr(request.user, "id", None)
+    is_admin = bool(getattr(request.user, "is_admin", False) or getattr(request.user, "is_staff", False))
+    if not (is_owner or is_admin):
+        return Response({"error": "You do not have permission to view this document."}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        file_handle = vr.document.open("rb")
+    except Exception:
+        raise Http404("Verification document not found.")
+
+    filename = os.path.basename(vr.document.name)
+    content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    response = FileResponse(file_handle, content_type=content_type)
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 # Upload/replace or delete resident profile photo
@@ -337,23 +363,17 @@ def update_profile_photo(request):
     if not file:
         return Response({'error': 'No file uploaded under field "photo"'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Basic validation
-    allowed_types = {'image/jpeg', 'image/png', 'image/webp'}
-    if getattr(file, 'content_type', None) not in allowed_types:
-        return Response({'error': 'Unsupported image type. Use JPG, PNG, or WEBP.'}, status=status.HTTP_400_BAD_REQUEST)
-    max_mb = 5
-    if file.size and file.size > max_mb * 1024 * 1024:
-        return Response({'error': f'File too large. Max {max_mb}MB.'}, status=status.HTTP_400_BAD_REQUEST)
+    upload_error = validate_upload(
+        file,
+        UploadPolicy(IMAGE_TYPES, max_size_mb=5, require_image_dimensions=True, min_width=128, min_height=128),
+    )
+    if upload_error:
+        return Response({'error': upload_error}, status=status.HTTP_400_BAD_REQUEST)
 
     # Process image: exif-orient, constrain max size, save
     try:
         img = Image.open(file)
         img = ImageOps.exif_transpose(img)
-        # Validate minimum dimensions before any resize
-        min_w = 128
-        min_h = 128
-        if img.width < min_w or img.height < min_h:
-            return Response({'error': f'Image too small. Minimum size is {min_w}x{min_h} pixels.'}, status=status.HTTP_400_BAD_REQUEST)
         # Constrain max dimension (downscale only)
         max_dim = 1024
         img.thumbnail((max_dim, max_dim))
@@ -424,14 +444,10 @@ def enroll_face(request):
         return Response({'error': 'No image uploaded. Use field "image" or multiple "images".'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # Validate type and size for each provided image
-        allowed_types = {'image/jpeg', 'image/png', 'image/webp'}
         for f in files:
-            ct = getattr(f, 'content_type', None)
-            if ct not in allowed_types:
-                return Response({'error': 'Unsupported image type. Use JPG, PNG, or WEBP.'}, status=status.HTTP_400_BAD_REQUEST)
-            if getattr(f, 'size', None) and f.size > 5 * 1024 * 1024:
-                return Response({'error': 'File too large. Max 5MB.'}, status=status.HTTP_400_BAD_REQUEST)
+            upload_error = validate_upload(f, UploadPolicy(IMAGE_TYPES, max_size_mb=5))
+            if upload_error:
+                return Response({'error': upload_error}, status=status.HTTP_400_BAD_REQUEST)
 
         # Compute embedding(s)
         embs = []

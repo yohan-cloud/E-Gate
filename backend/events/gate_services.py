@@ -1,6 +1,5 @@
 import os
 
-from PIL import Image
 from django.db import transaction
 from django.utils import timezone
 
@@ -12,6 +11,7 @@ from accounts.face_utils import (
     match_face_image,
 )
 from residents.models import ResidentProfile
+from common.upload_validation import IMAGE_TYPES, UploadPolicy, validate_upload
 
 from .models import EntryLog
 
@@ -123,21 +123,7 @@ def record_resident_gate_log(profile, *, actor=None, method="qr", confidence=Non
 def validate_face_upload(image):
     if not image:
         return "Provide a face image under field 'image'."
-    allowed_types = {"image/jpeg", "image/png", "image/webp"}
-    if getattr(image, "content_type", None) not in allowed_types:
-        return "Unsupported image type. Use JPG, PNG, or WEBP."
-    if getattr(image, "size", None) and image.size > 5 * 1024 * 1024:
-        return "File too large. Max 5MB."
-    try:
-        img = Image.open(image)
-        img.verify()
-        try:
-            image.seek(0)
-        except Exception:
-            pass
-    except Exception as exc:
-        return f"Invalid image: {exc}"
-    return None
+    return validate_upload(image, UploadPolicy(IMAGE_TYPES, max_size_mb=5))
 
 
 def parse_tolerance(raw_tolerance):

@@ -46,6 +46,8 @@ mkcert.exe
 analytics_backup.*
 data.json
 data_nobom.json
+backend/sqlite_to_postgres_dump*.json
+sqlite_to_postgres_dump*.json
 *.sql
 *_backup.sql
 temp_*
