@@ -311,7 +311,7 @@ export default function ProfileCard() {
               <div style={{ display: "grid", gap: "0.5mm" }}>
                 <div style={frontRepublicStyle}>Republic of the Philippines</div>
                 <div style={frontHeaderTitleStyle}>Resident Identification Card</div>
-                <div style={frontBarangayStyle}>Barangay 663-A, Zone 73, District 5, Manila</div>
+                <div style={frontBarangayStyle}>Barangay 663-A, Zone 71, District 5, Manila</div>
               </div>
               <div style={frontHeaderMarkStyle}>
                 <img src="/barangay-663a-logo.png" alt="Barangay 663-A logo" style={{ width: "8mm", height: "8mm", objectFit: "contain" }} />
