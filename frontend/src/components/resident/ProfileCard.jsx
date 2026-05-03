@@ -314,7 +314,7 @@ export default function ProfileCard() {
                 <div style={frontBarangayStyle}>Barangay 663-A, Zone 71, District 5, Manila</div>
               </div>
               <div style={frontHeaderMarkStyle}>
-                <img src="/barangay-663a-logo.png" alt="Barangay 663-A logo" style={{ width: "8mm", height: "8mm", objectFit: "contain" }} />
+                <img src="/barangay-663a-logo.png" alt="Barangay 663-A logo" style={{ width: "12mm", height: "12mm", objectFit: "contain", position: "relative", top: "-0.8mm", transform: "scale(1.55)", transformOrigin: "center" }} />
                 <div style={frontHeaderMarkTextStyle}>Barangay Identification Card</div>
               </div>
             </div>
@@ -367,7 +367,7 @@ export default function ProfileCard() {
                 <div style={backTitleStyle}>Barangay 663-A Resident ID</div>
                 <div style={backSubtitleStyle}>Official back panel for gate verification and attendance scanning</div>
               </div>
-              <img src="/barangay-663a-logo.png" alt="Barangay 663-A seal" style={{ width: "9mm", height: "9mm", objectFit: "contain" }} />
+              <img src="/barangay-663a-logo.png" alt="Barangay 663-A seal" style={{ width: "19mm", height: "19mm", objectFit: "contain" }} />
             </div>
 
             <div style={backContentStyle}>
