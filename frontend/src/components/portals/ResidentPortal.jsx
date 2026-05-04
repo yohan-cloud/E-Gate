@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { api } from "../../api";
 import NightModeIconButton from "../common/NightModeIconButton";
+import PasswordVisibilityToggle from "../common/PasswordVisibilityToggle";
 import BrowseEvents from "../resident/BrowseEvents";
 import MyRegistrations from "../resident/MyRegistrations";
 import ProfileCard from "../resident/ProfileCard";
@@ -13,6 +14,16 @@ const RESIDENT_NAV_ITEMS = [
   { key: "verification", label: "ID Reverification", eyebrow: "Identity", icon: "shield" },
   { key: "profile", label: "Profile", eyebrow: "Account", icon: "user" },
 ];
+
+function RequiredLabelText({ children }) {
+  return (
+    <span className="required-field-label" style={{ display: "inline-flex", alignItems: "baseline", gap: 4, fontWeight: 700 }}>
+      <span className="required-marker">*</span>
+      <span>{children}</span>
+      <span className="required-text">Required</span>
+    </span>
+  );
+}
 
 export default function ResidentPortal({ onLogout }) {
   const [viewMode, setViewMode] = useState("browse");
@@ -33,6 +44,11 @@ export default function ResidentPortal({ onLogout }) {
     current_password: "",
     new_password: "",
     confirm_password: "",
+  });
+  const [shownPasswordFields, setShownPasswordFields] = useState({
+    current_password: false,
+    new_password: false,
+    confirm_password: false,
   });
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
@@ -154,6 +170,13 @@ export default function ResidentPortal({ onLogout }) {
     }
   };
 
+  const toggleShownPasswordField = (field) => {
+    setShownPasswordFields((current) => ({
+      ...current,
+      [field]: !current[field],
+    }));
+  };
+
   return (
     <div className="resident-layout">
       {isMobileView && isMobileNavOpen ? (
@@ -251,30 +274,66 @@ export default function ResidentPortal({ onLogout }) {
               </p>
             </div>
             <form onSubmit={handleForcedPasswordChange} style={{ display: "grid", gap: 12 }}>
-              <input
-                type="password"
-                placeholder="CURRENT TEMPORARY PASSWORD"
-                value={passwordForm.current_password}
-                onChange={(e) => setPasswordForm((current) => ({ ...current, current_password: e.target.value }))}
-                autoComplete="current-password"
-                required
-              />
-              <input
-                type="password"
-                placeholder="NEW PASSWORD"
-                value={passwordForm.new_password}
-                onChange={(e) => setPasswordForm((current) => ({ ...current, new_password: e.target.value }))}
-                autoComplete="new-password"
-                required
-              />
-              <input
-                type="password"
-                placeholder="CONFIRM NEW PASSWORD"
-                value={passwordForm.confirm_password}
-                onChange={(e) => setPasswordForm((current) => ({ ...current, confirm_password: e.target.value }))}
-                autoComplete="new-password"
-                required
-              />
+              <label htmlFor="resident-current-password">
+                <RequiredLabelText>Current Temporary Password</RequiredLabelText>
+              </label>
+              <div className="valo-password-field">
+                <input
+                  id="resident-current-password"
+                  className="valo-login-input valo-password-input"
+                  type={shownPasswordFields.current_password ? "text" : "password"}
+                  placeholder="CURRENT TEMPORARY PASSWORD"
+                  value={passwordForm.current_password}
+                  onChange={(e) => setPasswordForm((current) => ({ ...current, current_password: e.target.value }))}
+                  autoComplete="current-password"
+                  required
+                />
+                <PasswordVisibilityToggle
+                  shown={shownPasswordFields.current_password}
+                  onToggle={() => toggleShownPasswordField("current_password")}
+                  controls="resident-current-password"
+                />
+              </div>
+              <label htmlFor="resident-new-password">
+                <RequiredLabelText>New Password</RequiredLabelText>
+              </label>
+              <div className="valo-password-field">
+                <input
+                  id="resident-new-password"
+                  className="valo-login-input valo-password-input"
+                  type={shownPasswordFields.new_password ? "text" : "password"}
+                  placeholder="NEW PASSWORD"
+                  value={passwordForm.new_password}
+                  onChange={(e) => setPasswordForm((current) => ({ ...current, new_password: e.target.value }))}
+                  autoComplete="new-password"
+                  required
+                />
+                <PasswordVisibilityToggle
+                  shown={shownPasswordFields.new_password}
+                  onToggle={() => toggleShownPasswordField("new_password")}
+                  controls="resident-new-password"
+                />
+              </div>
+              <label htmlFor="resident-confirm-password">
+                <RequiredLabelText>Confirm New Password</RequiredLabelText>
+              </label>
+              <div className="valo-password-field">
+                <input
+                  id="resident-confirm-password"
+                  className="valo-login-input valo-password-input"
+                  type={shownPasswordFields.confirm_password ? "text" : "password"}
+                  placeholder="CONFIRM NEW PASSWORD"
+                  value={passwordForm.confirm_password}
+                  onChange={(e) => setPasswordForm((current) => ({ ...current, confirm_password: e.target.value }))}
+                  autoComplete="new-password"
+                  required
+                />
+                <PasswordVisibilityToggle
+                  shown={shownPasswordFields.confirm_password}
+                  onToggle={() => toggleShownPasswordField("confirm_password")}
+                  controls="resident-confirm-password"
+                />
+              </div>
               <button className="btn-primary" type="submit" disabled={passwordSaving}>
                 {passwordSaving ? "Saving..." : "Change Password"}
               </button>

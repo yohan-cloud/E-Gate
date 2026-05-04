@@ -29,6 +29,16 @@ const GUEST_STATUS_OPTIONS = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
+function RequiredLabelText({ children }) {
+  return (
+    <span className="required-field-label" style={{ display: "inline-flex", alignItems: "baseline", gap: 4, fontWeight: 700 }}>
+      <span className="required-marker">*</span>
+      <span>{children}</span>
+      <span className="required-text">Required</span>
+    </span>
+  );
+}
+
 const CONTACT_ALLOWED_PATTERN = /^[0-9+\-() ]*$/;
 
 function toOffsetIso(value) {
@@ -389,14 +399,20 @@ export default function Guests() {
 
   const renderGuestFields = () => (
     <>
-      <input className="guest-form-input" name="name" placeholder="Guest name" value={guestForm.name} onChange={onGuestChange} required />
+      <label className="guest-input-shell">
+        <RequiredLabelText>Guest Name</RequiredLabelText>
+        <input className="guest-form-input" name="name" placeholder="Guest name" value={guestForm.name} onChange={onGuestChange} required />
+      </label>
       <input className="guest-form-input" name="organization_company" placeholder="Organization / Company" value={guestForm.organization_company} onChange={onGuestChange} />
       <div className="guest-input-shell">
         <input className="guest-form-input" name="contact" placeholder="Contact number" value={guestForm.contact} onChange={onGuestChange} inputMode="tel" />
         {numericOnlyNotice.contact ? <InputNotice text="You can only type a number here." /> : null}
       </div>
-      <input className="guest-form-input" name="purpose" placeholder="Purpose of visit" value={guestForm.purpose} onChange={onGuestChange} required />
-      <DateTimeField id="appointment-guest-eta" name="eta" label="" value={guestForm.eta} onChange={onGuestChange} required placeholder="Appointment schedule" panelInFlow disablePastDates />
+      <label className="guest-input-shell">
+        <RequiredLabelText>Purpose of Visit</RequiredLabelText>
+        <input className="guest-form-input" name="purpose" placeholder="Purpose of visit" value={guestForm.purpose} onChange={onGuestChange} required />
+      </label>
+      <DateTimeField id="appointment-guest-eta" name="eta" label="Appointment Schedule" value={guestForm.eta} onChange={onGuestChange} required placeholder="Appointment schedule" panelInFlow disablePastDates />
       <div className="guest-input-shell">
         <input className="guest-form-input" name="no_of_participants" placeholder="No. of participants" value={guestForm.no_of_participants} onChange={onGuestChange} inputMode="numeric" />
         {numericOnlyNotice.participants ? <InputNotice text="Participants must be numeric." /> : null}

@@ -4,7 +4,12 @@ import ConfirmDialog from "../common/ConfirmDialog";
 import { api } from "../../api";
 import toast, { formatApiError } from "../../lib/toast";
 import userAddIcon from "../../assets/user-add.png";
-import { DEFAULT_GATE_AUDIT_FILTERS, GATE_AUDIT_ACTIONS, GATE_AUDIT_STATUS_OPTIONS, GateAuditTable } from "./GateAuditLogs";
+import { GateAuditTable } from "./GateAuditLogs";
+import {
+  DEFAULT_GATE_AUDIT_FILTERS,
+  GATE_AUDIT_ACTIONS,
+  GATE_AUDIT_STATUS_OPTIONS,
+} from "./gateAuditConstants";
 
 const DEFAULT_FORM = {
   full_name: "",
@@ -29,6 +34,16 @@ const DEFAULT_LOG_FILTERS = {
   date_from: "",
   date_to: "",
 };
+
+function RequiredLabelText({ children, className = "" }) {
+  return (
+    <span className={`required-field-label ${className}`} style={{ display: "inline-flex", alignItems: "baseline", gap: 4 }}>
+      <span className="required-marker">*</span>
+      <span>{children}</span>
+      <span className="required-text">Required</span>
+    </span>
+  );
+}
 
 export default function GateAccounts() {
   const [gateForm, setGateForm] = useState(DEFAULT_FORM);
@@ -362,12 +377,12 @@ export default function GateAccounts() {
 
             <div className="gate-account-grid">
               <label className="gate-account-field">
-                <span className="gate-account-label">Full Name</span>
+                <RequiredLabelText className="gate-account-label">Full Name</RequiredLabelText>
                 <input name="full_name" value={gateForm.full_name} onChange={updateGateForm} required placeholder="Juan Dela Cruz" />
               </label>
 
               <label className="gate-account-field">
-                <span className="gate-account-label">Username</span>
+                <RequiredLabelText className="gate-account-label">Username</RequiredLabelText>
                 <input name="username" value={gateForm.username} onChange={updateGateForm} autoComplete="username" required placeholder="gate_operator_01" />
               </label>
 
@@ -382,7 +397,7 @@ export default function GateAccounts() {
               </label>
 
               <label className="gate-account-field gate-account-field-wide">
-                <span className="gate-account-label">Password</span>
+                <RequiredLabelText className="gate-account-label">Password</RequiredLabelText>
                 <div className="gate-account-password-wrap">
                   <input
                     name="password"
@@ -551,7 +566,9 @@ export default function GateAccounts() {
             </div>
 
             <div style={{ display: "grid", gap: 8 }}>
-              <label htmlFor="gate-temp-password" style={fieldLabelStyle}>Temporary Password</label>
+              <label htmlFor="gate-temp-password" style={fieldLabelStyle}>
+                <RequiredLabelText>Temporary Password</RequiredLabelText>
+              </label>
               <input
                 id="gate-temp-password"
                 type={resetModal.showPassword ? "text" : "password"}
@@ -560,13 +577,19 @@ export default function GateAccounts() {
                 placeholder="Enter temporary password"
                 autoFocus
                 style={fieldInputStyle}
+                required
               />
+              <label htmlFor="gate-confirm-temp-password" style={fieldLabelStyle}>
+                <RequiredLabelText>Confirm Temporary Password</RequiredLabelText>
+              </label>
               <input
+                id="gate-confirm-temp-password"
                 type={resetModal.showPassword ? "text" : "password"}
                 value={resetModal.confirmTemporaryPassword}
                 onChange={(event) => setResetModal((current) => ({ ...current, confirmTemporaryPassword: event.target.value }))}
                 placeholder="Confirm temporary password"
                 style={fieldInputStyle}
+                required
               />
               <label style={checkboxLabelStyle}>
                 <input
@@ -613,12 +636,15 @@ export default function GateAccounts() {
             </div>
 
             <div style={{ display: "grid", gap: 8 }}>
-              <label htmlFor="gate-deactivate-reason" style={fieldLabelStyle}>Reason</label>
+              <label htmlFor="gate-deactivate-reason" style={fieldLabelStyle}>
+                <RequiredLabelText>Reason</RequiredLabelText>
+              </label>
               <select
                 id="gate-deactivate-reason"
                 value={deactivateModal.reason}
                 onChange={(event) => setDeactivateModal((current) => ({ ...current, reason: event.target.value }))}
                 style={fieldInputStyle}
+                required
               >
                 <option value="">Select reason</option>
                 {DEACTIVATION_REASONS.map((reason) => (
@@ -626,13 +652,20 @@ export default function GateAccounts() {
                 ))}
               </select>
               {deactivateModal.reason === "Other" ? (
-                <textarea
-                  value={deactivateModal.customReason}
-                  onChange={(event) => setDeactivateModal((current) => ({ ...current, customReason: event.target.value }))}
-                  rows={3}
-                  placeholder="Enter the deactivation reason"
-                  style={{ ...fieldInputStyle, resize: "vertical" }}
-                />
+                <>
+                  <label htmlFor="gate-custom-deactivate-reason" style={fieldLabelStyle}>
+                    <RequiredLabelText>Custom Reason</RequiredLabelText>
+                  </label>
+                  <textarea
+                    id="gate-custom-deactivate-reason"
+                    value={deactivateModal.customReason}
+                    onChange={(event) => setDeactivateModal((current) => ({ ...current, customReason: event.target.value }))}
+                    rows={3}
+                    placeholder="Enter the deactivation reason"
+                    style={{ ...fieldInputStyle, resize: "vertical" }}
+                    required
+                  />
+                </>
               ) : null}
               <div style={helperTextStyle}>
                 This reason will be saved for admin reference and audit history.

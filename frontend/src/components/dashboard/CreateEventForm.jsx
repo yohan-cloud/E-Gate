@@ -136,6 +136,10 @@ export default function CreateEventForm({ onCreated }) {
       toast.error("Please select an event date and time.");
       return;
     }
+    if (!form.end_date) {
+      toast.error("Please select an event end date and time.");
+      return;
+    }
     if (form.capacity === "") {
       toast.error("Please enter the estimated capacity.");
       return;
@@ -237,6 +241,8 @@ export default function CreateEventForm({ onCreated }) {
           label="Event End Date & Time"
           value={form.end_date}
           onChange={update}
+          required
+          requiredInvalid={submitted && !form.end_date}
           placeholder="Select event end date and time"
           helpText="Set when the event is expected to end."
           panelInFlow

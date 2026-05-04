@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { api, clearStoredAuth, notifyAuthChanged } from "../api";
+import PasswordVisibilityToggle from "./common/PasswordVisibilityToggle";
 
 function dashboardForRole(role) {
   if (role === "Resident") return "/resident/dashboard";
@@ -13,6 +14,7 @@ export default function UnifiedLogin({ onLogin }) {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetMode, setResetMode] = useState(false);
@@ -199,17 +201,24 @@ export default function UnifiedLogin({ onLogin }) {
           />
 
           <label className="sr-only" htmlFor="unified-password">Password</label>
-          <input
-            className="valo-login-input"
-            type="password"
-            id="unified-password"
-            name="password"
-            placeholder="PASSWORD"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-            autoComplete="current-password"
-          />
+          <div className="valo-password-field">
+            <input
+              className="valo-login-input valo-password-input"
+              type={showPassword ? "text" : "password"}
+              id="unified-password"
+              name="password"
+              placeholder="PASSWORD"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              autoComplete="current-password"
+            />
+            <PasswordVisibilityToggle
+              shown={showPassword}
+              onToggle={() => setShowPassword((value) => !value)}
+              controls="unified-password"
+            />
+          </div>
 
           <button className="valo-login-submit" type="submit" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}

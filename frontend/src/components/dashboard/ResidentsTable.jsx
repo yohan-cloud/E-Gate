@@ -41,6 +41,16 @@ function badgeStyle(background, color) {
   };
 }
 
+function RequiredLabelText({ children }) {
+  return (
+    <span className="required-field-label" style={{ display: "inline-flex", alignItems: "baseline", gap: 4 }}>
+      <span className="required-marker">*</span>
+      <span>{children}</span>
+      <span className="required-text">Required</span>
+    </span>
+  );
+}
+
 function calcAge(birthdate) {
   if (!birthdate) return null;
   try {
@@ -122,6 +132,29 @@ function getResidentAudiencePills(age, residentCategory, voterStatus) {
   }
 
   return pills;
+}
+
+function getAgeAudiencePill(age) {
+  if (age === null) return null;
+  if (age < 18) {
+    return {
+      label: "kids/teens",
+      background: "#dbeafe",
+      color: "#1d4ed8",
+    };
+  }
+  if (age >= 60) {
+    return {
+      label: "senior",
+      background: "#fef3c7",
+      color: "#92400e",
+    };
+  }
+  return {
+    label: "adult",
+    background: "#e2e8f0",
+    color: "#334155",
+  };
 }
 
 function maskEmail(email) {
@@ -508,6 +541,7 @@ export default function ResidentsTable() {
             const isMenuOpen = actionMenuId === userId;
             const isSensitiveMasked = Boolean(maskedById[userId]);
             const showSensitive = Boolean(revealed) && !isSensitiveMasked;
+            const ageAudiencePill = getAgeAudiencePill(age);
             const statusBadge = r.is_archived
               ? { label: "archived", background: "#64748b", color: "#fff" }
               : isDeactivated
@@ -543,6 +577,11 @@ export default function ResidentsTable() {
                       <span style={badgeStyle(isVerified ? "#dcfce7" : "#fee2e2", isVerified ? "#166534" : "#991b1b")}>
                         {isVerified ? "verified" : "not verified"}
                       </span>
+                      {ageAudiencePill ? (
+                        <span style={badgeStyle(ageAudiencePill.background, ageAudiencePill.color)}>
+                          {ageAudiencePill.label}
+                        </span>
+                      ) : null}
                       {isExpired ? (
                         <span style={badgeStyle("#fee2e2", "#991b1b")}>
                           expired
@@ -812,7 +851,7 @@ export default function ResidentsTable() {
 
             <div style={{ display: "grid", gap: 8 }}>
               <label htmlFor="resident-deactivate-reason" style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>
-                Reason
+                <RequiredLabelText>Reason</RequiredLabelText>
               </label>
               <select
                 id="resident-deactivate-reason"
@@ -826,6 +865,7 @@ export default function ResidentsTable() {
                   background: "#fff",
                   outline: "none",
                 }}
+                required
               >
                 <option value="">Select reason</option>
                 {DEACTIVATION_REASONS.map((reason) => (
@@ -833,21 +873,28 @@ export default function ResidentsTable() {
                 ))}
               </select>
               {deactivateModal.reason === "Other" ? (
-                <textarea
-                  value={deactivateModal.customReason}
-                  onChange={(e) => setDeactivateModal((current) => ({ ...current, customReason: e.target.value }))}
-                  rows={3}
-                  placeholder="Enter the deactivation reason"
-                  style={{
-                    width: "100%",
-                    padding: "12px 14px",
-                    borderRadius: 12,
-                    border: "1px solid #cbd5e1",
-                    background: "#fff",
-                    outline: "none",
-                    resize: "vertical",
-                  }}
-                />
+                <>
+                  <label htmlFor="resident-custom-deactivate-reason" style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>
+                    <RequiredLabelText>Custom Reason</RequiredLabelText>
+                  </label>
+                  <textarea
+                    id="resident-custom-deactivate-reason"
+                    value={deactivateModal.customReason}
+                    onChange={(e) => setDeactivateModal((current) => ({ ...current, customReason: e.target.value }))}
+                    rows={3}
+                    placeholder="Enter the deactivation reason"
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      borderRadius: 12,
+                      border: "1px solid #cbd5e1",
+                      background: "#fff",
+                      outline: "none",
+                      resize: "vertical",
+                    }}
+                    required
+                  />
+                </>
               ) : null}
               <div style={{ color: "#64748b", fontSize: 13, lineHeight: 1.5 }}>
                 This reason will be saved for admin reference and audit history.
@@ -948,7 +995,7 @@ export default function ResidentsTable() {
 
             <div style={{ display: "grid", gap: 8 }}>
               <label htmlFor="resident-temp-password" style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>
-                Temporary Password
+                <RequiredLabelText>Temporary Password</RequiredLabelText>
               </label>
               <input
                 id="resident-temp-password"
@@ -965,6 +1012,7 @@ export default function ResidentsTable() {
                   background: "#fff",
                   outline: "none",
                 }}
+                required
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
@@ -972,7 +1020,11 @@ export default function ResidentsTable() {
                   }
                 }}
               />
+              <label htmlFor="resident-confirm-temp-password" style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>
+                <RequiredLabelText>Confirm Temporary Password</RequiredLabelText>
+              </label>
               <input
+                id="resident-confirm-temp-password"
                 type={resetModal.showPassword ? "text" : "password"}
                 value={resetModal.confirmTemporaryPassword}
                 onChange={(e) => setResetModal((current) => ({ ...current, confirmTemporaryPassword: e.target.value }))}
@@ -985,6 +1037,7 @@ export default function ResidentsTable() {
                   background: "#fff",
                   outline: "none",
                 }}
+                required
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();

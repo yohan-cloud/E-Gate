@@ -3054,6 +3054,52 @@ input[type="date"] { color-scheme: dark; }
   background: rgba(255, 255, 255, 0.96);
 }
 
+.valo-password-field {
+  position: relative;
+}
+
+.valo-password-input {
+  padding-right: 52px;
+}
+
+.valo-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #53625a;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.valo-password-toggle:hover {
+  background: rgba(47, 143, 91, 0.1);
+  color: #1f7a48;
+}
+
+.valo-password-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(47, 143, 91, 0.18);
+}
+
+.valo-password-toggle svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
 .valo-login-input-compact {
   min-height: 48px;
   padding: 12px 14px;
@@ -3288,6 +3334,15 @@ input[type="date"] { color-scheme: dark; }
   border-color: rgba(134, 239, 172, 0.62) !important;
   background: rgba(9, 9, 11, 0.92) !important;
   box-shadow: 0 0 0 4px rgba(134, 239, 172, 0.12);
+}
+
+:root[data-theme="dark"] .valo-password-toggle {
+  color: #d4d4d8 !important;
+}
+
+:root[data-theme="dark"] .valo-password-toggle:hover {
+  background: rgba(134, 239, 172, 0.12) !important;
+  color: #bbf7d0 !important;
 }
 
 :root[data-theme="dark"] .valo-login-submit {

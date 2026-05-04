@@ -23,6 +23,16 @@ const EVENT_TYPE_OPTIONS = [
 
 const EVENT_TYPE_LABELS = Object.fromEntries(EVENT_TYPE_OPTIONS.map((option) => [option.value, option.label]));
 
+function RequiredLabel({ htmlFor, children }) {
+  return (
+    <label htmlFor={htmlFor} className="required-field-label">
+      <span className="required-marker">*</span>
+      <span>{children}</span>
+      <span className="required-text">Required</span>
+    </label>
+  );
+}
+
 function toLocalInput(dt) {
   if (!dt) return "";
   try {
@@ -185,6 +195,30 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
   };
 
   const save = async () => {
+    if (!form.title?.trim()) {
+      toast.error("Please enter the event title.");
+      return;
+    }
+    if (!form.event_type) {
+      toast.error("Please select an event type.");
+      return;
+    }
+    if (!form.audience_type) {
+      toast.error("Please select an audience.");
+      return;
+    }
+    if (!form.date) {
+      toast.error("Please select an event date and time.");
+      return;
+    }
+    if (!form.end_date) {
+      toast.error("Please select an event end date and time.");
+      return;
+    }
+    if (!form.status) {
+      toast.error("Please select an event status.");
+      return;
+    }
     if (form.capacity === "") {
       toast.error("Please enter the estimated capacity.");
       return;
@@ -260,19 +294,19 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
         <>
           <div className="form-grid">
             <div className="form-group">
-              <label htmlFor="edit-title">Title</label>
-              <input id="edit-title" name="title" value={form.title} onChange={updateField} />
+              <RequiredLabel htmlFor="edit-title">Title</RequiredLabel>
+              <input id="edit-title" name="title" value={form.title} onChange={updateField} required />
             </div>
             <div className="form-group">
-              <label htmlFor="edit-type">Event Type</label>
-              <select id="edit-type" name="event_type" value={form.event_type} onChange={updateField}>
+              <RequiredLabel htmlFor="edit-type">Event Type</RequiredLabel>
+              <select id="edit-type" name="event_type" value={form.event_type} onChange={updateField} required>
                 {EVENT_TYPE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
             </div>
             <div className="form-group">
-              <label htmlFor="edit-audience">Audience</label>
+              <RequiredLabel htmlFor="edit-audience">Audience</RequiredLabel>
               <AudienceSelector
                 id="edit-audience"
                 value={form.audience_type}
@@ -285,6 +319,7 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
               label="Event Date & Time"
               value={form.date}
               onChange={updateField}
+              required
               placeholder="Select event date and time"
               helpText="The actual start date/time of the event."
               disablePastDates
@@ -295,6 +330,7 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
               label="Event End Date & Time"
               value={form.end_date}
               onChange={updateField}
+              required
               placeholder="Select event end date and time"
               helpText="Set when the event ends."
               disablePastDates
@@ -312,8 +348,8 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
               <small>Select an active venue or TBD if the venue is not yet finalized.</small>
             </div>
             <div className="form-group">
-              <label htmlFor="edit-status">Status</label>
-              <select id="edit-status" name="status" value={form.status} onChange={updateField}>
+              <RequiredLabel htmlFor="edit-status">Status</RequiredLabel>
+              <select id="edit-status" name="status" value={form.status} onChange={updateField} required>
                 <option value="upcoming">upcoming</option>
                 <option value="ongoing">ongoing</option>
                 <option value="completed">completed</option>
@@ -321,7 +357,7 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
               </select>
             </div>
             <div className="form-group">
-              <label htmlFor="edit-capacity">{isTbdVenue ? "Estimated Capacity" : "Capacity"}</label>
+              <RequiredLabel htmlFor="edit-capacity">{isTbdVenue ? "Estimated Capacity" : "Capacity"}</RequiredLabel>
               <input
                 id="edit-capacity"
                 type="number"

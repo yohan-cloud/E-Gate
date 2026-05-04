@@ -11,6 +11,16 @@ const EMPTY_FORM = {
   max_capacity: "",
 };
 
+function RequiredLabel({ htmlFor, children }) {
+  return (
+    <label htmlFor={htmlFor} className="required-field-label">
+      <span className="required-marker">*</span>
+      <span>{children}</span>
+      <span className="required-text">Required</span>
+    </label>
+  );
+}
+
 export default function VenueManagement() {
   const [venues, setVenues] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -132,7 +142,7 @@ export default function VenueManagement() {
         <form className="venue-form" onSubmit={submit}>
           <h3>{editingId ? "Edit Venue" : "Add Venue"}</h3>
           <div className="form-group">
-            <label htmlFor="venue-name">Venue Name</label>
+            <RequiredLabel htmlFor="venue-name">Venue Name</RequiredLabel>
             <input
               id="venue-name"
               value={form.name}
@@ -142,7 +152,7 @@ export default function VenueManagement() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="venue-capacity">Max Capacity</label>
+            <RequiredLabel htmlFor="venue-capacity">Max Capacity</RequiredLabel>
             <input
               id="venue-capacity"
               type="number"

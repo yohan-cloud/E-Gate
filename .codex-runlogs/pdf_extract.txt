@@ -1,0 +1,2239 @@
+
+
+===== PAGE 1 =====
+E-Gate: An Electronic Event Registration and  
+QR-Enabled Pass System 
+ 
+ 
+ 
+OVERVIEW 
+The Barangay 663 -A Identification System is a digital 
+identification and event -attendance platform that enables 
+barangay officials to efficiently register residents, issue secure ID 
+cards, and manage participation in community programs. The 
+system replaces manual paper-based processes with a QR-enabled 
+verification workflow and an optional facial recognition feature 
+for enhanced security. 
+ 
+Residents can create digital accounts, update their profiles, and 
+access their virtual barangay ID, which includes a QR code linked 
+to their unique Barangay ID. Barangay officials utilize a web -
+based administrator portal to manage community events, track 
+registrants, monitor real-time attendance, and export participation 
+reports. 
+ 
+The backend is developed using Django and Django REST 
+Framework with JWT authentication, while the frontend is built 
+with React and Vite. QR scanning is supported through HTML5-
+Qrcode and WebRTC for camera access. When enabled, facial 
+recognition uses face  embeddings to match live images against 
+stored resident templates. 
+ 
+This project aligns with the ongoing digital transformation efforts 
+in local government units and with SDG 9: Industry, Innovation, 
+and Infrastructure, promoting efficient and secure public service 
+delivery through technology. 
+ 
+In addition to its core features, the system also supports gate 
+operations and guest appointment management. It allows real -
+time logging of resident time -in and time -out, event attendance 
+validation, and guest check -in and check -out processes. The 
+platform is designed not only for event management but also as a 
+broader barangay operations system that improves efficiency, 
+organization, and data tracking across multiple service 
+ 
+Categories and Subject Descriptors 
+Information Systems → Web-Based Information Systems 
+Security and Privacy → Authentication 
+Computing Methodologies → Computer Vision 
+General Terms 
+Design, Management, Performance, Security 
+Keywords 
+QR Code, Resident Identification, Digital Pass, Event 
+Attendance, Facial Recognition, Access Control, Django, React 
+THE PROBLEM AND ITS 
+BACKGROUND 
+This chapter introduces the concept behind the proposed capstone 
+project and explains the significance of developing a digital 
+identification and attendance system tailored for barangay 
+operations. It provides the context, background, objectives, scope, 
+limitations, and definitions relevant to the study. 
+Project Context 
+Introduction 
+Community programs such as medical missions, relief 
+distribution, and outreach events remain essential to public 
+welfare, yet many barangays continue to rely on manual 
+processes involving paper forms, handwritten attendance 
+logs, and physical IDs. These ou tdated processes 
+frequently lead to data inconsistency, slow verification, and 
+difficulty in preventing unauthorized participation [2]. In 
+addition, manual verification contributes to long queues 
+and operational delays during high -volume events, which 
+negatively affects service delivery efficiency [4]. 
+ 
+To remedy these challenges, the proponents developed the 
+Barangay 663-A Identification System, a digital platform 
+that handles resident registration, generates QR -enabled 
+virtual IDs, and performs event attendance verification. By 
+using QR scanning and optional facial recognition, the 
+system prevents duplicate entries, pass sharing, and 
+identity fraud, 
+Michael Nino Acebedo 
+Adamson University 
+michael.nino.acebedo@adamson.edu.ph 
+Winston Estimada 
+Adamson University 
+winston.estimada@adamson.edu.ph 
+Miguel Andrei Tiongson 
+Adamson University 
+miguel.andrei.tiongson@adamson.edu.ph 
+Johan Frederick Urellan 
+Adamson University 
+Johan.frederick.urellan@adamson.edu.ph 
+Dr. Carmelita H. Benito 
+Adamson University 
+
+===== PAGE 2 =====
+enabling a more secure and transparent event participation 
+process [1]. Leveraging modern digital tools improves data 
+handling, reduces human error, and provides barangay 
+officials with reliable metrics for planning and resource 
+allocation [6]. 
+ 
+Background of the Study 
+Barangays function as the smallest administrative units in the 
+Philippines, responsible for frontline service delivery. Many 
+barangays still depend on manual encoding and physical 
+documents to manage residents and event participants. This leads 
+to errors, inefficiencies, and accessibility issues, especially during 
+events that require strict eligibility or limited resources [3]. 
+Inefficient verification systems may result in unauthorized 
+attendance, repeated claiming of benefits, and inaccurate 
+reporting, which compromises fairness and transparency [2]. 
+ 
+Existing commercial event platforms focus on public ticketing 
+and payment-based events, making them unsuitable for barangay 
+operations because they lack resident -specific verification, ID 
+management, and QR - based identity validation [5]. The 
+Barangay 663 -A Identification System addresses these gaps by 
+tailoring its workflow to barangay needs —resident registration, 
+barangay ID generation, controlled event registration, and secure 
+QR/face recognition-based attendance. This aligns with ongoing 
+digital transfo rmation efforts in both local government and 
+educational institutions, where digitization enhances efficiency 
+and minimizes operational risks [4], [6]. 
+ 
+Purpose and Description 
+The purpose of this study is to design and develop a web - based 
+identification and event attendance system that securely registers 
+residents, generates QR -enabled barangay IDs, and streamlines 
+participation in barangay programs through digital validation 
+mechanisms. The system replaces manual paperwork with a 
+centralized, digital, and verifiable workflow supported by modern 
+authentication and data processing approaches [7]. 
+ 
+Key features such as QR scanning and optional facial recognition 
+draw from established studies highlighting the importance of 
+biometric verification and real -time authentication in preventing 
+identity fraud and improving operational accuracy [1], [6]. 
+ 
+Objectives of the Study 
+General Objective 
+To develop a secure web -based identification and event 
+attendance system that automates resident verification, enhances 
+event management, and supports real -time monitoring for 
+Barangay 663-A. 
+ 
+Specific Objectives 
+In order to achieve the general objective, the following specific 
+objectives must be met: 
+Develop a digital resident registration module with secure profile 
+management and QR ID generation. 
+ 
+Integrate a virtual barangay ID system containing a scannable QR 
+code linked to a unique resident identifier. 
+ 
+Build an event management module that supports registration 
+schedules, capacity limits, and registrant tracking. 
+ 
+Implement a web -based QR scanner with instant server -side  
+validation  for  attendance. 
+Incorporate optional facial recognition for biometric
+ identity confirmation. 
+ 
+Provide dashboards and exportable reports to support data-driven 
+barangay service planning. 
+ 
+Apply JWT authentication and secure data handling to ensure 
+privacy and integrity of resident information. 
+ 
+Develop a gate monitoring system that supports resident time -
+in/time-out and entry validation. 
+ 
+Implement a guest appointment module with QR -based tracking 
+and logging. 
+ 
+Provide data archival and backup features for long -term storage 
+and retrieval. 
+ 
+Scope and Limitations 
+ 
+Scope 
+The system includes digital resident registration, QR -based ID 
+generation, event setup, registration management, real - time 
+attendance verification, optional facial recognition, and 
+attendance analytics. These features align with studies 
+emphasizing digita l transformation for accurate, secure, and 
+accessible public service delivery. The system also includes gate 
+operation features such as resident logging and guest appointment 
+processing, as well as data archival for residents, events, and guest 
+records. 
+ 
+Limitations 
+Facial recognition is optional and may be used as an additional 
+layer of verification; however, its accuracy may vary under 
+inconsistent lighting conditions or significant facial changes. 
+Internet connectivity is required for real-time QR and verification 
+processes. The system does not integrate with national 
+government databases. Existing literature notes similar 
+limitations in real-time access control systems used in developing 
+communities. 
+Definition of Terms 
+Electronic Registration: A digital process wherein residents are 
+registered into the barangay system through an online or 
+computer-based form, allowing their personal information to be 
+stored, updated, and managed in a centralized database. 
+Barangay Identification System: A digital platform used by the 
+barangay to create, manage, and verify resident records, serving 
+as the official basis for issuing digital IDs and validating 
+eligibility for barangay events and services. 
+Virtual Barangay ID: A digital version of a resident’s barangay 
+identification card, displayed on a screen or printed, that includes 
+the resident’s details, photo, and QR code linked to their unique 
+Barangay ID in the system. 
+QR-Enabled Pass:  A digital credential, typically shown on a 
+mobile device or printed as part of the virtual barangay ID, 
+containing a QR code that can be scanned to verify a resident’s 
+
+===== PAGE 3 =====
+identity and registration for a barangay event or service. 
+Real-Time Validation: The instantaneous process of checking a 
+scanned QR code or captured image against the central barangay 
+database at the moment of entry, allowing immediate 
+confirmation or rejection of a resident’s eligibility. 
+Facial Recognition Verification:  A biometric technology that 
+confirms a resident’s identity by comparing a live facial image 
+captured from the webcam with stored facial data in the system. 
+In the Barangay 663 -A Identification System, it is used as an 
+optional additional verification step alongside QR scanning. 
+QR Code: A scannable code linked to a resident or guest record 
+within the system database for identification and verification 
+purposes. 
+JSON Web Token (JWT):  A compact, digitally signed token 
+used for securely transmitting user identity and authorization data 
+between the frontend and backend. In this system, JWTs are 
+issued upon login and must be presented to access protected API 
+endpoints. 
+Resident Profile:  A structured digital record in the database 
+containing a resident’s personal details such as name, address, 
+birthdate, Barangay ID, profile photo, QR code, and optional 
+facial data if enabled. 
+Web-Based Scanner:  A browser -based interface that uses the 
+device camera, via technologies like HTML5 and WebRTC, to 
+scan QR codes or capture images for identity verification and 
+attendance marking during barangay events or services. 
+Event Attendance System: The module of the Barangay 663 -A 
+Identification System responsible for managing event 
+registrations, validating participants through QR and optional 
+facial recognition, and recording attendance data for reporting and 
+analytics. 
+Gate Portal:  A system interface used by personnel to monitor 
+and validate entries in real time, including resident logging and 
+event attendance. 
+Guest Appointment: A scheduled visit recorded in the system 
+with corresponding QR-based validation and tracking. 
+Time-In/Time-Out Logging: A feature that records the entry and 
+exit of residents within the barangay for monitoring and tracking 
+purposes. 
+REVIEW OF RELATED LITERATURE 
+This chapter presents a comprehensive review of existing 
+literature, studies, and systems relevant to the development of E -
+Gate. The review examines local and foreign publications 
+covering QR code technology, digital event 
+management, secure access control, facial recognition, and user 
+acceptance factors. 
+Local Literature 
+The Rise of QR Code Adoption in the Philippines 
+(2023) 
+This article discusses the rapid integration of QR code technology 
+into various sectors in the Philippines, driven by the widespread 
+use of smartphones. It highlights the public's growing familiarity 
+and comfort with using QR codes for transactions, from payments 
+to information dissemination, citing their convenience and speed 
+as key adoption factors. The widespread acceptance of QR codes 
+in the local context supports the usability of the E-Gate system. It 
+indicates that the target users will likely find the process of using 
+a QR code  for  event  entry  intuitive  and  non-obtrusive. 
+Data Privacy in Digital Systems: A Philippine 
+Perspective (2022) 
+Published in a local IT journal, this literature emphasizes the 
+critical importance of complying with the Philippine Data Privacy 
+Act of 2012. It outlines fundamental principles such as data 
+encryption, access control, and purpose limitation that must be 
+embedded in any system handling personal information. 
+This literature directly influences the security design of E - Gate. 
+It underscores the necessity of implementing robust data 
+protection measures, ensuring that the handling of attendee 
+registration data within the system adheres to national legal 
+standards. 
+Web Application Security in Philippine E- Services 
+(2023) 
+This article examines the security challenges faced by web 
+applications in the Philippine digital landscape. It discusses 
+common vulnerabilities such as SQL injection and cross -site 
+scripting, and emphasizes the importance of implementing secure 
+coding pra ctices and regular security audits. The security 
+principles discussed directly informed the development of E -
+Gate's backend. To mitigate these common threats, the system 
+will implement parameterized queries to prevent SQL injection 
+and input sanitization to guard against XSS, ensuring the integrity 
+of the registration and validation modules. 
+Digital Transformation in Philippine Educational 
+Institutions (2023) 
+This study explores the ongoing digital transformation in 
+Philippine educational institutions, highlighting the shift from 
+paper-based to digital systems. It discusses the challenges, such 
+as resistance to change, and benefits, including improved 
+efficiency and reduced operational costs. This study validates the 
+core mission of E -Gate, which is to be a part of this digital 
+transformation. However, it also highlights that many existing 
+solutions focus only on digitizing registration. E -Gate addresses 
+the subsequent critical need for secure, automated access control, 
+a gap often left unaddressed in institutional settings. 
+User Experience Design for Filipino Digital 
+Consumers (2023) 
+This literature focuses on user experience (UX) design principles 
+tailored for Filipino users. It emphasizes simplicity, mobile -first 
+design, and accommodating varying
+
+===== PAGE 4 =====
+levels of digital literacy. These principles were central to 
+designing E -Gate's interfaces. The admin dashboard prioritizes 
+clarity for barangay officials, while the scanner interface is 
+designed for large, legible elements to ensure rapid and error-free 
+use by security personnel during high- volume events. 
+Foreign Literature 
+Security Vulnerabilities and Mitigation in QR-
+Based Access Control (2024) 
+This foreign journal article analyzes security flaws in QR code -
+based systems, identifying simple screenshot-based duplication as 
+a major vulnerability. It proposes countermeasures such as using 
+dynamically generated, time - sensitive codes paired with real -
+time backend validation. This article critically validates E -Gate's 
+core security architecture. While E-Gate uses real-time validation 
+to prevent reuse, the identified vulnerability of screenshot sharing 
+is precisely why the system incorporates facial rec ognition as a 
+mandatory second factor. This dual -layer approach directly 
+addresses the limitations of QR -only systems discussed in the 
+literature. 
+The Impact of Digital Tools on 
+Organizational Efficiency (2023) 
+This literature explores how digital management tools automate 
+manual tasks, leading to significant gains in operational 
+efficiency. It provides evidence that organizations using 
+integrated digital systems report faster processing times, more 
+accurate data analytics, and higher satisfaction  among  both  staff  
+and  clients. This supports the core rationale for the E -Gate 
+system. The literature confirms the anticipated benefits of 
+digitizing the event management process, justifying the project's 
+potential to improve efficiency for organizers and the experience 
+for attendees. 
+Real-time Data Processing in Web Applications 
+(2024) 
+This technical literature discusses architectures  and technologies 
+for implementing real -time data processing in web applications, 
+such as WebSocket technology and server- sent events. The need 
+for instantaneous verification, as identified in the security 
+literature, necessitates these technologies. This  literature 
+informed the technical planning for E-Gate's scanner-to-database 
+communication, ensuring that pass validation and facial match 
+results are communicated to the operator without perceptible 
+delay. 
+Mobile-First Design Principles for Modern 
+Web Applications (2023) 
+This literature emphasizes the importance of mobile -first design 
+in contemporary web development. It discusses responsive design 
+techniques, touch -friendly interfaces, and performance 
+optimization strategies for mobile devices. These design 
+principles dire ctly influence E -Gate's development, particularly 
+for the web application scanner. They ensure that the scanner 
+interface is optimized for use on mobile devices, which are 
+commonly used by security personnel for ticket validation. 
+Database Optimization Techniques for High-
+Traffic Web Applications (2024) 
+This technical literature explores database optimization strategies 
+for web applications expecting high concurrent 
+usage, including indexing, query optimization, and connection 
+pooling. During peak events like relief distribution, E -Gate must 
+handle a surge of simultaneous scan requests. The techniques 
+from this literature are essential for designing the database to 
+maintain performance under load, preventing bottlenecks that 
+could cause long queues and system timeouts. 
+Local Studies/Systems 
+Eventbrite Philippines (Platform, 2023) Eventbrite is a 
+globally recognized platform for event management and 
+ticketing, widely used in the Philippines. It allows organizers to 
+create event pages, sell tickets, and manage attendees, who 
+receive e-tickets with QR codes for entry. While Eventbrite  is a 
+comprehensive public ticketing solution, E -Gate differentiates 
+itself by being a closed-loop, secure-access system for community 
+services. E-Gate is not designed for public sales but for managing 
+access to restricted barangay services, emphasizing
+ identity verification and preventing pass sharing 
+through integrated facial recognition, a feature absent in 
+Eventbrite. 
+Lalamove's QR-Based Verification System (System, 
+2023) 
+Lalamove, a logistics and courier service in the Philippines, 
+employs a QR code system for parcel pick -up and delivery 
+verification. Both senders and receivers get a unique QR code that 
+the rider scans to confirm identity and complete the transaction. 
+The operational principle of Lalamove's system is analogous to 
+E-Gate's verification process. It serves as a successful, real-world 
+example of using real -time QR code validation for identity and 
+access confirmation, reinforcing the technical feasibility an d 
+reliability of this approach for the E-Gate system. 
+GCash QR Payment System (System, 2023) GCash, a 
+leading mobile wallet in the Philippines, utilizes QR code 
+technology for cashless transactions. The system generates 
+unique QR codes for each transaction that are scanned by 
+merchants to process payments securely and efficiently. 
+The widespread success and reliability of GCash's QR system 
+demonstrates the robustness of QR technology for secure 
+transactions. This validates E -Gate's use of QR codes for access 
+control and provides insights into implementing secure code 
+generation and validation processes. 
+UP University Event Management System (Study, 
+2023) 
+A study conducted at the University of the Philippines developed 
+an event management system for university -wide activities. The 
+system included online registration but relied on manual check-in 
+processes. This study perfectly illustrates the specific gap E-Gate 
+aims to fill. It shows that digitizing registration is only half the 
+solution. E-Gate completes the workflow by automating the final 
+and most critical step—access control—bridging the gap between 
+digital registration and physical entry. 
+SM Supermalls Event Access Control (System, 
+2023) 
+SM Supermalls implemented a QR -based access control system 
+for exclusive mall events and sales. The system generates unique 
+QR codes for privileged customers that are
+
+===== PAGE 5 =====
+scanned  at  event  entrances  for  verification. The successful 
+implementation of QR -based access control in a large -scale 
+commercial environment like SM Supermalls demonstrates the 
+scalability and effectiveness of this approach. This provides a 
+relevant local example of QR technology being used for event 
+access management. 
+Foreign Studies/Systems 
+Apple Wallet Passes (System, 2023) 
+Apple Wallet allows users to store digital versions of tickets, 
+boarding passes, and loyalty cards, many of which utilize QR 
+codes for redemption. The system is praised for its user - friendly 
+interface and seamless integration with iOS devices. The user 
+experience design of Apple Wallet is an inspiration for the E-Gate 
+participant module. It highlights the importance of providing a 
+simple, accessible, and reliable way for users to store and present 
+their digital passes, a principle that E-Gate aims to emulate. 
+FestiVal App for Music Festivals (System, 2024) 
+FestiVal is a foreign mobile application used at large-scale music 
+festivals. It integrates ticketing and a secure entry system that uses 
+dynamic QR codes which refresh periodically to prevent 
+screenshot-based fraud. The anti - fraud mechanism of the 
+FestiVal app presents an advanced security concept. For the initial 
+version of E -Gate, the combination of single -use validation and 
+facial recognition provides a robust alternative to dynamic codes. 
+However, this system provides a valuable insight for future 
+enhancements, such as incorporating time -based OTPs for 
+extremely high-security scenarios. 
+Eventbee Event Management Platform (System, 
+2023) 
+Eventbee is an international event management platform that 
+offers QR code ticketing and check -in features. The system 
+provides organizers with real -time attendance tracking and 
+analytics  through  a  web -based  dashboard. The analytics and 
+reporting features of Eventbee demonstrate the value of real-time 
+data for event organizers. This influences E -Gate's design to 
+include comprehensive reporting capabilities that provide 
+organizers with immediate insights into event attendance. 
+Stanford University Campus Event System (Study, 
+2023) 
+A research project at Stanford University developed a campus -
+wide event management system utilizing NFC and QR 
+technology for access control. The system integrated with the 
+university's existing student database for automatic attendee 
+verification. The integration approach used in the Stanford system 
+provides a model for how E -Gate could potentially scale and 
+integrate with larger government databases (e.g., a future 
+Barangay Management Information System). It demonstrates the 
+architectural principle of a u nified ecosystem, which E -Gate is 
+designed to be a part of at the local level. 
+Ticketmaster Presence Platform (System, 2024) 
+Ticketmaster's Presence platform is used by major venues 
+worldwide for contactless entry using QR codes. The system 
+includes sophisticated fraud detection algorithms and can process 
+thousands of scans per hour at large venues. 
+The scalability and security features of the Ticketmaster system 
+provide valuable insights for E-Gate's architecture. While E-Gate 
+targets smaller -scale events initially, the Ticketmaster example 
+demonstrates best practices for building robust, high -volume 
+scanning systems. 
+ 
+METHODOLOGY, RESULTS AND 
+DISCUSSION 
+This chapter presents the methods, frameworks, and technical 
+processes used in the design and implementation of the Barangay 
+663-A Identification System. The methodology follows software 
+engineering and research models supported by existing literature 
+on system development and digital authentication technologies. 
+Requirements Analysis 
+Software Development Life Cycle 
+The project adopted the Agile–Scrum Model, an iterative SDLC 
+approach known for promoting flexibility and continuous 
+feedback. Literature emphasizes Scrum’s effectiveness in 
+developing systems with evolving requirements and multiple 
+stakeholders. 
+ 
+For the development of the E -Gate system, the proponents 
+selected the Agile Model, specifically the Scrum Framework. 
+This choice was driven by its adaptive and iterative nature, which 
+is ideal for a project with evolving requirements and a need for 
+continuous stakeholder feedback. Unlike traditional, rigid 
+models, Scrum allows the team to focus on developing high -
+priority features in short, manageable cycles, enabling them to 
+quickly incorporate changes and identify issues early in the 
+development process [ 30]. The iterative testing inherent in each 
+cycle ensures a higher quality product and reduces the risk of 
+major failures. 
+ 
+Figure 1. SDLDC Agile-Scrum Model [31]. 
+ 
+Phases of the Agile-Scrum Model
+
+
+===== PAGE 6 =====
+The development of E-Gate followed the structured phases of the 
+Scrum framework: 
+ 
+Requirement Gathering: The team conducted initial meetings 
+with the Barangay administrators to gather comprehensive inputs 
+and define the functional and non-functional requirements for the 
+proposed system. 
+Product Backlog Creation: All identified features and user stories 
+were compiled into a prioritized list known as the Product 
+Backlog. For E -Gate, this included items such as the secure 
+registration module, QR code generation, facial recognition 
+integration, real -time web scanner, and the administrator 
+dashboard. 
+Sprint Planning: At the beginning of each sprint (a time -boxed 
+development period, typically 2 -3 weeks), a set of high -priority 
+items was selected from the product backlog for development. 
+The team prioritized core functionalities to build a minimal viable 
+product (MVP) first. 
+Sprint Execution: The development team designed, coded, and 
+unit-tested the features committed to in the sprint backlog. 
+Daily Scrum Meetings: Brief, daily stand-up meetings were held 
+to synchronize activities. Team members discussed progress 
+made, plans for the day, and any impediments faced, ensuring 
+alignment and quick problem-solving. 
+Sprint Review: At the end of each sprint, the completed features 
+were demonstrated to the 
+project beneficiaries (Barangay officials). Their feedback was 
+gathered to validate the system's functionality and usability 
+against their requirements. 
+Sprint Retrospective: The team held a retrospective meeting to 
+reflect on the sprint process, discuss what went well, identify 
+areas for improvement, and adapt their workflow for subsequent 
+sprints. 
+Deployment: After multiple sprints resulted in a stable and 
+feature-complete system, it was deployed to a production 
+environment for use by the Barangay. Post -deployment, user 
+feedback continues to be collected to inform future updates and 
+improvements. 
+ 
+ 
+ 
+3.1.2 Conceptual Paradigm 
+The Conceptual Paradigm (Figure 2) showcases the following 
+variables that compose the concept of the proposed project. It is 
+divided into four blocks (Input, Output, Process and Benefits). 
+Figure 2. Conceptual Paradigm 
+The Conceptual Paradigm (Figure 2) shows the main parts that 
+make up the proposed Barangay E -Pass: An Electronic 
+Registration and QR -Enabled Pass System with Facial 
+Recognition. It is divided into four blocks: Input, Process, Output, 
+and Benefits.
+ 
+ 
+ 
+Figure 2. Conceptual Paradigm
+
+
+===== PAGE 7 =====
+The Conceptual Paradigm (Figure 2) presents the essential 
+components that shape the operation of the E -Gate System: a 
+secure electronic registration and QR-enabled pass platform with 
+facial recognition tailored for Barangay events and services. It is 
+organized into four blocks —Input, Process, Output, and 
+Benefits—which illustrate how data flows and transforms within 
+the system. 
+ 
+The Input block defines everything needed for the E -Gate 
+System to function. This includes the Data, such as resident 
+information, profile photos for facial recognition, service or event 
+registration details, and the encrypted QR codes generated upon 
+approval. It al so identifies the Users of the system —primarily 
+barangay officials who manage registrations and verification, and 
+residents or visitors who apply for digital passes. Additionally, 
+Devices form part of the input, consisting of the administrators’ 
+computers for managing records and the smartphones or tablets 
+equipped with cameras for scanning QR codes and capturing 
+facial recognition data. 
+ 
+The Process block outlines the system’s core operations. 
+Residents or visitors first undergo digital registration through the 
+secure barangay -managed platform. Once their information is 
+validated and approved, the system automatically generates an 
+encrypted QR pass an d stores the user’s facial signature for 
+biometric verification. During services or events, the web -based 
+scanner validates both the QR code and facial data in real time by 
+checking them against the central barangay database. If the 
+identity is confirmed, the system logs the entry or attendance and 
+updates the administrative dashboard instantly. 
+ 
+The Output block reflects all results produced by the system after 
+processing. These outputs include verified entry or attendance 
+records, real -time monitoring panels for barangay staff, and 
+downloadable reports that summarize participation. The system 
+also triggers immediate alerts for invalid, duplicate, or 
+mismatched QR codes and facial data, ensuring accurate and 
+secure verification at every checkpoint. 
+ 
+Finally, the Benefits block highlights how the E -Gate System 
+enhances barangay operations. By digitizing registration and 
+verification, the system speeds up event entry, reduces manual 
+workload, and eliminates paper - based errors. It strengthens 
+access control by ensuring that only legitimate, approved 
+individuals can use digital passes —discouraging pass sharing, 
+forgery, and unauthorized access. Ultimately, the E-Gate System 
+promotes transparency, improves service delivery efficiency, 
+secures sensitive dat a, and supports the barangay’s transition 
+toward modern, technology-driven public service management. 
+Flowchart of the Existing System 
+ 
+ 
+Figure 6. Flowchart of the Existing System 
+Event Registration and QR-Enabled Pass System
+
+
+===== PAGE 8 =====
+Data Flow Diagram of the Existing System 
+ 
+ 
+ 
+ 
+Figure 7. Context Diagram of the Existing System 
+ 
+ 
+Figure 8. Data Flow Diagram of the Existing System (Level 0) 
+
+
+===== PAGE 9 =====
+ 
+Figure 9. Data Flow Diagram of the Existing System (Process 1 - Level 1)
+
+
+===== PAGE 10 =====
+Flow of the System 
+ 
+ 
+ 
+Flowchart of the Proposed System 
+ 
+ 
+ 
+Figure 10. Flowchart of the Proposed System
+
+
+===== PAGE 11 =====
+3.1.4.1 Data Flow Diagram of the Proposed System 
+ 
+ 
+ 
+Figure 11. Context Diagram of the Proposed System 
+
+
+===== PAGE 12 =====
+ 
+ 
+Figure 12. Data Flow Diagram of the Accounts (Lvl 0 ) 
+ 
+ 
+
+
+===== PAGE 13 =====
+ 
+ 
+Figure 13. Data Flow Diagram of the Accounts (Lvl 1) 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 14 =====
+ 
+ 
+Figure 14. Data Flow Diagram of the Residents 
+
+
+===== PAGE 15 =====
+ 
+ 
+Figure 14. Data Flow Diagram of the Attendance
+
+
+===== PAGE 16 =====
+ 
+ 
+Figure 15. Data Flow Diagram of the Verification 
+ 
+
+
+===== PAGE 17 =====
+ 
+ 
+Figure 16 Data Flow Diagram of the QR & Face
+
+
+===== PAGE 18 =====
+Network Diagram of Existing System 
+ 
+Logical Network Diagram of the Proposed System 
+ 
+ 
+Figure 17. Logical Network Diagram of the Proposed System 
+Security of the Proposed System 
+ 
+The E-Gate system implements comprehensive security measures using the implemented technologies: 
+ 
+JWT Authentication with Simple JWT The system uses Django Simple JWT for secure token -based authentication. When 
+administrators log in with their credentials, the Django backend validates them and returns an access token and refresh token . This token 
+must be 
+ 
+included in the header of every subsequent request to access protected API endpoints. The tokens are digitally signed using Django's security 
+settings and have a configurable lifespan, reducing the risk of unauthorized access. 
+ 
+Additional Security Measures:
+CORS Configuration: Properly configured Cross - Origin Resource 
+Sharing in Django REST Framework to control which domains can 
+access the API 
+API Throttling: Implemented rate limiting using Django REST 
+Framework to prevent abuse and DDoS attacks 
+Data Encryption: Sensitive data encrypted both in transit (HTTPS) 
+and at rest in PostgreSQL 
+Django Security Middleware: Utilizes Django's built -in security 
+features including CSRF protection, XSS prevention, and SQL 
+injection protection 
+Input Validation: Comprehensive validation on both React frontend 
+and Django backend sides 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Figure 18. Json Web Token Authentication Process 
+ 
+JWT authentication, or JSON Web Token authentication, is a system 
+where a user logs in once using their username and password, and 
+the server responds by giving a signed token. This token acts as 
+proof of identity and must be sent with every request to acc ess 
+protected features. Because the
+
+
+===== PAGE 19 =====
+token is digitally signed, it can’t be altered without being 
+detected. 
+ 
+JWT is important because your password is not repeatedly sent 
+after login, reducing risk if traffic is intercepted. 
+Tokens also expire automatically, limiting misuse. 
+ 
+A JWT contains three parts: 
+Header – the signing method 
+Payload – user data and expiration time 
+Signature – ensures the token is valid 
+ 
+It provides fast, secure, and stateless authentication for web and 
+mobile systems. 
+ 
+Requirements Documentation 
+Methods of Research 
+This study employed a Descriptive  Development Research 
+Methodology. Descriptive research involves gathering data that 
+describes the nature and characteristics of a phenomenon or 
+population, without influencing it [4]. The development aspect 
+refers to the systematic process of designing, c reating, and 
+evaluating a product to solve an identified problem. This method 
+was chosen because it is ideally suited for capstone projects that 
+aim to describe an existing problem (the inefficiencies in manual 
+event management) and then develop a tangible  solution (the E-
+Gate system) to address it. This approach allows for a structured 
+investigation into the requirements and a methodical creation of 
+the software product. 
+ 
+Research Instruments 
+ 
+To ensure comprehensive data collection, multiple research 
+instruments were utilized. 
+ 
+Interview 
+An interview is a qualitative data collection method that involves 
+direct, conversational questioning to gather in- depth information, 
+opinions, and insights from individuals [4]. Interviews were 
+conducted with Barangay officials to understand the intricac ies, 
+challenges, and specific requirements of their current event 
+management process. This helped the researchers identify core 
+problems such as pass sharing and inaccurate headcounts, which 
+directly informed the system's need for biometric verification and 
+real-time validation. 
+ 
+Observation 
+Observation is a data -gathering technique where researchers 
+systematically watch and document behaviors, processes, and 
+events in their natural setting to understand 
+how they occur [4]. The researchers observed the flow of 
+operations during a community event. This allowed them to 
+identify bottlenecks in the manual verification process, 
+understand the environmental conditions at entry points, and note 
+the practical challenges that would need to be addressed by the E-
+Gate scanner and interface design. 
+ 
+Software Evaluation (using ISO 25010) 
+The quality model is the cornerstone of a product quality 
+evaluation system. The quality model determines which quality 
+characteristics will be taken into account when evaluating the 
+properties of a software product [6]. The performance of the 
+developed E-Gate software will be evaluated using an ISO 25010 
+evaluation instrument in terms of Functional Suitability, 
+Reliability, Performance Efficiency, Usability, Security, 
+Compatibility, Maintainability, and Portability. This standardized 
+evaluation will be con ducted through a survey administered to 
+end-users after the User Acceptance Testing (UAT). The collected 
+data will be analyzed by calculating mean scores for each quality 
+characteristic to identify strengths and areas for improvement, 
+ensuring the feedback is objective and actionable. 
+ 
+ 
+Technical Background 
+Core Technical Concepts 
+ 
+QR Code Technology 
+Quick Response (QR) codes are two -dimensional barcodes that 
+can store significantly more information than traditional barcodes. 
+For E-Gate, we utilize the HTML5 QR Code library to generate 
+encrypted QR codes containing unique identifiers for each 
+registered attendee. These codes are designed to be scanned 
+quickly and securely, with encryption preventing easy replication 
+or forgery. 
+ 
+Facial Recognition System 
+The facial recognition component uses the device's camera to 
+capture and analyze facial features. The system creates a digital 
+facial signature by mapping nodal points on a person's face and 
+stores this encrypted data securely. 
+During verification, it compares live captures against stored 
+references to confirm identity. 
+ 
+JWT Authentication 
+We implement Simple JWT for secure authentication in our 
+Django REST Framework. This provides digitally signed tokens 
+that contain user information and permissions, ensuring each API 
+request is independently verifiable without server -side session 
+storage.
+
+===== PAGE 20 =====
+System Architecture and Technologies 
+The E-Gate system is built on a modern Django REST Framework 
+backend with a React Vite frontend. The backend uses Python and 
+Django to handle server-side logic and database operations, while 
+the frontend provides a dynamic user interface. PostgreSQL 
+serves as our primary database for production, ensuring reliable 
+data storage for resident records and event logs. 
+Data Flow and Processing 
+ 
+ 
+The system follows this structured pipeline: 
+ 
+Registration: Resident data and facial images are captured and 
+stored in PostgreSQL 
+Pass Generation: Approved registrations trigger QR code 
+generation using HTML5 QR Code 
+Verification: Scanning decodes QR codes and initiates facial 
+comparison 
+Real-time Updates: Results immediately update attendance 
+records and dashboard displays 
+ 
+This technical foundation ensures the system meets its objectives 
+of security, reliability, and performance while maintaining user 
+privacy through proper data protection measures. 
+ 
+Product Description 
+ 
+The E-Gate system is a full-stack web application that will be used 
+by Barangay administrators through an intuitive React Vite-based 
+dashboard to manage events, residents, and monitor attendance in 
+real-time. Security personnel will use the scanner interfa ce, built 
+with HTML5 QR Code library, to validate digital passes at entry 
+points. The system leverages Django REST Framework for all 
+business logic and data management, with React Vite providing a 
+fast, responsive user experience across all devices. The 
+integration of Simple JWT ensures secure access to all system 
+functionalities while maintaining performance.  
+The system also includes a Gate Portal designed for real -time 
+operations, where personnel can validate residents, monitor 
+attendance, and process guest appointments efficiently. This 
+ensures smooth and fast verification during actual barangay 
+activities. 
+ 
+System Architecture and Technologies 
+The E-Gate system is built on a modern Django REST Framework 
+backend with a React Vite frontend, following a decoupled client-
+server architecture. The backend API was developed using Python 
+and Django REST Framework for handling robust server -side 
+logic, database models, and 
+secure API endpoints. User authentication and authorization are 
+managed through Simple JWT (JSON Web Token), providing 
+secure token-based access control for all API requests. 
+ 
+For the database, SQLite (for development) and PostgreSQL (for 
+production) were utilized due to their reliability in handling 
+structured data like resident records, event logs, and attendance 
+tracking. The frontend for both the administrator dashboard and 
+scanner application was built using React Vite for its fast 
+development experience and component -based architecture that 
+enables dynamic user interfaces. 
+ 
+The core QR scanning functionality was implemented using the 
+HTML5 QR Code library, which provides efficient client-side QR 
+code scanning capabilities directly in the web browser without 
+requiring external applications. This allows security personnel to 
+use the system on any device with a camera and modern browser. 
+ 
+User Requirements 
+To ensure that the system is used effectively and securely, it is 
+important to identify the qualifications required from its users. 
+These qualifications establish who is eligible to use the system 
+and clarify the roles and responsibilities of each user cat egory. 
+This also helps the research define its target population and 
+analyze user needs accurately. 
+Example: 
+This is the introductory paragraph. 
+ 
+User Category 1: Residents / End-Users 
+Must have basic digital literacy (able to use a phone or 
+computer). 
+ 
+Must provide accurate personal information for account
+ creation. 
+Must be capable of handling login credentials securely. 
+ 
+Must be willing to submit required documents or photos when 
+needed. 
+ 
+User Category 2: Authorized Barangay Staff 
+Must be officially designated and authorized by the organization. 
+Must possess higher digital competency for managing
+ system modules.
+
+===== PAGE 21 =====
+Must understand basic data privacy and confidentiality 
+ guidelines. 
+ 
+Must be able to perform tasks such as approval, monitoring, and 
+report generation. 
+ 
+User Category 3: Gate Personnel 
+Must be able to operate the scanning interface  
+ 
+Must understand validation workflows for residents, events, and 
+guests  
+ 
+ 
+Must be capable of handling real-time entry monitoring 
+ 
+ 
+ 
+System Requirements 
+ 
+Backend Server Requirements 
+ 
+To deploy and run the backend API securely and efficiently, the 
+following specifications are required: 
+ 
+Programming Language: Python 3.10 or higher 
+Framework: Django 4.2+ with Django REST Framework 3.14+ 
+Authentication Module: Simple JWT (latest stable release) 
+Database Management System: 
+Development: SQLite (for rapid prototyping) 
+Production: PostgreSQL 13+ for reliability and data integrity 
+Memory: Minimum of 2 GB RAM; 4 GB RAM recommended 
+for handling QR and facial processing workloads 
+Storage: At least 10 GB free disk space for resident images, QR 
+codes, logs, and database files 
+Operating System: Linux-based server (Ubuntu 20.04 LTS or 
+later) recommended for deployment 
+Security Dependencies: HTTPS configuration, CORS headers, 
+Pillow for image processing, and facial recognition 
+dependencies (optional if the feature is enabled)  
+ 
+ 
+Frontend Client Requirements 
+ 
+The frontend interface used by both residents and barangay 
+administrators requires the following environment: 
+ 
+JavaScript Runtime: Node.js 18+ (required for building and 
+running the Vite environment) 
+Frontend Framework: React 18+ using Vite (latest version) 
+Supported Browsers: 
+Google Chrome 90+ 
+Mozilla Firefox 85+ 
+Safari 13+ 
+Microsoft Edge 90+ 
+Camera Requirements: 
+Minimum: 720p HD webcam for reliable QR scanning 
+Recommended: 1080p Full HD camera for clearer facial capture 
+Internet Connectivity: 
+Minimum: 5 Mbps for basic operations 
+Recommended: 25 Mbps for smooth scanning, rapid API 
+validation, and real-time dashboard updates 
+Device Compatibility: 
+Desktop or laptop for admin interfaces 
+Smartphones or tablets for scanning mode (requires modern 
+browser + camera support) 
+ 
+Development and Testing 
+ 
+The development of the E-Gate system was executed following 
+the iterative sprints outlined in the Agile-Scrum model. The 
+development was structured into two main components: the 
+backend API built with Python, Django, and Django REST 
+Framework, and the frontend application developed with React 
+Vite. 
+ 
+For the backend development, Django REST Framework with 
+Simple JWT was utilized to create secure, RESTful APIs with 
+token-based authentication. This included models for user 
+management, event creation, resident registration, and 
+attendance tracking. The frontend was built using React Vite 
+which provided fast refresh capabilities during development and 
+optimal performance for the production application. The 
+HTML5 QR Code library was integrated into the scanner 
+component to enable efficient QR code scanning directly in the 
+browser. 
+ 
+The testing phase employed a comprehensive strategy across 
+both backend and frontend components. For the Django 
+backend, unit tests were written using Django's testing 
+framework to verify model relationships, API endpoints, and 
+business logic. The REST API endpoints were tested using tools 
+like Postman to ensure proper authentication with Simple JWT 
+and correct data responses. Frontend testing focused on 
+component functionality, user interface responsiveness, and the 
+QR scanning feature using the HTML5 QR Code library. 
+ 
+A selected group of Barangay administrators and security 
+personnel conducted User Acceptance Testing (UAT) in a 
+staging environment. The UAT simulated real-world scenarios 
+like mass registration events and high-volume entry point 
+scanning to evaluate system performance under
+
+===== PAGE 22 =====
+load. To collect structured feedback, a survey based on the ISO 25010 software quality standard was administered, providing m easurable 
+data on Functional Suitability, Performance Efficiency, Usability, and Security.  
+Testing also included gate operations such as resident logging, event attendance validation, and guest appointment processing  to ensure 
+system reliability in real-world scenarios.  
+ 
+Description of the Prototype 
+ 
+The prototype for the Barangay 663-A Identification and Event Management System provides a digital workflow that connects resident 
+account management, event participation, QR -based attendance, identity verification, guest appointment handling, and gate log ging in one 
+centralized platform. Built using React Vite for the frontend and Django REST Framework for the backend, and secured through Simple 
+JWT authentication, the system reduces manual, paper -based processes by providing a faster, more organized, and more secure digital 
+solution for barangay operations. The Administrator Dashboard serves as the central management interface for authorized baran gay 
+personnel. It displays key system statistics such as total residents, active events, event registrations, a nd verified IDs. It also includes recent 
+activity information related to registrations and attendance. Through the dashboard navigation, administrators can access major modules such 
+as Scanner, Verification Requests, Manage Events, Analytics, Residents, and Guest Appointments. The Resident Registration Module allows 
+authorized administrators to create and manage resident accounts with complete personal details and QR -linked identification. The system 
+applies data validation and structured record management to help maintain accurate resident information. The Event Management Interface 
+enables administrators to create, edit, and manage barangay events with configurable schedules, venues, and capacity limits. Residents can 
+register for events, and their partici pation can be tracked through the attendance records maintained by the system. The Scanner Module 
+supports QR code scanning and optional facial recognition verification. QR mode activates the camera to validate QR -linked resident or 
+guest information, whil e facial recognition can be used as an additional identity verification method when available. After successful 
+validation, the system records attendance or entry logs and updates the related records in the database. The system also includes a Verification 
+Requests Module for reviewing resident submissions and an Analytics Dashboard for monitoring records, attendance activity, an d system 
+reports. In addition, the prototype includes guest appointment handling and gate logging features, allowing barangay pers onnel to process 
+visitors, verify guest appointments, and monitor entries and exits within the barangay premises. 
+ 
+ 
+ 
+ 
+Figure 19. Landing Page of the Proposed System 
+ 
+
+
+===== PAGE 23 =====
+ 
+ 
+Figure 20. Admin Login of the Proposed System 
+ 
+. 
+ 
+Figure 21. Resident Login of the Proposed System 
+ 
+
+
+===== PAGE 24 =====
+ 
+ 
+ 
+Figure 22. Account Recovery of the Proposed System
+
+
+===== PAGE 25 =====
+ 
+ 
+ 
+Figure 23. Resident Account Creation of the Proposed System 
+ 
+ 
+ 
+ 
+Figure 24. Event Creation of the Proposed System
+
+
+===== PAGE 26 =====
+ 
+ 
+ 
+Figure 25. Analytics Dashboard of the Proposed System A 
+ 
+ 
+ 
+Figure 26. Analytics Dashboard of the Proposed System B 
+ 
+
+
+===== PAGE 27 =====
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Figure 26. View Registered Residents Dashboard of the Proposed System 
+ 
+ 
+ 
+ 
+Figure 27. Manage Events Dashboard of the Proposed System
+
+
+===== PAGE 28 =====
+ 
+ 
+ 
+ 
+Figure 28. Web Scanner of the Proposed System
+
+
+===== PAGE 29 =====
+ 
+ 
+ 
+ 
+Figure 29. Admin Dashboard of the Proposed System 
+ 
+ 
+Figure 30. Residents Browse Event of the Proposed System 
+
+
+===== PAGE 30 =====
+ 
+ 
+Figure 31. Residents My Registration of the Proposed System 
+ 
+ 
+ 
+Figure 32. Residents Verify Account of the Proposed System 
+
+
+===== PAGE 31 =====
+ 
+ 
+Figure 33. Residents Profile  of the Proposed System 
+ 
+ 
+ 
+Figure 34. Guard Portal Residents Log  of the Proposed System 
+
+
+===== PAGE 32 =====
+ 
+ 
+Figure 35. Guard Portal Event Attendance  of the Proposed System 
+ 
+ 
+ 
+Figure 35. Guard Portal Guest Appointment   of the Proposed System 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 33 =====
+Implementation Plan 
+The implementation of the E -Gate system will be conducted in 
+phases. Initially, the system will be deployed on a secure server to 
+ensure high availability and reliability. Data migration will 
+involve manually inputting the existing list of residents and 
+ongoing event details into the new system. Comprehensive 
+training sessions will be conducted for all Barangay 
+administrators and security personnel, covering system 
+navigation, resident registration, pass issuance, and the scanning 
+procedure. The researchers  will provide technical support for a 
+transition period of one month post - implementation to address 
+any immediate issues, after which a support manual will be 
+handed over to the Barangay's designated IT personnel. 
+ 
+Implementation Results 
+ 
+For the initial phase of the capstone project, the Barangay 
+663-A Identification System is expected to deliver a fully 
+operational digital platform that improves resident management, 
+event registration, and attendance monitoring. 
+By transitioning from manual processes to an integrated web -
+based system, the barangay will experience reduced paperwork, 
+faster verification processes, and improved data accuracy. 
+The system’s use of QR -based validation and optional facial 
+recognition enhances security and helps prevent duplicate entries 
+and unauthorized participation. Real -time validation ensures 
+efficient monitoring of attendance and participation. 
+Additionally, the system centralizes records such as resident 
+profiles, event registrations, and attendance logs, enabling better 
+reporting and decision-making. 
+The system also improves gate operations and guest management 
+by providing faster validation, better tracking, and more 
+organized records. 
+ 
+ 
+SUMMARY, CONCLUSION AND 
+RECOMMENDATIONS 
+Summary 
+ 
+This study focused on the development of the E -Gate system, a 
+web-based platform designed to improve resident management, 
+event registration, and gate operations in Barangay 663 -A. The 
+system was developed to address the limitations of manual 
+processes suc h as paper -based registration, inefficient 
+verification, and lack of centralized data management. 
+In Chapter 1, the researchers identified the existing problems 
+encountered by the barangay, including slow verification 
+processes, data inconsistencies, and difficulty in monitoring event 
+participation. The study aimed to provide a digital solution that 
+integrates resident registration, QR -based identification, event 
+management, and gate validation. The objectives of the study 
+were clearly defined to ensure that the system addresses these 
+issues effectively. 
+In Chapter 2, related literature and systems were reviewed to 
+support the development of the proposed system. The researchers 
+analyzed both local and foreign studies on QR code technology, 
+digital systems, and access control. These studies provided a 
+strong foundation and justification for the system’s design and 
+functionality. 
+In Chapter 3, the methodology used in developing the system was 
+presented. The Agile -Scrum model was applied to allow 
+continuous improvement and flexibility during development. The 
+system was designed as a full-stack web application using Django 
+REST Framework for the backend and React with Vite for the 
+frontend. Testing was conducted to ensure that all modules, 
+including resident management, event handling, gate logging, and 
+guest appointments, function properly. 
+Overall, the system successfully achieved its objectives by 
+providing a centralized, efficient, and secure platform for 
+barangay operations. 
+ 
+Conclusion 
+Create Based on the findings of the study, the E -Gate system 
+proved to be an effective solution to the problems identified in 
+Barangay 663 -A. The implementation of a digital system 
+significantly improved the efficiency of resident management, 
+event registration, and attendance monitoring. 
+The use of QR -based validation, along with optional facial 
+recognition, enhanced the security and reliability of the system by 
+reducing duplicate entries and unauthorized participation. 
+Additionally, the inclusion of gate logging and guest appointment 
+features improved the monitoring of entries and exits within the 
+barangay. 
+The system also provided a centralized database that allows 
+barangay officials to easily access, manage, and analyze data. This 
+contributes to better decision-making, improved service delivery, 
+and more organized operations. 
+Therefore, it can be concluded that the E-Gate system successfully 
+meets its intended purpose and provides a positive impact on the 
+overall efficiency and effectiveness of barangay services. 
+ 
+Recommendations 
+Based on the results and conclusions of the study, the researchers 
+recommend the implementation of the E -Gate system for its 
+intended purpose in Barangay 663 -A. The system has shown its 
+capability to improve operational efficiency, data management, 
+and security. 
+For future improvements, the following recommendations are 
+suggested: 
+The system may be enhanced by improving the facial recognition 
+feature to increase accuracy under different environmental 
+conditions. Additional features such as offline functionality may 
+also be considered to ensure continuous operation even without 
+internet connectivity. Integration with other government systems 
+may also be explored to further improve data validation and 
+interoperability. 
+Furthermore, continuous system maintenance and updates are 
+recommended to ensure long -term usability, security, and 
+performance. User training should also be regularly conducted to 
+ensure that barangay personnel can fully utilize the system. 
+ 
+ACKNOWLEDGMENTS 
+The researchers would like to express their sincere gratitude to all 
+individuals who contributed to the completion of this capstone 
+project. 
+First and foremost, we would like to thank our adviser, Dr. 
+Carmelita H. Benito, for her guidance, support, and valuable 
+insights throughout the development of this study. 
+We also extend our appreciation to the officials of Barangay 663-
+A, including Hospicio de San Jose, for allowing us to conduct our 
+study and for providing the necessary information and 
+cooperation. 
+Special thanks are given to our families and friends for their 
+continuous support, encouragement, and understanding during the 
+entire duration of this project. 
+Finally, we thank Almighty God for the strength, wisdom, and 
+perseverance that made this project possible. 
+
+===== PAGE 34 =====
+REFERENCES 
+[1.] Guanlao, Rodivinia, Pangilinan, Rendell, Rapinan, Jeffrey, 
+and Saturno, Jenica. 2014. IANUA: An Educational Game of 
+the Important Events in World History . Adamson University, 
+Manila 
+[2.] Aguila, Marc Anthony, Andal, Dialyn, Bagsik, Melvin, 
+Mercado, Jeverly Ann. 2013. A Website with Interactive 
+Virtual Tour for Pasay City Science Hig School Pasay City. 
+Adamson University, Manila. 
+[3.] Fröhlich, B. and Plate, J. 2000. The cubic mouse: a new 
+device for three -dimensional input. In Proceedings of the 
+SIGCHI Conference on Human Factors in Computing Systems 
+(The Hague, The Netherlands, April 01 - 06, 2000). CHI '00. 
+ACM, New   York,   NY,   526-531.   DOI= 
+http://doi.acm.org/10.1145/332040.332491. 
+[4.] Tavel, P. 2007. Modeling and Simulation Design. 
+AK Peters Ltd., Natick, MA. 
+[5.] Sannella, M. J. 1994. Constraint Satisfaction and 
+Debugging for Interactive User Interfaces . Doctoral Thesis. 
+UMI Order Number: UMI Order No. GAX95 -09398., 
+University of Washington. 
+[6.] Forman, G. 2003. An extensive empirical study of feature 
+selection metrics for text classification. J. Mach. Learn. Res. 3 
+(Mar. 2003), 1289-1305. 
+[7.] Brown, L. D., Hua, H., and Gao, C. 2003. A widget 
+framework for augmented interaction in SCAPE. 
+[14.]Tan, M. (2023). CampusFlow: A Digital Service Platform 
+for a Visayas University. Philippine Journal of Business 
+Management, 13(1), 112 –129. [15.]Angeles, C. (2022). 
+SecureTransact: A Financial Management System for 
+Philippine Schools. 
+Philippine Journal of Information Technology, 15(4), 78–95. 
+[16.]Wong, K. (2023). CampusQueue: An Intelligent Queue 
+Management System in a Singapore 
+[19.]105. 
+[20.]Thompson, R. (2022). ServiceNow Implementation in a 
+US University Administration. Journal of Higher Education 
+Management, 37(4), 167–184. 
+[21.]Park, J. (2023). MobileFirst: A University Service 
+Delivery Platform in South Korea. International Journal of 
+Mobile Computing, 16(2), 201–218. 
+In Proceedings of the 16th Annual ACM Symposium on User 
+Interface Software and Technology (Vancouver, Canada, 
+November 02 - 05, 2003). UIST '03. ACM, New York, NY, 1-
+10. 
+DOI= http://doi.acm.org/10.1145/964696.964697. [8.] Yu, Y. 
+T. and Lau, M. F. 2006. A comparison of MC/DC, MUMCUT 
+and several other coverage criteria for logical decisions. J. Syst. 
+Softw. 79, 5 (May. 2006), 577-590. DOI= 
+http://dx.doi.org/10.1016/j.jss.2005.05.030. 
+[9.] Spector, A. Z. 1989. Achieving application requirements. 
+In Distributed Systems, S. Mullender, Ed. ACM Press Frontier 
+Series. ACM, New   York,   NY,   19-33.   DOI= 
+http://doi.acm.org/10.1145/90417.90738. 
+[10.]Martinez, R. (2023). User Experience Design for 
+Administrative Systems. International Journal of Human -
+Computer Interaction, 39(4), 312–330. 
+[11.]Gonzales, P. (2022). QueueWise: A Mobile-Based Queue 
+Management System for a Manila University. Proceedings of 
+the Philippine Computing Conference, 134–142. 
+[12.]Lim, H. (2023). BioAuth: A Biometric Attendance System 
+for a Cebu -Based College. Philippine Journal of Information 
+Systems, 11(2), 67–84. 
+[13.]Rodriguez, T. (2022). PayEdu: A Payment Integration 
+System for a Luzon University. Philippine Journal of 
+Educational Technology, 7(3), 45–62. 
+University. International Journal of Educational Technology , 
+25(2), 145–162. 
+[17.]Smith, J. (2022). EduPay: An Integrated Payment System 
+in an Australian University. Journal of Educational 
+Administration, 44(3), 234–251. 
+[18.]Ahmad, B. (2023). BioAccess: A Multi -Campus 
+Biometric System in a Malaysian University. Asian Journal of 
+Information Systems, 18(1), 88– 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===== PAGE 35 =====
+APPENDICES  
+A.Gantt Chart 
+ 
+ 
+ 
+ 
+Figure 12. Gantt Chart  
+ 
+Figure 13. Gantt Chart  
+
+
+===== PAGE 36 =====
+ 
+Figure 14. Gantt Chart 
+ 
+B.Presentation of Findings  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===== PAGE 37 =====
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Figure 26. Proof of Presentation to Beneficiary 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+C.Survey Forms (Initial and Final )  
+ 
+ 
+ 
+D. Approval for Testing (Initial) 
+ 
+Figure 28. Approval Sheet (Initial Testing) 
+ 
+
+
+===== PAGE 38 =====
+E. Certificate of Implementation
+ 
+ 
+ 
+ 
+ 
+ 
+F.Certificate of Authentic Authorship 
+ 
+ 
+ 
+ 
+ 
+ 
+G.Users Manual 
+ 
+E-Gate User Manual 
+ 
+Barangay 663-A Identification System 
+ 
+1. Introduction 
+ 
+E-Gate is a barangay operations system for resident identification, 
+event registration, event attendance, gate access logging, guest 
+appointment processing, verification review, reporting, and audit 
+tracking. 
+ 
+The system has three main user areas: 
+ 
+- Administrator Portal: for managing residents, events, 
+verifications, guests, analytics, settings, and audit logs. 
+- Resident Portal: for browsing events, registering for events, 
+submitting verification, viewing the resident profile, 
+downloading QR, printing the ID, and enrolling face recognition. 
+- Gate Portal: for resident time in/time out, event attendance 
+scanning, and guest appointment check-in/check-out. 
+ 
+2. Basic Requirements 
+ 
+Use a modern browser such as Chrome, Edge, or Firefox. 
+ 
+For scanner features: 
+ 
+- Use a laptop or desktop for QR and face scanning in the Gate 
+Portal. 
+- Allow camera permission when the browser asks. 
+- Make sure the camera is not being used by another application. 
+- Use good lighting for face recognition. 
+- Keep QR codes clear, flat, and inside the scanner box. 
+ 
+For resident verification uploads: 
+ 
+- Accepted files: JPG, PNG, WEBP, or PDF. 
+- Maximum file size: 5 MB. 
+- The document should be clear and readable. 
+ 
+3. Accessing the System 
+ 
+1. Open the E-Gate website in a browser. 
+2. Choose the correct portal from the landing page. 
+3. Log in with the assigned account. 
+4. After login, the system redirects the user to the correct portal 
+based on role. 
+ 
+Role redirects: 
+ 
+- Resident accounts go to the Resident Portal. 
+- Administrator accounts go to the Admin Portal. 
+
+
+===== PAGE 39 =====
+- Gate Operator accounts use the Gate Portal. 
+ 
+To log out, use the Logout button in the portal sidebar. For the 
+Gate Portal, use Back to return to the landing page. 
+ 
+4. Administrator Portal 
+ 
+The Administrator Portal is the main control area for the barangay 
+staff. It includes the following sections: 
+ 
+- Dashboard 
+- Scanner 
+- Verifications 
+- Manage Events 
+- Analytics 
+- Residents 
+- Audit Trail 
+- Event Creation 
+- Resident Registration 
+- Guest Appointment 
+- Settings 
+ 
+4.1 Dashboard 
+ 
+Use Dashboard to view a quick overview of system activity. The 
+dashboard gives administrators a starting point before moving 
+into event, resident, guest, or report modules. 
+ 
+4.2 Create Resident Account 
+ 
+Use Resident Registration when adding a new resident. 
+ 
+Steps: 
+ 
+1. Open Admin Portal. 
+2. Select Resident Registration. 
+3. Enter the resident details: 
+   - Username, optional 
+   - Full name 
+   - Password 
+   - Email 
+   - Phone number 
+   - Sex 
+   - Address 
+   - Birthdate 
+4. Optionally upload a profile photo. 
+5. Optionally capture or upload a face image for face recognition. 
+6. Select Create Resident. 
+ 
+Notes: 
+ 
+- If username is left blank, the system can generate one from the 
+resident name. 
+- The profile photo appears in the resident profile and ID view. 
+- Face enrollment can be done during onboarding or later from the 
+resident profile. 
+ 
+4.3 Manage Residents 
+ 
+Use Residents to search, view, edit, archive, restore, or delete 
+resident records. 
+ 
+Common actions: 
+ 
+- Search by name, barangay ID, or email. 
+- Switch between Active and Archived residents. 
+- Reveal Details to view sensitive information. 
+- Edit to update resident fields. 
+- Archive to retain the record without keeping it active. 
+- Unarchive to restore an archived resident. 
+- Delete to remove an active resident account. 
+ 
+Recommended practice: 
+ 
+- Use Archive for records that should be retained for history. 
+- Use Delete only when the record should be permanently 
+removed. 
+ 
+4.4 Verification Requests 
+ 
+Use Verifications to review resident-submitted ID documents. 
+ 
+Steps: 
+ 
+1. Open Admin Portal. 
+2. Select Verifications. 
+3. Use the status tabs to view All, Pending, Approved, or Rejected 
+requests. 
+4. Use search to find a resident by name, username, email, or 
+phone. 
+5. Open the uploaded document using View. 
+6. For pending requests, select Approve or Reject. 
+7. For approved requests, select Request New Upload if the 
+resident must submit a clearer or updated document. 
+ 
+What approval does: 
+ 
+- Marks the resident account as verified. 
+- Allows the resident to register for eligible barangay events. 
+ 
+4.5 Create Event 
+ 
+Use Event Creation to add a new barangay event. 
+ 
+Steps: 
+ 
+1. Open Admin Portal. 
+2. Select Event Creation. 
+3. Enter the event details: 
+   - Title 
+   - Event type 
+   - Event date and time 
+   - Event end date and time, optional 
+   - Venue 
+   - Capacity, optional 
+   - Notes, optional 
+   - Registration opening time, optional 
+   - Registration closing time, optional 
+4. Select Create. 
+ 
+Event types: 
+ 
+- Mandatory Governance Meetings 
+- Health and Social Services 
+- Community Events 
+- Operations and Compliance 
+ 
+Validation reminders: 
+ 
+- Event date should be in the future when creating an event. 
+- End date should be after the start date. 
+- Registration opening should be before registration closing. 
+- Registration closing should not be after the event starts. 
+- Capacity should not be negative. 
+ 
+4.6 Manage Events 
+
+===== PAGE 40 =====
+ 
+Use Manage Events to view and maintain event records. 
+ 
+Available event groups: 
+ 
+- Live Events 
+- Upcoming Events 
+- Ended Events 
+- Archived Events 
+ 
+Common actions: 
+ 
+- Search events by title or location. 
+- View event details. 
+- Edit active events. 
+- Delete active events. 
+- Archive ended events. 
+- Restore archived events using Unarchive. 
+- View registrants. 
+- View attendance. 
+ 
+Recommended practice: 
+ 
+- Archive completed or cancelled events when they are no longer 
+active. 
+- Use Archived Events for historical review. 
+ 
+4.7 Scanner 
+ 
+Use Scanner in the Admin Portal to mark attendance for a selected 
+event. 
+ 
+Steps: 
+ 
+1. Open Admin Portal. 
+2. Select Scanner. 
+3. Select an event using the event selector. 
+4. Choose QR Code Scanner or Face Recognition. 
+5. Allow camera permission. 
+6. Scan the resident QR code or capture the resident face. 
+7. Review the scan result and recent scan history. 
+ 
+The scanner checks whether the resident is eligible and registered 
+for the selected event. Duplicate attendance is handled by the 
+system. 
+ 
+4.8 Guest Appointment 
+ 
+Use Guest Appointment to manage visitor appointments. 
+ 
+Create a guest appointment: 
+ 
+1. Open Admin Portal. 
+2. Select Guest Appointment. 
+3. Enter guest details: 
+   - Guest name 
+   - Organization or company 
+   - Contact number 
+   - Purpose of visit 
+   - Appointment time 
+   - Number of participants 
+   - Status 
+   - Notes, optional 
+4. Select Add Appointment. 
+ 
+Manage guest appointments: 
+ 
+- Use Today to view guests scheduled for the current day. 
+- Use All to search and filter all guest appointments. 
+- Use Archived to view archived guest appointments. 
+- Select Edit to update an appointment. 
+- Select Download QR to download the guest appointment QR. 
+- Select Manual Check In or Manual Check Out when camera 
+scanning is not used. 
+- Select Cancel to cancel an appointment. 
+- Select Archive to retain the appointment as an archived record. 
+- Select Unarchive to restore an archived appointment. 
+- Select Delete to remove a guest appointment. 
+ 
+4.9 Analytics 
+ 
+Use Analytics to view reporting data. 
+ 
+Available controls and reports: 
+ 
+- Date range filters using From and To. 
+- Apply to refresh the selected range. 
+- Download PDF for printable analytics charts. 
+- KPI cards such as total events, registrations, attendance, growth 
+rate, active residents, events this year, and average attendance. 
+- Top Events by Attendance chart. 
+- Attendance Over Time chart. 
+- Resident Demographics by gender and age distribution. 
+- Per-Event Analytics with attendee search, sorting, and 
+pagination. 
+ 
+If a chart is empty, there may be no attendance records for the 
+selected date range. 
+ 
+4.10 Audit Trail 
+ 
+Use Audit Trail to review selected system actions. 
+ 
+Visible audit categories include: 
+ 
+- Resident Edited 
+- Attendance Approved 
+- Verification Approved 
+ 
+Filters: 
+ 
+- Search action, actor, or resident. 
+- Actor name. 
+- Resident name. 
+- Action type. 
+- Date from. 
+- Date to. 
+ 
+Use Apply Filters to search and Clear to reset the filters. 
+ 
+4.11 Settings 
+ 
+Use Settings to configure admin interface preferences. 
+ 
+Available settings: 
+ 
+- Auto-refresh analytics 
+- Compact tables 
+- Scanner sound 
+- Highlight pending verifications 
+- Remember filters 
+ 
+Settings are saved to the server when available. If the server 
+setting API is unavailable, the browser keeps a local fallback 
+copy. 
+ 
+
+===== PAGE 41 =====
+5. Resident Portal 
+ 
+The Resident Portal lets residents manage their own event 
+participation, verification, profile, QR code, and face enrollment. 
+ 
+Sections: 
+ 
+- Browse Events 
+- My Registrations 
+- Verify Account 
+- Profile 
+ 
+5.1 Browse Events 
+ 
+Use Browse Events to find barangay events and register. 
+ 
+Steps: 
+ 
+1. Open Resident Portal. 
+2. Select Browse Events. 
+3. Use Active Events, Ended Events, or All Events. 
+4. Search by event name if needed. 
+5. Filter by status, event type, or ordering. 
+6. Select Register for Event. 
+ 
+Important: 
+ 
+- Residents must be verified before registering for events. 
+- If the account is not verified, select Go to Verification. 
+- If already registered, the button changes to Unregister. 
+- Ended events cannot be registered for. 
+ 
+5.2 My Registrations 
+ 
+Use My Registrations to review events the resident has joined. 
+ 
+Typical use: 
+ 
+- Check upcoming registered events. 
+- Confirm event registration status. 
+- Review previous registrations when available. 
+ 
+5.3 Verify Account 
+ 
+Use Verify Account to submit a Barangay ID or other required 
+document for admin review. 
+ 
+Steps: 
+ 
+1. Open Resident Portal. 
+2. Select Verify Account. 
+3. Read the current verification status. 
+4. Upload a clear JPG, PNG, WEBP, or PDF file. 
+5. Add a note for the admin if needed. 
+6. Select Submit for Verification. 
+ 
+Status meanings: 
+ 
+- Not Yet Verified: no approved verification is on file. 
+- Pending Review: the request is waiting for admin review. 
+- Verified: the account has been approved. 
+- New Upload Requested: the admin rejected the previous upload 
+and needs a clearer or updated document. 
+ 
+Notes: 
+ 
+- Only one pending request is allowed at a time. 
+- Approved residents do not need to upload again unless an admin 
+requests it. 
+ 
+5.4 Profile 
+ 
+Use Profile to view resident information and ID tools. 
+ 
+Available actions: 
+ 
+- View barangay ID. 
+- Copy barangay ID. 
+- View verification status. 
+- View ID expiry. 
+- Upload or update profile photo. 
+- Download QR. 
+- Print ID. 
+- Enroll or re-enroll face recognition. 
+ 
+Profile photo rules: 
+ 
+- Accepted image types: JPG, PNG, WEBP. 
+- Maximum file size: 5 MB. 
+ 
+Face recognition: 
+ 
+- Select Enroll Face or Re-enroll Face. 
+- Allow camera permission. 
+- Use good lighting and face the camera clearly. 
+- Save the enrollment when capture succeeds. 
+ 
+6. Gate Portal 
+ 
+The Gate Portal supports operational scanning and logging at the 
+gate. 
+ 
+Modes: 
+ 
+- Resident Log 
+- Event Attendance 
+- Guest Appointment 
+ 
+The Gate Portal can show recent gate history, latest scan result, 
+and time sheet views for resident and guest logs. 
+ 
+6.1 Resident Log 
+ 
+Use Resident Log for daily resident time in/time out tracking 
+outside a specific event. 
+ 
+Steps: 
+ 
+1. Open Gate Portal. 
+2. Select Resident Log. 
+3. Choose Time In or Time Out. 
+4. On a laptop or desktop, choose QR Scanner or Face Scanner. 
+5. Scan the resident QR code or capture the resident face. 
+6. Review the Latest Result panel. 
+ 
+Notes: 
+ 
+- Mobile devices can view logs, but scanner features are disabled 
+for this mode. 
+- Use a laptop or desktop gate station for resident QR and face 
+scanning. 
+- Recent logs update automatically. 
+ 
+6.2 Event Attendance 
+ 
+Use Event Attendance to mark attendance for a selected barangay 
+
+===== PAGE 42 =====
+event. 
+ 
+Steps: 
+ 
+1. Open Gate Portal. 
+2. Select Event Attendance. 
+3. Select an active event. 
+4. On a laptop or desktop, choose QR Scanner or Face Scanner. 
+5. Scan the resident QR code or capture the resident face. 
+6. Review the Latest Result panel. 
+ 
+The system checks event registration, resident verification, and 
+duplicate attendance rules. 
+ 
+6.3 Guest Appointment 
+ 
+Use Guest Appointment to process visitor check -in and check -
+out. 
+ 
+QR scanning steps: 
+ 
+1. Open Gate Portal. 
+2. Select Guest Appointment. 
+3. On a laptop or desktop, choose QR Scanner. 
+4. Scan the guest appointment QR. 
+5. Review the result. 
+ 
+Manual lookup steps: 
+ 
+1. Open Gate Portal. 
+2. Select Guest Appointment. 
+3. Choose Manual Lookup. 
+4. Search for the guest appointment. 
+5. Record the guest check-in or check-out. 
+ 
+Notes: 
+ 
+- Mobile devices support Manual Lookup for guest processing. 
+- Guest QR scanning is disabled on phones. 
+- Cancelled or archived guest appointments cannot be used for 
+normal scanning. 
+- Time-out requires a prior time-in. 
+ 
+6.4 Gate History and Time Sheets 
+ 
+The Gate Portal includes a Gate History panel. 
+ 
+Use it to: 
+ 
+- Search resident, event, guest, purpose, or address depending on 
+the active gate mode. 
+- View recent logs. 
+- Switch to Time Sheet for Resident Log or Guest Appointment. 
+- Select an exact date for the time sheet. 
+- Export CSV for resident or guest time sheets. 
+ 
+7. Reports and Exports 
+ 
+The system supports several reporting and export actions: 
+ 
+- Analytics PDF from the Analytics page. 
+- Resident gate time sheet CSV from the Gate Portal. 
+- Guest time sheet CSV from the Gate Portal. 
+- Guest appointment QR download from the Guest Appointment 
+page. 
+- Resident virtual ID QR download from the Resident Profile 
+page. 
+- Event registrants and attendance exports from the event 
+management area when enabled in the event detail views. 
+ 
+Use exports for attendance records, barangay reporting, and 
+manual backup documentation. 
+ 
+8. Common Messages and What To Do 
+ 
+Account is not verified: 
+ 
+- Resident should open Verify Account and submit a valid 
+document. 
+- Admin should review the request in Verifications. 
+ 
+Event is full: 
+ 
+- The event capacity has been reached. The resident cannot 
+register unless capacity is increased. 
+ 
+Registration is closed: 
+ 
+- The event registration window has ended. Admin may edit the 
+event window if needed. 
+ 
+Resident already checked in: 
+ 
+- Attendance has already been recorded. No extra action is needed 
+unless there is a reporting issue. 
+ 
+QR unavailable: 
+ 
+- The appointment or profile may be inactive, archived, or missing 
+required data. 
+ 
+Camera not working: 
+ 
+- Allow browser camera permission. 
+- Close other apps using the camera. 
+- Use a laptop or desktop for scanner modes that disable mobile 
+scanning. 
+- Refresh the page and reopen the scanner. 
+ 
+Face recognition unavailable: 
+ 
+- The backend may not have the optional face recognition 
+environment installed. 
+- Use QR scanning as the fallback. 
+ 
+No analytics data: 
+ 
+- Adjust the date range. 
+- Confirm that attendance records exist for the selected period. 
+ 
+9. Recommended Daily Workflow 
+ 
+Before operations: 
+ 
+1. Admin logs in. 
+2. Check Dashboard and Verifications. 
+3. Confirm active events in Manage Events. 
+4. Add expected guest appointments if needed. 
+ 
+During operations: 
+ 
+1. Gate staff opens Gate Portal. 
+2. Use Resident Log for regular resident time in/time out. 
+3. Use Event Attendance during barangay events. 
+4. Use Guest Appointment for visitor check-in/check-out. 
+ 
+
+===== PAGE 43 =====
+After operations: 
+ 
+1. Review Gate History and time sheets. 
+2. Check Analytics for attendance activity. 
+3. Review Audit Trail for sensitive changes. 
+4. Archive completed or cancelled events and old guest 
+appointments as needed. 
+ 
+10. Safety and Privacy Reminders 
+ 
+- Do not share administrator or gate operator accounts. 
+- Log out after use, especially on shared devices. 
+- Keep verification documents and resident records confidential. 
+- Use Reveal Details only when needed for official work. 
+- Archive records for retention when appropriate instead of 
+deleting them immediately. 
+- Use face recognition only with proper resident enrollment and 
+consent according to barangay policy. 
+ 
+11. Quick Reference 
+ 
+Administrator: 
+ 
+- Create resident: Admin Portal > Resident Registration. 
+- Review verification: Admin Portal > Verifications. 
+- Create event: Admin Portal > Event Creation. 
+- Manage events: Admin Portal > Manage Events. 
+- Manage guests: Admin Portal > Guest Appointment. 
+- View reports: Admin Portal > Analytics. 
+- View audit logs: Admin Portal > Audit Trail. 
+ 
+Resident: 
+ 
+- Register for event: Resident Portal > Browse Events. 
+- View registrations: Resident Portal > My Registrations. 
+- Submit verification: Resident Portal > Verify Account. 
+- Download QR or print ID: Resident Portal > Profile. 
+- Enroll face: Resident Portal > Profile > Face Recognition. 
+ 
+Gate: 
+ 
+- Resident time in/out: Gate Portal > Resident Log. 
+- Event attendance: Gate Portal > Event Attendance. 
+- Guest check-in/out: Gate Portal > Guest Appointment. 
+- View logs: Gate Portal > Gate History. 
+- Export time sheet: Gate Portal > Time Sheet > Export CSV. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 

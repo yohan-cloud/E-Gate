@@ -22,6 +22,16 @@ const SORT_OPTIONS = [
   { value: "status", label: "Status" },
 ];
 
+function RequiredLabelText({ children }) {
+  return (
+    <span className="required-field-label" style={{ display: "inline-flex", alignItems: "baseline", gap: 4 }}>
+      <span className="required-marker">*</span>
+      <span>{children}</span>
+      <span className="required-text">Required</span>
+    </span>
+  );
+}
+
 function toOffsetIso(value) {
   if (!value) return "";
   const date = new Date(value);
@@ -328,7 +338,7 @@ export default function Appointments() {
             </div>
             <form className="resident-appointment-form" onSubmit={submit}>
               <label className="resident-appointment-field">
-                <span>Purpose</span>
+                <RequiredLabelText>Purpose</RequiredLabelText>
                 <input
                   name="purpose"
                   placeholder="Barangay ID, certificate, consultation, etc."
@@ -338,7 +348,7 @@ export default function Appointments() {
                 />
               </label>
               <div className="resident-appointment-field">
-                <span>Preferred Schedule</span>
+                <RequiredLabelText>Preferred Schedule</RequiredLabelText>
                 <DateTimeField
                   id="resident-appointment-at"
                   name="appointment_at"
