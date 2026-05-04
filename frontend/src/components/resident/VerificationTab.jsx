@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api } from "../../api";
+import { api, openAuthenticatedFile } from "../../api";
 
 const statusColors = {
   pending: { bg: "#fef9c3", color: "#854d0e", icon: "Pending", title: "Pending Review" },
@@ -18,6 +18,7 @@ export default function VerificationTab({ onStatusChange, residentProfile = null
   const [fileFeedback, setFileFeedback] = useState(null);
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [viewingDocument, setViewingDocument] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
   const expiryDate = useMemo(() => {
@@ -104,6 +105,19 @@ export default function VerificationTab({ onStatusChange, residentProfile = null
       setError(e?.response?.data?.error || `Failed to submit ${requestKind}.`);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const viewLastDocument = async () => {
+    if (!current?.document_url) return;
+    setViewingDocument(true);
+    setError("");
+    try {
+      await openAuthenticatedFile(current.document_url);
+    } catch (e) {
+      setError(e?.response?.data?.error || e?.response?.data?.detail || "Failed to open uploaded document.");
+    } finally {
+      setViewingDocument(false);
     }
   };
 
@@ -222,9 +236,14 @@ export default function VerificationTab({ onStatusChange, residentProfile = null
 
       {current?.document_url && (
         <div style={{ marginTop: 8 }}>
-          <a href={current.document_url} target="_blank" rel="noreferrer">
-            View last uploaded document
-          </a>
+          <button
+            type="button"
+            onClick={viewLastDocument}
+            disabled={viewingDocument}
+            style={{ background: "transparent", border: 0, color: "#2563eb", padding: 0, cursor: viewingDocument ? "wait" : "pointer" }}
+          >
+            {viewingDocument ? "Opening document..." : "View last uploaded document"}
+          </button>
         </div>
       )}
 

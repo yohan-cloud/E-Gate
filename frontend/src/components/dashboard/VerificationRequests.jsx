@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { api, fetchJson } from "../../api";
+import { api, fetchJson, openAuthenticatedFile } from "../../api";
 
 const STATUSES = [
   { key: "pending", label: "Pending", color: "#d97706", pillBg: "#fef3c7", pillColor: "#92400e" },
@@ -39,6 +39,7 @@ export default function VerificationRequests() {
   const [error, setError] = useState("");
   const [tab, setTab] = useState("all");
   const [busyId, setBusyId] = useState(null);
+  const [viewingId, setViewingId] = useState(null);
   const [search, setSearch] = useState("");
   const [searchDebounced, setSearchDebounced] = useState("");
   const [counts, setCounts] = useState({ pending: 0, approved: 0, rejected: 0 });
@@ -104,6 +105,19 @@ export default function VerificationRequests() {
       setError(error?.response?.data?.error || "Failed to update request.");
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const viewDocument = async (req) => {
+    if (!req?.document_url) return;
+    setViewingId(req.id);
+    setError("");
+    try {
+      await openAuthenticatedFile(req.document_url);
+    } catch (error) {
+      setError(error?.response?.data?.error || error?.response?.data?.detail || "Failed to open verification document.");
+    } finally {
+      setViewingId(null);
     }
   };
 
@@ -193,7 +207,7 @@ export default function VerificationRequests() {
                   <div style={{ color: "#6b7280", fontSize: 13, marginTop: 2 }}>
                     Request ID: VR-{String(req.id).padStart(4, "0")}
                   </div>
-                  <div className="verification-request-info-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 8, marginTop: 10 }}>
+                  <div className="verification-request-info-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: "12px 18px", marginTop: 10 }}>
                     <Info label="Email" value={req?.user?.email || "N/A"} />
                     <Info label="Contact" value={req.phone_number || "N/A"} />
                     <Info label="Review Type" value={req.request_kind === "reverification" ? "Reverification" : "Verification"} />
@@ -211,9 +225,15 @@ export default function VerificationRequests() {
               </div>
               <div className="verification-request-actions" style={{ display: "grid", justifyItems: "end", alignContent: "center", gap: 10, minWidth: 180 }}>
                 {req.document_url && (
-                  <a className="verification-request-view-link" href={req.document_url} target="_blank" rel="noreferrer">
-                    View
-                  </a>
+                  <button
+                    type="button"
+                    className="verification-request-view-link"
+                    disabled={viewingId === req.id}
+                    onClick={() => viewDocument(req)}
+                    style={{ background: "transparent", border: 0, padding: 0, cursor: viewingId === req.id ? "wait" : "pointer" }}
+                  >
+                    {viewingId === req.id ? "Opening..." : "View"}
+                  </button>
                 )}
                 {req.status === "pending" && (
                   <div className="verification-request-button-stack" style={{ display: "grid", gap: 8, width: "100%" }}>
@@ -256,9 +276,9 @@ export default function VerificationRequests() {
 
 function Info({ label, value }) {
   return (
-    <div>
-      <div style={{ color: "#6b7280", fontSize: 12 }}>{label}</div>
-      <div style={{ fontWeight: 600 }}>{value}</div>
+    <div className="verification-info-item" style={{ minWidth: 0 }}>
+      <div className="verification-info-label" style={{ color: "#6b7280", fontSize: 12 }}>{label}</div>
+      <div className="verification-info-value" style={{ fontWeight: 600, overflowWrap: "anywhere", wordBreak: "break-word", lineHeight: 1.25 }}>{value}</div>
     </div>
   );
 }

@@ -37,6 +37,36 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export async function openAuthenticatedFile(path) {
+  const viewer = window.open("about:blank", "_blank");
+
+  try {
+    const response = await api.get(path, { responseType: "blob" });
+    const contentType = response.headers?.["content-type"] || "application/octet-stream";
+    const blob = response.data instanceof Blob
+      ? response.data
+      : new Blob([response.data], { type: contentType });
+    const url = window.URL.createObjectURL(blob);
+
+    if (viewer) {
+      viewer.location.href = url;
+    } else {
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+  } catch (error) {
+    if (viewer && !viewer.closed) viewer.close();
+    throw error;
+  }
+}
+
 // Attempt token refresh on 401 once
 let isRefreshing = false;
 let pendingRequests = [];
