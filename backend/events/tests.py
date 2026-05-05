@@ -8,6 +8,7 @@ from unittest.mock import patch as mock_patch
 from rest_framework.test import APIClient
 from rest_framework import status
 from django.contrib.auth import get_user_model
+from common.models import AuditLog
 from residents.models import ResidentProfile
 from events.models import EventAttendance, Event, Venue
 
@@ -97,24 +98,65 @@ class EventsFlowTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         return res.data["id"]
 
+    def test_event_create_and_update_are_audited(self):
+        event_id = self.create_open_event(title="Audit Event", capacity=25)
+
+        create_log = AuditLog.objects.filter(action="event_create", target_id=str(event_id)).latest("id")
+        self.assertEqual(create_log.target_type, "event")
+        self.assertEqual(create_log.metadata["title"], "Audit Event")
+
+        self.auth(self.admin_token)
+        event = Event.objects.get(id=event_id)
+        payload = {
+            "title": "Audit Event Updated",
+            "event_type": event.event_type,
+            "audience_type": event.audience_type,
+            "date": event.date.isoformat(),
+            "end_date": event.end_date.isoformat(),
+            "venue": event.venue,
+            "capacity": 30,
+            "registration_open": event.registration_open.isoformat(),
+            "registration_close": event.registration_close.isoformat(),
+        }
+        update = self.client.put(f"/api/events/update/{event_id}/", payload, format="json")
+
+        self.assertEqual(update.status_code, status.HTTP_200_OK)
+        update_log = AuditLog.objects.filter(action="event_update", target_id=str(event_id)).latest("id")
+        self.assertEqual(update_log.target_label, "Audit Event Updated")
+        self.assertIn("title", update_log.metadata["changed_fields"])
+        self.assertIn("capacity", update_log.metadata["changed_fields"])
+
     def test_admin_can_manage_venues_and_deactivate(self):
         self.auth(self.admin_token)
 
         create = self.client.post(
             "/api/events/venues/",
-            {"name": "Covered Court", "max_capacity": 120},
+            {
+                "name": "Covered Court",
+                "city": "Manila",
+                "address": "Barangay 663-A Covered Court",
+                "max_capacity": 120,
+            },
             format="json",
         )
         self.assertEqual(create.status_code, status.HTTP_201_CREATED)
         venue_id = create.data["id"]
+        self.assertEqual(create.data["city"], "Manila")
+        self.assertEqual(create.data["address"], "Barangay 663-A Covered Court")
 
         update = self.client.patch(
             f"/api/events/venues/{venue_id}/",
-            {"name": "Covered Court A", "max_capacity": 150},
+            {
+                "name": "Covered Court A",
+                "city": "Manila",
+                "address": "Barangay 663-A Covered Court Annex",
+                "max_capacity": 150,
+            },
             format="json",
         )
         self.assertEqual(update.status_code, status.HTTP_200_OK)
         self.assertEqual(update.data["max_capacity"], 150)
+        self.assertEqual(update.data["address"], "Barangay 663-A Covered Court Annex")
 
         deactivate = self.client.post(f"/api/events/venues/{venue_id}/deactivate/")
         self.assertEqual(deactivate.status_code, status.HTTP_200_OK)
@@ -136,7 +178,12 @@ class EventsFlowTests(TestCase):
 
     def test_event_can_use_venue_id_and_capacity_within_venue_limit(self):
         self.auth(self.admin_token)
-        venue = Venue.objects.create(name="Training Room", max_capacity=35)
+        venue = Venue.objects.create(
+            name="Training Room",
+            city="Manila",
+            address="Barangay 663-A Training Room",
+            max_capacity=35,
+        )
         now = timezone.now()
 
         res = self.client.post(
@@ -158,6 +205,8 @@ class EventsFlowTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(res.data["venue"], "Training Room")
         self.assertEqual(res.data["venue_ref_id"], venue.id)
+        self.assertEqual(res.data["venue_city"], "Manila")
+        self.assertEqual(res.data["venue_address"], "Barangay 663-A Training Room")
         self.assertEqual(res.data["capacity"], 35)
 
     def test_event_capacity_is_required_and_cannot_exceed_real_venue_limit(self):

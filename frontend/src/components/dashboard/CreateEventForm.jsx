@@ -11,6 +11,8 @@ import {
   TBD_VENUE_VALUE,
   isTbdVenueName,
   normalizeVenueList,
+  venueLocationLabel,
+  venueOptionLabel,
 } from "../../constants/venues";
 
 const EVENT_TYPE_OPTIONS = [
@@ -63,7 +65,8 @@ export default function CreateEventForm({ onCreated }) {
       { divider: true, id: "venue-divider-bottom" },
       ...venues.map((venue) => ({
         value: String(venue.id || venue.name),
-        label: `${venue.name} (${venue.max_capacity})`,
+        label: venueOptionLabel(venue),
+        description: venueLocationLabel(venue) || "No location details",
       })),
     ],
     [venues],
@@ -150,6 +153,14 @@ export default function CreateEventForm({ onCreated }) {
     }
     if (form.date && form.end_date && new Date(form.end_date) <= new Date(form.date)) {
       toast.error("Event end date/time must be after the start date/time.");
+      return;
+    }
+    if (form.registration_open && new Date(form.registration_open) < new Date()) {
+      toast.error("Registration opening date/time cannot be in the past.");
+      return;
+    }
+    if (form.registration_close && new Date(form.registration_close) < new Date()) {
+      toast.error("Registration closing date/time cannot be in the past.");
       return;
     }
     setBusy(true);
@@ -315,6 +326,7 @@ export default function CreateEventForm({ onCreated }) {
           placeholder="Select opening date and time"
           helpText="Residents can start registering at this time."
           panelInFlow
+          disablePastDates
         />
         <DateTimeField
           id="event-close"
@@ -325,6 +337,7 @@ export default function CreateEventForm({ onCreated }) {
           placeholder="Select closing date and time"
           helpText="No more registrations after this time."
           panelInFlow
+          disablePastDates
         />
         <div style={{ gridColumn: "1 / -1", textAlign: "right" }}>
           <button type="submit" disabled={busy} className="event-create-submit button-with-icon" style={{ padding: "10px 16px" }}>

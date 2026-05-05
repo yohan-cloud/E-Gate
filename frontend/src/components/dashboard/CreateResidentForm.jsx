@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { api } from "../../api";
 import toast from "../../lib/toast";
 import FaceCaptureField from "../common/FaceCaptureField";
+import PasswordVisibilityToggle from "../common/PasswordVisibilityToggle";
 import SegmentedPillSelect from "../common/SegmentedPillSelect";
 import { DateField } from "./PickerField";
 import userAddIcon from "../../assets/user-add.png";
@@ -48,6 +49,16 @@ export default function CreateResidentForm({ onCreated }) {
   const [busy, setBusy] = useState(false);
   const [captureLabel, setCaptureLabel] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const idDocumentInputRef = useRef(null);
+  const photoInputRef = useRef(null);
+  const faceImageInputRef = useRef(null);
+
+  const clearFileInputs = () => {
+    [idDocumentInputRef, photoInputRef, faceImageInputRef].forEach((inputRef) => {
+      if (inputRef.current) inputRef.current.value = "";
+    });
+  };
 
   const update = (e) => {
     const { name, value, files } = e.target;
@@ -110,6 +121,8 @@ export default function CreateResidentForm({ onCreated }) {
       });
       toast.success("Resident account created");
       setForm(INITIAL);
+      setShowPassword(false);
+      clearFileInputs();
       setCaptureLabel("");
       setSubmitted(false);
       onCreated?.(res.data?.user);
@@ -148,7 +161,23 @@ export default function CreateResidentForm({ onCreated }) {
         </div>
         <div className="form-group">
           <RequiredLabel htmlFor="res-password" invalid={submitted && !form.password}>Password</RequiredLabel>
-          <input id="res-password" name="password" type="password" value={form.password} onChange={update} required />
+          <div className="valo-password-field">
+            <input
+              id="res-password"
+              className="valo-password-input"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              value={form.password}
+              onChange={update}
+              autoComplete="new-password"
+              required
+            />
+            <PasswordVisibilityToggle
+              shown={showPassword}
+              onToggle={() => setShowPassword((current) => !current)}
+              controls="res-password"
+            />
+          </div>
         </div>
         <div className="form-group">
           <RequiredLabel htmlFor="res-email" invalid={submitted && !form.email}>Email</RequiredLabel>
@@ -206,12 +235,12 @@ export default function CreateResidentForm({ onCreated }) {
         />
         <div className="form-group">
           <RequiredLabel htmlFor="res-id-document" invalid={submitted && !form.id_document}>Resident ID Document</RequiredLabel>
-          <input id="res-id-document" name="id_document" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={update} required />
+          <input ref={idDocumentInputRef} id="res-id-document" name="id_document" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={update} required />
           <small>Upload a clear Barangay ID or valid ID document. Accepted: JPG, PNG, WEBP, or PDF up to 5MB.</small>
         </div>
         <div className="form-group">
           <label htmlFor="res-photo">Profile Photo (optional)</label>
-          <input id="res-photo" name="photo" type="file" accept="image/*" onChange={update} />
+          <input ref={photoInputRef} id="res-photo" name="photo" type="file" accept="image/*" onChange={update} />
           <small>This photo appears in the resident portal and ID views.</small>
         </div>
         <FaceCaptureField
@@ -221,7 +250,7 @@ export default function CreateResidentForm({ onCreated }) {
         />
         <div className="form-group">
           <label htmlFor="res-face">Face Image Upload</label>
-          <input id="res-face" name="face_image" type="file" accept="image/*" onChange={update} />
+          <input ref={faceImageInputRef} id="res-face" name="face_image" type="file" accept="image/*" onChange={update} />
           <small>Upload a face image if you prefer not to use the camera face-enroll flow above.</small>
           {captureLabel ? <small style={{ display: "block", marginTop: 6 }}>{captureLabel}</small> : null}
         </div>

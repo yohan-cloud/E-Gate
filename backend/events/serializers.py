@@ -49,6 +49,8 @@ class VenueSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "city",
+            "address",
             "max_capacity",
             "is_active",
             "created_at",
@@ -67,6 +69,12 @@ class VenueSerializer(serializers.ModelSerializer):
         if qs.exists():
             raise serializers.ValidationError("A venue with this name already exists.")
         return name
+
+    def validate_city(self, value):
+        return (value or "").strip()
+
+    def validate_address(self, value):
+        return (value or "").strip()
 
     def validate_max_capacity(self, value):
         if value is None or value <= 0:
@@ -89,6 +97,8 @@ class EventSerializer(serializers.ModelSerializer):
     )
     venue_ref_id = serializers.IntegerField(source="venue_ref.id", read_only=True, allow_null=True)
     venue_max_capacity = serializers.IntegerField(source="venue_ref.max_capacity", read_only=True, allow_null=True)
+    venue_city = serializers.SerializerMethodField()
+    venue_address = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -104,6 +114,8 @@ class EventSerializer(serializers.ModelSerializer):
             'venue_ref_id',
             'venue',
             'venue_max_capacity',
+            'venue_city',
+            'venue_address',
             'capacity',
             'registration_open',
             'registration_close',
@@ -149,6 +161,14 @@ class EventSerializer(serializers.ModelSerializer):
 
     def get_is_archived(self, obj):
         return bool(getattr(obj, "archived_at", None))
+
+    def get_venue_city(self, obj):
+        venue = getattr(obj, "venue_ref", None)
+        return getattr(venue, "city", "") if venue else ""
+
+    def get_venue_address(self, obj):
+        venue = getattr(obj, "venue_ref", None)
+        return getattr(venue, "address", "") if venue else ""
 
     def validate_event_type(self, value):
         """Make event_type case-insensitive and enforce known values."""

@@ -142,14 +142,14 @@ body {
   min-width: 120px;
   border: none;
   border-radius: 999px;
-  background: #2563eb;
+  background: #16a34a;
   color: #fff;
   font-weight: 700;
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
+  box-shadow: 0 10px 24px rgba(22, 163, 74, 0.22);
 }
 
 .event-create-submit:hover {
-  background: #1d4ed8;
+  background: #15803d;
 }
 
 .resident-create-submit {
@@ -733,15 +733,15 @@ body {
 
 .appointment-modal-panel {
   box-sizing: border-box;
-  width: min(720px, calc(100vw - 32px));
+  width: min(680px, calc(100vw - 32px));
   max-height: min(86vh, 820px);
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid rgba(146, 181, 157, 0.72);
-  border-radius: 14px;
-  background: #ffffff;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fff9 100%);
   box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
-  padding: 20px;
+  padding: 22px;
 }
 
 .appointment-modal-panel.has-error {
@@ -767,7 +767,7 @@ body {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .appointment-modal-head h3 {
@@ -800,17 +800,23 @@ body {
 }
 
 .appointment-modal-form {
-  margin-top: 0;
+  margin: 0;
+  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 14px !important;
+  column-gap: 16px !important;
+  row-gap: 14px !important;
+  align-items: start;
 }
 
 .appointment-modal-form > *,
 .appointment-modal-form .form-group,
 .appointment-modal-form .guest-input-shell {
+  display: grid;
+  gap: 6px;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
+  margin: 0;
 }
 
 .appointment-modal-form .guest-form-input,
@@ -820,13 +826,23 @@ body {
 .appointment-modal-form textarea {
   box-sizing: border-box;
   width: 100%;
-  min-height: 50px;
+  min-height: 48px;
   max-width: 100%;
+  margin: 0;
 }
 
 .appointment-modal-form .guest-input-shell .guest-form-input {
   width: 100%;
   box-sizing: border-box;
+}
+
+.appointment-modal-schedule,
+.appointment-modal-status {
+  min-width: 0;
+}
+
+.appointment-modal-schedule .picker-field {
+  width: 100%;
 }
 
 .appointment-modal-form .picker-field-datetime {
@@ -835,22 +851,23 @@ body {
 
 .appointment-modal-form .guest-form-textarea {
   grid-column: 1 / -1;
-  min-height: 84px;
+  min-height: 90px;
 }
 
 .appointment-modal-form .guest-form-actions {
   grid-column: 1 / -1;
   display: flex;
   justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
-  margin-top: 2px;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 0;
 }
 
 .appointment-modal-form .guest-form-submit,
 .appointment-modal-form .guest-form-cancel {
-  min-width: 150px;
+  min-width: 160px;
   width: auto;
+  min-height: 42px;
 }
 
 .appointment-modal-form .picker-panel {
@@ -885,32 +902,58 @@ body {
 
 @media (max-width: 640px) {
   .appointment-modal-backdrop {
-    padding: 12px;
+    align-items: start;
+    padding: 10px;
+    overflow-y: auto;
   }
 
   .appointment-modal-panel {
     width: 100%;
-    padding: 16px;
+    max-height: none;
+    padding: 14px;
+    border-radius: 16px;
   }
 
   .appointment-modal-form {
     grid-template-columns: 1fr !important;
+    gap: 10px !important;
   }
 
+  .appointment-modal-form > *,
   .appointment-modal-form .picker-field-datetime,
   .appointment-modal-form .guest-form-textarea,
   .appointment-modal-form .guest-form-actions {
     grid-column: 1 / -1 !important;
   }
 
-  .appointment-modal-form .guest-form-actions {
-    flex-direction: column-reverse;
-    align-items: stretch;
+  .appointment-modal-form .guest-form-input,
+  .appointment-modal-form .picker-trigger,
+  .appointment-modal-form select,
+  .appointment-modal-form input,
+  .appointment-modal-form textarea {
+    min-height: 46px;
+    width: 100%;
+    font-size: 0.9rem;
   }
 
-.appointment-modal-form .guest-form-submit,
-.appointment-modal-form .guest-form-cancel {
-  width: 100%;
+  .appointment-modal-form .guest-form-textarea {
+    min-height: 90px;
+  }
+
+  .appointment-modal-form .guest-form-actions {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .appointment-modal-form .guest-form-submit,
+  .appointment-modal-form .guest-form-cancel {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    margin: 0;
   }
 }
 
@@ -1456,10 +1499,10 @@ body {
 }
 
 .segmented-pill.selected {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: #16a34a;
+  border-color: #16a34a;
   color: #fff;
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18);
+  box-shadow: 0 10px 20px rgba(22, 163, 74, 0.18);
 }
 
 .audience-picker {
@@ -1514,8 +1557,8 @@ body {
 }
 
 .audience-option.selected {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: #16a34a;
+  border-color: #16a34a;
   color: #fff;
 }
 
@@ -1666,10 +1709,10 @@ body {
 }
 
 .audience-modal-option.selected {
-  border-color: #2563eb;
-  background: #2563eb;
+  border-color: #16a34a;
+  background: #16a34a;
   color: #fff;
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+  box-shadow: 0 12px 24px rgba(22, 163, 74, 0.18);
 }
 
 .audience-modal-actions {
@@ -1689,14 +1732,14 @@ body {
 
 .audience-modal-primary {
   border: none;
-  background: #2563eb;
+  background: #16a34a;
   color: #fff;
   font-weight: 700;
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 12px 24px rgba(22, 163, 74, 0.2);
 }
 
 .audience-modal-primary:hover {
-  background: #1d4ed8;
+  background: #15803d;
 }
 
 .datetime-field {
@@ -1846,14 +1889,14 @@ body {
 }
 
 .picker-day:hover:not(:disabled) {
-  background: rgba(37, 99, 235, 0.18);
-  border-color: #3b82f6;
+  background: rgba(22, 163, 74, 0.18);
+  border-color: #4ade80;
 }
 
 .picker-day.selected {
-  background: #2563eb;
+  background: #16a34a;
   color: #fff;
-  border-color: #2563eb;
+  border-color: #16a34a;
 }
 
 .picker-day.past:not(.empty) {
@@ -2049,8 +2092,8 @@ body {
 }
 
 .event-accordion.open {
-  border-color: rgba(37, 99, 235, 0.3);
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08);
+  border-color: rgba(22, 163, 74, 0.3);
+  box-shadow: 0 10px 24px rgba(22, 163, 74, 0.08);
 }
 
 .event-accordion-summary {
@@ -2079,10 +2122,10 @@ body {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: #e0e7ff;
+  background: #dcfce7;
   display: grid;
   place-items: center;
-  color: #1d4ed8;
+  color: #166534;
   font-size: 12px;
   font-weight: 700;
   flex-shrink: 0;
@@ -2106,8 +2149,8 @@ body {
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: rgba(37, 99, 235, 0.08);
-  color: #1d4ed8;
+  background: rgba(22, 163, 74, 0.1);
+  color: #166534;
   font-size: 0.8rem;
   font-weight: 700;
   flex-shrink: 0;
@@ -2189,16 +2232,16 @@ body {
   justify-content: center;
   gap: 10px;
   padding: 10px 18px;
-  border: 1px solid rgba(37, 99, 235, 0.35);
+  border: 1px solid rgba(74, 222, 128, 0.55);
   border-radius: 14px;
   background: #ffffff;
   color: #166534;
   font-weight: 800;
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 8px 18px rgba(22, 163, 74, 0.12);
 }
 
 .gate-account-add-toggle.open {
-  background: #dbeafe;
+  background: #dcfce7;
 }
 
 .gate-account-add-icon {
@@ -2311,6 +2354,10 @@ body {
   display: grid;
   gap: 14px;
   padding: 18px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   border: 1px solid rgba(146, 181, 157, 0.52);
   border-radius: 16px;
   background: linear-gradient(180deg, rgba(248, 255, 249, 0.96), rgba(237, 249, 241, 0.94));
@@ -2334,6 +2381,7 @@ body {
   display: grid;
   gap: 6px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .gate-account-field-wide {
@@ -2347,14 +2395,18 @@ body {
 }
 
 .gate-account-password-wrap {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: center;
+  position: relative;
 }
 
 .gate-account-password-wrap input {
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.gate-account-password-wrap .valo-password-input {
+  padding-right: 52px;
 }
 
 .gate-account-password-toggle {
@@ -2539,8 +2591,8 @@ body {
 }
 
 .gate-audit-status.info {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: #dcfce7;
+  color: #166534;
 }
 
 .table-container {
@@ -2730,13 +2782,14 @@ tr:hover {
   }
 
   .resident-action-menu {
-    left: auto;
-    right: 0;
+    left: 0;
+    right: auto;
     top: calc(100% + 8px);
     margin-top: 8px;
     min-width: 0;
-    width: min(260px, calc(100vw - 48px));
+    width: min(220px, calc(100vw - 48px));
     max-width: calc(100vw - 48px);
+    z-index: 80;
   }
 
   .residents-records-card .admin-resident-actions {
@@ -2804,9 +2857,9 @@ tr:hover {
 
 .resident-action-save,
 .audit-apply-button {
-  background: #2563eb !important;
+  background: #16a34a !important;
   color: #ffffff !important;
-  border: 1px solid #2563eb !important;
+  border: 1px solid #16a34a !important;
 }
 
 .resident-action-button:hover,
@@ -3028,6 +3081,62 @@ tr:hover {
   color: #e4e4e7 !important;
 }
 
+:root[data-theme="dark"] .resident-action-menu {
+  border-color: rgba(113, 113, 122, 0.64) !important;
+  background: #09090b !important;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.38) !important;
+}
+
+:root[data-theme="dark"] .resident-status-badge {
+  border: 1px solid rgba(148, 163, 184, 0.36) !important;
+  background: rgba(39, 39, 42, 0.92) !important;
+  color: #f4f4f5 !important;
+}
+
+:root[data-theme="dark"] .resident-status-badge[data-badge="active"],
+:root[data-theme="dark"] .resident-status-badge[data-badge="verified"],
+:root[data-theme="dark"] .resident-status-badge[data-badge="registered voter"] {
+  border-color: rgba(74, 222, 128, 0.46) !important;
+  background: rgba(34, 197, 94, 0.18) !important;
+  color: #bbf7d0 !important;
+}
+
+:root[data-theme="dark"] .resident-status-badge[data-badge="deactivated"],
+:root[data-theme="dark"] .resident-status-badge[data-badge="not-verified"],
+:root[data-theme="dark"] .resident-status-badge[data-badge="expired"] {
+  border-color: rgba(248, 113, 113, 0.46) !important;
+  background: rgba(127, 29, 29, 0.38) !important;
+  color: #fecaca !important;
+}
+
+:root[data-theme="dark"] .resident-status-badge[data-badge="adult"],
+:root[data-theme="dark"] .resident-status-badge[data-badge="kid/teen"],
+:root[data-theme="dark"] .resident-status-badge[data-badge="kids/teens"] {
+  border-color: rgba(74, 222, 128, 0.46) !important;
+  background: rgba(34, 197, 94, 0.18) !important;
+  color: #bbf7d0 !important;
+}
+
+:root[data-theme="dark"] .resident-status-badge[data-badge="senior"],
+:root[data-theme="dark"] .resident-status-badge[data-badge="not yet voter"] {
+  border-color: rgba(251, 191, 36, 0.46) !important;
+  background: rgba(120, 53, 15, 0.38) !important;
+  color: #fde68a !important;
+}
+
+:root[data-theme="dark"] .resident-status-badge[data-badge="client"] {
+  border-color: rgba(216, 180, 254, 0.48) !important;
+  background: rgba(88, 28, 135, 0.38) !important;
+  color: #e9d5ff !important;
+}
+
+:root[data-theme="dark"] .resident-status-badge[data-badge="resident"],
+:root[data-theme="dark"] .resident-status-badge[data-badge="archived"] {
+  border-color: rgba(148, 163, 184, 0.46) !important;
+  background: rgba(51, 65, 85, 0.5) !important;
+  color: #e2e8f0 !important;
+}
+
 :root[data-theme="dark"] .residents-records-card input[type="search"] {
   color: #ffffff !important;
 }
@@ -3069,8 +3178,8 @@ tr:hover {
 :root[data-theme="dark"] .gate-account-submit,
 :root[data-theme="dark"] .gate-account-add-toggle,
 :root[data-theme="dark"] .resident-action-save {
-  border-color: #3b82f6 !important;
-  background: #2563eb !important;
+  border-color: #4ade80 !important;
+  background: #16a34a !important;
   color: #ffffff !important;
 }
 
@@ -3202,13 +3311,13 @@ tr:hover {
 }
 
 :root[data-theme="dark"] .event-accordion-icon {
-  background: rgba(37, 99, 235, 0.18) !important;
-  color: #bfdbfe !important;
+  background: rgba(34, 197, 94, 0.18) !important;
+  color: #bbf7d0 !important;
 }
 
 :root[data-theme="dark"] .event-accordion-chevron {
-  background: rgba(37, 99, 235, 0.16) !important;
-  color: #93c5fd !important;
+  background: rgba(34, 197, 94, 0.16) !important;
+  color: #86efac !important;
 }
 
 :root[data-theme="dark"] .event-progress-track {
@@ -3238,6 +3347,7 @@ tr:hover {
 
 :root[data-theme="dark"] .gate-account-card,
 :root[data-theme="dark"] .gate-account-list-section,
+:root[data-theme="dark"] .gate-account-form,
 :root[data-theme="dark"] .gate-account-table-wrap,
 :root[data-theme="dark"] .gate-audit-table-wrap {
   border-color: rgba(113, 113, 122, 0.52) !important;
@@ -3248,6 +3358,24 @@ tr:hover {
 :root[data-theme="dark"] .gate-account-copy,
 :root[data-theme="dark"] .gate-account-hint,
 :root[data-theme="dark"] .gate-audit-account-cell span {
+  color: #d4d4d8 !important;
+}
+
+:root[data-theme="dark"] .gate-account-form h4,
+:root[data-theme="dark"] .gate-account-form .required-field-label,
+:root[data-theme="dark"] .gate-account-form .required-marker,
+:root[data-theme="dark"] .gate-account-form .required-text,
+:root[data-theme="dark"] .gate-account-form .gate-account-label {
+  color: #f4f4f5 !important;
+}
+
+:root[data-theme="dark"] .gate-account-form input {
+  border-color: rgba(113, 113, 122, 0.72) !important;
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] .gate-account-form input::placeholder {
   color: #d4d4d8 !important;
 }
 
@@ -3274,6 +3402,50 @@ tr:hover {
 :root[data-theme="dark"] .gate-account-actions button {
   border-color: rgba(113, 113, 122, 0.64) !important;
   background: #000000 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] .audience-selector-trigger,
+:root[data-theme="dark"] .audience-modal-panel,
+:root[data-theme="dark"] .audience-modal-section {
+  border-color: rgba(113, 113, 122, 0.56) !important;
+  background: #09090b !important;
+  color: #f4f4f5 !important;
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.38) !important;
+}
+
+:root[data-theme="dark"] .audience-modal-backdrop {
+  background: rgba(0, 0, 0, 0.62) !important;
+}
+
+:root[data-theme="dark"] .audience-selector-trigger-meta,
+:root[data-theme="dark"] .audience-modal-copy,
+:root[data-theme="dark"] .audience-modal-section-title {
+  color: #d4d4d8 !important;
+}
+
+:root[data-theme="dark"] .audience-modal-eyebrow,
+:root[data-theme="dark"] .audience-selector-pill {
+  color: #86efac !important;
+}
+
+:root[data-theme="dark"] .audience-selector-pill {
+  border-color: rgba(74, 222, 128, 0.42) !important;
+  background: rgba(34, 197, 94, 0.18) !important;
+}
+
+:root[data-theme="dark"] .audience-modal-close,
+:root[data-theme="dark"] .audience-modal-secondary,
+:root[data-theme="dark"] .audience-modal-option {
+  border-color: rgba(113, 113, 122, 0.64) !important;
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] .audience-modal-option.selected,
+:root[data-theme="dark"] .audience-modal-primary {
+  border-color: #4ade80 !important;
+  background: #16a34a !important;
   color: #ffffff !important;
 }
 
@@ -3466,6 +3638,45 @@ tr:hover {
     border-radius: 16px;
   }
 
+  .gate-account-form {
+    gap: 12px;
+    padding: 14px;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .gate-account-form-head {
+    display: grid;
+    gap: 6px;
+  }
+
+  .gate-account-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .gate-account-field,
+  .gate-account-field input,
+  .gate-account-password-wrap,
+  .gate-account-password-wrap input,
+  .gate-account-password-toggle {
+    width: 100% !important;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .gate-account-label {
+    font-size: 0.82rem;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .gate-account-hint {
+    font-size: 0.85rem;
+    line-height: 1.45;
+  }
+
   .venue-table-shell,
   .gate-account-table-wrap {
     overflow-x: visible;
@@ -3603,6 +3814,31 @@ tr:hover {
   .gate-account-form-actions {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  :root[data-theme="dark"] .venue-table tr,
+  :root[data-theme="dark"] .gate-account-table tr {
+    border-color: rgba(113, 113, 122, 0.56) !important;
+    background: #09090b !important;
+    color: #f4f4f5 !important;
+  }
+
+  :root[data-theme="dark"] .venue-table td,
+  :root[data-theme="dark"] .gate-account-table td {
+    border-bottom-color: rgba(113, 113, 122, 0.42) !important;
+    background: transparent !important;
+    color: #f4f4f5 !important;
+  }
+
+  :root[data-theme="dark"] .venue-table td::before,
+  :root[data-theme="dark"] .gate-account-table td::before {
+    color: #86efac !important;
+  }
+
+  :root[data-theme="dark"] .venue-table-shell,
+  :root[data-theme="dark"] .gate-account-table-wrap {
+    border-color: rgba(113, 113, 122, 0.56) !important;
+    background: #050505 !important;
   }
 
   .admin-main-content > .card {
@@ -4136,8 +4372,42 @@ tr:hover {
   }
 
   .appointment-row .guest-detail-actions {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 1fr;
     width: 100%;
+    gap: 10px !important;
+  }
+
+  .appointment-row .guest-action-primary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+    grid-auto-flow: row;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .appointment-row .guest-action-primary .btn-primary {
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 10px !important;
+    white-space: normal;
+  }
+
+  .appointment-row .guest-menu-wrap {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .appointment-row .guest-menu-wrap .resident-more-button {
+    width: 100% !important;
+    min-height: 38px;
+  }
+
+  .appointment-row .guest-action-menu {
+    left: auto;
+    right: 0;
+    width: min(220px, calc(100vw - 48px));
+    max-width: calc(100vw - 48px);
+    z-index: 80;
   }
 
   .admin-resident-main > div:last-child > div:nth-child(3) {

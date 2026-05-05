@@ -2266,10 +2266,11 @@ input[type="date"] { color-scheme: dark; }
 }
 
 .gate-account-password-wrap {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px;
-  align-items: center;
+  position: relative;
+}
+
+.gate-account-password-wrap .valo-password-input {
+  padding-right: 52px;
 }
 
 .gate-account-password-toggle {
@@ -3056,9 +3057,12 @@ input[type="date"] { color-scheme: dark; }
 
 .valo-password-field {
   position: relative;
+  width: 100%;
 }
 
 .valo-password-input {
+  width: 100%;
+  box-sizing: border-box;
   padding-right: 52px;
 }
 

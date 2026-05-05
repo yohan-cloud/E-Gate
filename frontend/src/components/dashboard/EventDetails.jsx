@@ -12,6 +12,9 @@ import {
   TBD_VENUE_VALUE,
   isTbdVenueName,
   normalizeVenueList,
+  venueFullLabel,
+  venueLocationLabel,
+  venueOptionLabel,
 } from "../../constants/venues";
 
 const EVENT_TYPE_OPTIONS = [
@@ -77,11 +80,13 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
       {
         id: form.venue_id || null,
         name: form.venue,
+        city: event?.venue_city || "",
+        address: event?.venue_address || "",
         max_capacity: form.capacity || event?.venue_max_capacity || event?.capacity || 0,
         is_active: false,
       },
     ];
-  }, [event?.capacity, event?.venue_max_capacity, form.capacity, form.venue, form.venue_id, isTbdVenue, venues]);
+  }, [event?.capacity, event?.venue_address, event?.venue_city, event?.venue_max_capacity, form.capacity, form.venue, form.venue_id, isTbdVenue, venues]);
   const venueOptions = useMemo(
     () => [
       { value: "", label: "Select a venue" },
@@ -90,7 +95,8 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
       { divider: true, id: "edit-venue-divider-bottom" },
       ...selectableVenues.map((venue) => ({
         value: String(venue.id || venue.name),
-        label: `${venue.name} (${venue.max_capacity || "no capacity"})`,
+        label: venueOptionLabel(venue),
+        description: venueLocationLabel(venue) || "No location details",
       })),
     ],
     [selectableVenues],
@@ -285,7 +291,7 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
           </div>
           <p><b>Type:</b> {EVENT_TYPE_LABELS[event.event_type] || event.event_type}</p>
           <p><b>Audience:</b> {parseAudienceValue(event.audience_type).map((value) => AUDIENCE_LABELS[value] || value).join(", ")}</p>
-          <p><b>Venue:</b> {event.venue}</p>
+          <p><b>Venue:</b> {venueFullLabel({ name: event.venue, city: event.venue_city, address: event.venue_address })}</p>
           <p><b>Status:</b> {event.status}</p>
           <p><b>Schedule:</b> {formatEventSchedule(event.date, event.end_date)}</p>
           <p><b>Description:</b> {event.description}</p>
@@ -394,6 +400,7 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
               value={form.registration_open}
               onChange={updateField}
               placeholder="Select opening date and time"
+              disablePastDates
             />
             <DateTimeField
               id="edit-close"
@@ -402,6 +409,7 @@ export default function EventDetails({ eventId, initialEvent = null, onDeleted, 
               value={form.registration_close}
               onChange={updateField}
               placeholder="Select closing date and time"
+              disablePastDates
             />
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
               <label htmlFor="edit-description">Description</label>

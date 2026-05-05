@@ -5,6 +5,7 @@ import AttendanceTable from "./AttendanceTable";
 import RegistrantsList from "./RegistrantsList";
 import toast from "../../lib/toast";
 import ConfirmDialog from "../common/ConfirmDialog";
+import { venueFullLabel } from "../../constants/venues";
 
 function getEventBucket(event) {
   const rawStatus = (event?.status || "").toLowerCase();
@@ -222,7 +223,7 @@ export default function DashboardHome() {
                                 <div className="event-accordion-meta">
                                   <span>Date: {dateLabel}</span>
                                   <span>Time: {timeLabel}</span>
-                                  <span>Venue: {ev.venue || "TBD"}</span>
+                                  <span>Venue: {venueFullLabel({ name: ev.venue || "TBD", city: ev.venue_city, address: ev.venue_address })}</span>
                                   <span>Registrants: {registered} / {capacity || "No limit"}</span>
                                 </div>
                                 <div className="event-progress-track" style={{ marginTop: 8, height: 6, background: "#e5e7eb", borderRadius: 999, overflow: "hidden" }}>

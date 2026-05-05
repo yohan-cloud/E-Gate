@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
+import { venueFullLabel } from "../constants/venues";
 
 function formatScheduleLabel(start, end) {
   if (!start) return { dateLabel: "TBD", timeLabel: "" };
@@ -53,7 +54,7 @@ export default function EventSelector({ onSelect, endpoint = "/events/list/?page
   const selectedLabel = useMemo(() => {
     const ev = events.find((e) => e.id === selectedEvent);
     if (!ev) return "No event selected";
-    return `${ev.title} • ${ev.venue || "TBD"}`;
+    return `${ev.title} • ${venueFullLabel({ name: ev.venue || "TBD", city: ev.venue_city, address: ev.venue_address })}`;
   }, [events, selectedEvent]);
 
   return (
@@ -117,7 +118,7 @@ export default function EventSelector({ onSelect, endpoint = "/events/list/?page
                 <div style={{ display: "flex", gap: 10, color: selectedEvent === ev.id ? "#cbd5e1" : "#6b7280", fontSize: 12, marginTop: 4, flexWrap: "wrap" }}>
                   <span>📅 {dateLabel}</span>
                   <span>⏰ {timeLabel || "TBD"}</span>
-                  <span>📍 {ev.venue || "TBD"}</span>
+                  <span>📍 {venueFullLabel({ name: ev.venue || "TBD", city: ev.venue_city, address: ev.venue_address })}</span>
                   <span>👥 {registered}/{capacity || "∞"}</span>
                 </div>
               </div>

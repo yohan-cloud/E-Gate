@@ -1,13 +1,14 @@
-export default function PasswordVisibilityToggle({ shown, onToggle, controls }) {
+export default function PasswordVisibilityToggle({ shown, onToggle, controls, className = "", style }) {
   return (
     <button
       type="button"
-      className="valo-password-toggle"
+      className={`valo-password-toggle${className ? ` ${className}` : ""}`}
       onClick={onToggle}
       aria-label={shown ? "Hide password" : "Show password"}
       aria-controls={controls}
       aria-pressed={shown}
       title={shown ? "Hide password" : "Show password"}
+      style={style}
     >
       {shown ? (
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">

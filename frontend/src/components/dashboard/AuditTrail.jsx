@@ -10,6 +10,8 @@ const ACTION_OPTIONS = [
   { value: "resident_archive", label: "Resident Archive" },
   { value: "attendance_mark", label: "Attendance Approval" },
   { value: "verification_review", label: "Verification Approval" },
+  { value: "event_create", label: "Event Created" },
+  { value: "event_update", label: "Event Updated" },
 ];
 
 function isRelevantAuditRow(row) {
@@ -19,6 +21,8 @@ function isRelevantAuditRow(row) {
   if (row.action === "resident_reactivate") return true;
   if (row.action === "resident_archive") return true;
   if (row.action === "attendance_mark") return true;
+  if (row.action === "event_create") return true;
+  if (row.action === "event_update") return true;
   if (row.action === "verification_review") {
     return (row.metadata?.status || "").toLowerCase() === "approved";
   }
@@ -71,7 +75,7 @@ export default function AuditTrail() {
       <div className="section-head">
         <div>
           <h3 style={{ margin: 0 }}>Audit Trail</h3>
-          <div className="muted">Show resident edits, deactivations, reactivations, archives, attendance approvals, and approved verification reviews.</div>
+          <div className="muted">Show resident edits, event changes, attendance approvals, and approved verification reviews.</div>
         </div>
         <div className="stack-row audit-summary-row">
           <div className="pill-light audit-summary-pill">Records: <b>{summary.total}</b></div>
@@ -159,12 +163,12 @@ export default function AuditTrail() {
 
               <div className="audit-detail-grid">
                 <AuditField label="Actor" value={row.actor_username || "System"} />
-                <AuditField label="Resident" value={row.resident_name || row.target_label || "N/A"} />
+                <AuditField label={row.target_type === "event" ? "Event" : "Resident"} value={row.resident_name || row.target_label || "N/A"} />
                 <AuditField label="Action" value={formatAction(row)} />
                 <AuditField label="Status" value={formatStatus(row)} />
               </div>
 
-              {row.action === "resident_update" && row.metadata?.changed_fields && Object.keys(row.metadata.changed_fields).length > 0 ? (
+              {(row.action === "resident_update" || row.action === "event_update") && row.metadata?.changed_fields && Object.keys(row.metadata.changed_fields).length > 0 ? (
                 <div className="audit-change-block">
                   <div className="audit-change-title">Changed Fields</div>
                   <div className="audit-change-list">
@@ -201,6 +205,8 @@ function formatAction(row) {
   if (row.action === "resident_archive") return "Resident Archived";
   if (row.action === "attendance_mark") return "Attendance Approved";
   if (row.action === "verification_review") return "Verification Approved";
+  if (row.action === "event_create") return "Event Created";
+  if (row.action === "event_update") return "Event Updated";
   return (row.action || "unknown")
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -213,6 +219,8 @@ function formatStatus(row) {
   if (row.action === "resident_deactivate") return row.metadata?.reason || "Deactivated";
   if (row.action === "resident_reactivate") return "Reactivated";
   if (row.action === "resident_archive") return row.metadata?.archive_storage ? `Archived (${row.metadata.archive_storage})` : "Archived";
+  if (row.action === "event_create") return "Created";
+  if (row.action === "event_update") return "Updated";
   if (row.action === "attendance_mark") {
     return row.metadata?.direction === "time_out" ? "Time Out Approved" : "Time In Approved";
   }

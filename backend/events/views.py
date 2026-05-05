@@ -543,6 +543,23 @@ def create_event(request):
     serializer = EventSerializer(data=request.data)
     if serializer.is_valid():
         event = serializer.save(created_by=user)  # ✅ auto attach admin
+        audit_log(
+            request,
+            action="event_create",
+            target_type="event",
+            target_id=event.id,
+            target_label=event.title,
+            metadata={
+                "event_id": event.id,
+                "title": event.title,
+                "event_type": event.event_type,
+                "audience_type": event.audience_type,
+                "date": event.date.isoformat() if event.date else None,
+                "end_date": event.end_date.isoformat() if event.end_date else None,
+                "venue": event.venue,
+                "capacity": event.capacity,
+            },
+        )
         _emit(
             "event.upserted",
             "events.Event",
@@ -584,9 +601,42 @@ def update_event(request, event_id):
     if event.archived_at:
         return Response({"error": "Archived events cannot be edited until restored."}, status=status.HTTP_400_BAD_REQUEST)
 
+    before = {
+        "title": event.title,
+        "description": event.description,
+        "event_type": event.event_type,
+        "audience_type": event.audience_type,
+        "date": event.date,
+        "end_date": event.end_date,
+        "venue": event.venue,
+        "capacity": event.capacity,
+        "registration_open": event.registration_open,
+        "registration_close": event.registration_close,
+        "status": event.status,
+    }
     serializer = EventSerializer(event, data=request.data, partial=True)
     if serializer.is_valid():
         updated = serializer.save()
+        changes = {}
+        for field, old_value in before.items():
+            new_value = getattr(updated, field)
+            if old_value != new_value:
+                changes[field] = {
+                    "from": old_value.isoformat() if hasattr(old_value, "isoformat") else old_value,
+                    "to": new_value.isoformat() if hasattr(new_value, "isoformat") else new_value,
+                }
+        audit_log(
+            request,
+            action="event_update",
+            target_type="event",
+            target_id=updated.id,
+            target_label=updated.title,
+            metadata={
+                "event_id": updated.id,
+                "title": updated.title,
+                "changed_fields": changes,
+            },
+        )
         _emit(
             "event.upserted",
             "events.Event",

@@ -9,6 +9,7 @@ import FaceScanner from "../FaceScanner";
 import GuestAppointmentLookup from "../GuestAppointmentLookup";
 import GuestQrScanner from "../GuestQrScanner";
 import QrScanner from "../QrScanner";
+import { venueFullLabel } from "../../constants/venues";
 
 const LOG_REFRESH_MS = 15000;
 
@@ -338,7 +339,7 @@ export default function GatePortal({ onExit }) {
                     subtitle="Select an event first, then choose whether to scan by QR or face."
                     latestEntries={latestEntries}
                     badgeLabel={selectedEvent ? selectedEvent.title : "Select an event first"}
-                    metaItems={selectedEvent ? [selectedEvent.venue || "TBD venue", formatSchedule(selectedEvent.date, selectedEvent.end_date)] : ["Event selection required", "Duplicate attendance is blocked"]}
+                    metaItems={selectedEvent ? [venueFullLabel({ name: selectedEvent.venue || "TBD venue", city: selectedEvent.venue_city, address: selectedEvent.venue_address }), formatSchedule(selectedEvent.date, selectedEvent.end_date)] : ["Event selection required", "Duplicate attendance is blocked"]}
                     controls={(
                       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                         {!isMobileGateView && <ModeButton label="QR Scanner" active={scannerMode === "qr"} onClick={() => setScannerMode("qr")} />}

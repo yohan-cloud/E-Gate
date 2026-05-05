@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, fetchJson } from "../../api";
 import toast from "../../lib/toast";
 import ConfirmDialog from "../common/ConfirmDialog";
+import PasswordVisibilityToggle from "../common/PasswordVisibilityToggle";
 import SegmentedPillSelect from "../common/SegmentedPillSelect";
 
 const GENDER_LABEL = {
@@ -573,17 +574,17 @@ export default function ResidentsTable() {
                           {fullName}
                         </div>
                       )}
-                      <span style={badgeStyle(statusBadge.background, statusBadge.color)}>{statusBadge.label}</span>
-                      <span style={badgeStyle(isVerified ? "#dcfce7" : "#fee2e2", isVerified ? "#166534" : "#991b1b")}>
+                      <span className="resident-status-badge" data-badge={statusBadge.label} style={badgeStyle(statusBadge.background, statusBadge.color)}>{statusBadge.label}</span>
+                      <span className="resident-status-badge" data-badge={isVerified ? "verified" : "not-verified"} style={badgeStyle(isVerified ? "#dcfce7" : "#fee2e2", isVerified ? "#166534" : "#991b1b")}>
                         {isVerified ? "verified" : "not verified"}
                       </span>
                       {ageAudiencePill ? (
-                        <span style={badgeStyle(ageAudiencePill.background, ageAudiencePill.color)}>
+                        <span className="resident-status-badge" data-badge={ageAudiencePill.label} style={badgeStyle(ageAudiencePill.background, ageAudiencePill.color)}>
                           {ageAudiencePill.label}
                         </span>
                       ) : null}
                       {isExpired ? (
-                        <span style={badgeStyle("#fee2e2", "#991b1b")}>
+                        <span className="resident-status-badge" data-badge="expired" style={badgeStyle("#fee2e2", "#991b1b")}>
                           expired
                         </span>
                       ) : null}
@@ -997,74 +998,56 @@ export default function ResidentsTable() {
               <label htmlFor="resident-temp-password" style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>
                 <RequiredLabelText>Temporary Password</RequiredLabelText>
               </label>
-              <input
-                id="resident-temp-password"
-                type={resetModal.showPassword ? "text" : "password"}
-                value={resetModal.temporaryPassword}
-                onChange={(e) => setResetModal((current) => ({ ...current, temporaryPassword: e.target.value }))}
-                placeholder="Enter temporary password"
-                autoFocus
-                style={{
-                  width: "100%",
-                  padding: "12px 14px",
-                  borderRadius: 12,
-                  border: "1px solid #cbd5e1",
-                  background: "#fff",
-                  outline: "none",
-                }}
-                required
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    submitResidentPasswordReset();
-                  }
-                }}
-              />
+              <div className="valo-password-field">
+                <input
+                  id="resident-temp-password"
+                  className="valo-password-input"
+                  type={resetModal.showPassword ? "text" : "password"}
+                  value={resetModal.temporaryPassword}
+                  onChange={(e) => setResetModal((current) => ({ ...current, temporaryPassword: e.target.value }))}
+                  placeholder="Enter temporary password"
+                  autoFocus
+                  style={residentPasswordInputStyle}
+                  required
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      submitResidentPasswordReset();
+                    }
+                  }}
+                />
+                <PasswordVisibilityToggle
+                  shown={resetModal.showPassword}
+                  onToggle={() => setResetModal((current) => ({ ...current, showPassword: !current.showPassword }))}
+                  controls="resident-temp-password"
+                />
+              </div>
               <label htmlFor="resident-confirm-temp-password" style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>
                 <RequiredLabelText>Confirm Temporary Password</RequiredLabelText>
               </label>
-              <input
-                id="resident-confirm-temp-password"
-                type={resetModal.showPassword ? "text" : "password"}
-                value={resetModal.confirmTemporaryPassword}
-                onChange={(e) => setResetModal((current) => ({ ...current, confirmTemporaryPassword: e.target.value }))}
-                placeholder="Confirm temporary password"
-                style={{
-                  width: "100%",
-                  padding: "12px 14px",
-                  borderRadius: 12,
-                  border: "1px solid #cbd5e1",
-                  background: "#fff",
-                  outline: "none",
-                }}
-                required
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    submitResidentPasswordReset();
-                  }
-                }}
-              />
-              <label
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifySelf: "start",
-                  gap: 8,
-                  color: "#334155",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  marginTop: 2,
-                }}
-              >
+              <div className="valo-password-field">
                 <input
-                  type="checkbox"
-                  checked={resetModal.showPassword}
-                  onChange={(e) => setResetModal((current) => ({ ...current, showPassword: e.target.checked }))}
-                  style={{ margin: 0 }}
+                  id="resident-confirm-temp-password"
+                  className="valo-password-input"
+                  type={resetModal.showPassword ? "text" : "password"}
+                  value={resetModal.confirmTemporaryPassword}
+                  onChange={(e) => setResetModal((current) => ({ ...current, confirmTemporaryPassword: e.target.value }))}
+                  placeholder="Confirm temporary password"
+                  style={residentPasswordInputStyle}
+                  required
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      submitResidentPasswordReset();
+                    }
+                  }}
                 />
-                Show password
-              </label>
+                <PasswordVisibilityToggle
+                  shown={resetModal.showPassword}
+                  onToggle={() => setResetModal((current) => ({ ...current, showPassword: !current.showPassword }))}
+                  controls="resident-confirm-temp-password"
+                />
+              </div>
               <div style={{ color: "#64748b", fontSize: 13, lineHeight: 1.5 }}>
                 Use a strong temporary password so the resident can log in once and immediately replace it.
               </div>
@@ -1110,6 +1093,15 @@ export default function ResidentsTable() {
     </div>
   );
 }
+
+const residentPasswordInputStyle = {
+  width: "100%",
+  padding: "12px 52px 12px 14px",
+  borderRadius: 12,
+  border: "1px solid #cbd5e1",
+  background: "#fff",
+  outline: "none",
+};
 
 function Info({ label, value, title }) {
   return (

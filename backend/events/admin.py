@@ -4,9 +4,9 @@ from .models import Event, EventRegistration, EventAttendance, Venue
 
 @admin.register(Venue)
 class VenueAdmin(admin.ModelAdmin):
-    list_display = ('name', 'max_capacity', 'is_active', 'updated_at')
-    search_fields = ('name',)
-    list_filter = ('is_active',)
+    list_display = ('name', 'city', 'address', 'max_capacity', 'is_active', 'updated_at')
+    search_fields = ('name', 'city', 'address')
+    list_filter = ('is_active', 'city')
 
 
 @admin.register(Event)

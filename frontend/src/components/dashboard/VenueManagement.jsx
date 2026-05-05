@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 
 import { api } from "../../api";
 import ConfirmDialog from "../common/ConfirmDialog";
-import { normalizeVenueList } from "../../constants/venues";
+import { normalizeVenueList, venueLocationLabel } from "../../constants/venues";
 import toast, { formatApiError } from "../../lib/toast";
 import addLocationIcon from "../../assets/add-location.png";
 
 const EMPTY_FORM = {
   name: "",
+  city: "Manila",
+  address: "",
   max_capacity: "",
 };
 
@@ -59,6 +61,8 @@ export default function VenueManagement() {
     setEditingId(venue.id);
     setForm({
       name: venue.name || "",
+      city: venue.city || "",
+      address: venue.address || "",
       max_capacity: venue.max_capacity ?? "",
     });
   };
@@ -69,6 +73,8 @@ export default function VenueManagement() {
     try {
       const payload = {
         name: form.name.trim(),
+        city: form.city.trim(),
+        address: form.address.trim(),
         max_capacity: Number(form.max_capacity),
       };
       if (editingId) {
@@ -152,6 +158,25 @@ export default function VenueManagement() {
             />
           </div>
           <div className="form-group">
+            <RequiredLabel htmlFor="venue-city">City</RequiredLabel>
+            <input
+              id="venue-city"
+              value={form.city}
+              onChange={(e) => setForm({ ...form, city: e.target.value })}
+              placeholder="e.g., Manila"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="venue-address">Address / Area</label>
+            <input
+              id="venue-address"
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+              placeholder="e.g., Barangay 663-A Covered Court"
+            />
+          </div>
+          <div className="form-group">
             <RequiredLabel htmlFor="venue-capacity">Max Capacity</RequiredLabel>
             <input
               id="venue-capacity"
@@ -190,6 +215,7 @@ export default function VenueManagement() {
               <thead>
                 <tr>
                   <th>Venue</th>
+                  <th>Location</th>
                   <th>Max Capacity</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -199,6 +225,7 @@ export default function VenueManagement() {
                 {venues.map((venue) => (
                   <tr key={venue.id}>
                     <td data-label="Venue">{venue.name}</td>
+                    <td data-label="Location">{venueLocationLabel(venue) || "No location details"}</td>
                     <td data-label="Max Capacity">{venue.max_capacity}</td>
                     <td data-label="Status">
                       <span className={`venue-status ${venue.is_active ? "active" : "inactive"}`}>

@@ -16,6 +16,7 @@ import ResidentsTable from "../dashboard/ResidentsTable";
 import Settings from "../dashboard/Settings";
 import VenueManagement from "../dashboard/VenueManagement";
 import VerificationRequests from "../dashboard/VerificationRequests";
+import { venueFullLabel } from "../../constants/venues";
 
 const ADMIN_NAV_ITEMS = [
   { key: "overview", label: "Dashboard", eyebrow: "Home", icon: "home" },
@@ -303,7 +304,7 @@ function ScannerWorkspace({
                 <div className="scanner-event-kicker">Now Scanning For</div>
                 <div className="scanner-event-title">{selectedEvent.title}</div>
                 <div className="scanner-event-meta">
-                  <span>{selectedEvent.venue || "TBD venue"}</span>
+                  <span>{venueFullLabel({ name: selectedEvent.venue || "TBD venue", city: selectedEvent.venue_city, address: selectedEvent.venue_address })}</span>
                   <span>{formatSchedule(selectedEvent.date, selectedEvent.end_date)}</span>
                 </div>
               </div>

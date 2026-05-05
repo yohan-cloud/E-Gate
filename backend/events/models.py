@@ -4,6 +4,8 @@ from residents.models import User
 
 class Venue(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    city = models.CharField(max_length=100, blank=True, default="")
+    address = models.CharField(max_length=255, blank=True, default="")
     max_capacity = models.PositiveIntegerField()
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -19,7 +21,8 @@ class Venue(models.Model):
 
     def __str__(self):
         status = "active" if self.is_active else "inactive"
-        return f"{self.name} ({self.max_capacity}, {status})"
+        location = f", {self.city}" if self.city else ""
+        return f"{self.name}{location} ({self.max_capacity}, {status})"
 
 
 class Event(models.Model):

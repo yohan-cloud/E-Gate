@@ -399,29 +399,39 @@ export default function Guests() {
 
   const renderGuestFields = () => (
     <>
-      <label className="guest-input-shell">
+      <label className="guest-input-shell appointment-modal-name">
         <RequiredLabelText>Guest Name</RequiredLabelText>
         <input className="guest-form-input" name="name" placeholder="Guest name" value={guestForm.name} onChange={onGuestChange} required />
       </label>
-      <input className="guest-form-input" name="organization_company" placeholder="Organization / Company" value={guestForm.organization_company} onChange={onGuestChange} />
-      <div className="guest-input-shell">
+      <label className="guest-input-shell appointment-modal-organization">
+        <span>Organization / Company</span>
+        <input className="guest-form-input" name="organization_company" placeholder="Organization / Company" value={guestForm.organization_company} onChange={onGuestChange} />
+      </label>
+      <label className="guest-input-shell appointment-modal-contact">
+        <span>Contact Number</span>
         <input className="guest-form-input" name="contact" placeholder="Contact number" value={guestForm.contact} onChange={onGuestChange} inputMode="tel" />
         {numericOnlyNotice.contact ? <InputNotice text="You can only type a number here." /> : null}
-      </div>
-      <label className="guest-input-shell">
+      </label>
+      <label className="guest-input-shell appointment-modal-purpose">
         <RequiredLabelText>Purpose of Visit</RequiredLabelText>
         <input className="guest-form-input" name="purpose" placeholder="Purpose of visit" value={guestForm.purpose} onChange={onGuestChange} required />
       </label>
-      <DateTimeField id="appointment-guest-eta" name="eta" label="Appointment Schedule" value={guestForm.eta} onChange={onGuestChange} required placeholder="Appointment schedule" panelInFlow disablePastDates />
-      <div className="guest-input-shell">
+      <div className="appointment-modal-schedule">
+        <DateTimeField id="appointment-guest-eta" name="eta" label="Appointment Schedule" value={guestForm.eta} onChange={onGuestChange} required placeholder="Appointment schedule" panelInFlow disablePastDates />
+      </div>
+      <label className="guest-input-shell appointment-modal-participants">
+        <span>No. of Participants</span>
         <input className="guest-form-input" name="no_of_participants" placeholder="No. of participants" value={guestForm.no_of_participants} onChange={onGuestChange} inputMode="numeric" />
         {numericOnlyNotice.participants ? <InputNotice text="Participants must be numeric." /> : null}
-      </div>
-      <select className="guest-form-input" name="status" value={guestForm.status} onChange={onGuestChange}>
-        {GUEST_STATUS_OPTIONS.map((item) => (
-          <option key={item.value} value={item.value}>{item.label}</option>
-        ))}
-      </select>
+      </label>
+      <label className="guest-input-shell appointment-modal-status">
+        <span>Status</span>
+        <select className="guest-form-input" name="status" value={guestForm.status} onChange={onGuestChange}>
+          {GUEST_STATUS_OPTIONS.map((item) => (
+            <option key={item.value} value={item.value}>{item.label}</option>
+          ))}
+        </select>
+      </label>
       <textarea className="guest-form-input guest-form-textarea" name="notes" placeholder="Internal notes" value={guestForm.notes} onChange={onGuestChange} />
     </>
   );

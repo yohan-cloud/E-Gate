@@ -23,6 +23,10 @@ export default function UnifiedLogin({ onLogin }) {
   const [otpCode, setOtpCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [shownResetPasswords, setShownResetPasswords] = useState({
+    newPassword: false,
+    confirmPassword: false,
+  });
   const [otpJustSent, setOtpJustSent] = useState(false);
 
   const resetFlowState = () => {
@@ -31,6 +35,7 @@ export default function UnifiedLogin({ onLogin }) {
     setOtpCode("");
     setNewPassword("");
     setConfirmPassword("");
+    setShownResetPasswords({ newPassword: false, confirmPassword: false });
     setOtpJustSent(false);
   };
 
@@ -289,30 +294,42 @@ export default function UnifiedLogin({ onLogin }) {
         />
 
         <div className="valo-login-password-row">
-          <div className="valo-login-password-field">
+          <div className="valo-login-password-field valo-password-field">
             <label className="sr-only" htmlFor="unified-reset-newpass">New Password</label>
             <input
-              className="valo-login-input valo-login-input-compact"
-              type="password"
+              className="valo-login-input valo-login-input-compact valo-password-input"
+              type={shownResetPasswords.newPassword ? "text" : "password"}
               id="unified-reset-newpass"
               name="new_password"
               placeholder="NEW PASSWORD"
               value={newPassword}
               onChange={(event) => setNewPassword(event.target.value)}
               required
+              autoComplete="new-password"
+            />
+            <PasswordVisibilityToggle
+              shown={shownResetPasswords.newPassword}
+              onToggle={() => setShownResetPasswords((current) => ({ ...current, newPassword: !current.newPassword }))}
+              controls="unified-reset-newpass"
             />
           </div>
-          <div className="valo-login-password-field">
+          <div className="valo-login-password-field valo-password-field">
             <label className="sr-only" htmlFor="unified-reset-confirmpass">Confirm Password</label>
             <input
-              className="valo-login-input valo-login-input-compact"
-              type="password"
+              className="valo-login-input valo-login-input-compact valo-password-input"
+              type={shownResetPasswords.confirmPassword ? "text" : "password"}
               id="unified-reset-confirmpass"
               name="confirm_password"
               placeholder="CONFIRM PASSWORD"
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
               required
+              autoComplete="new-password"
+            />
+            <PasswordVisibilityToggle
+              shown={shownResetPasswords.confirmPassword}
+              onToggle={() => setShownResetPasswords((current) => ({ ...current, confirmPassword: !current.confirmPassword }))}
+              controls="unified-reset-confirmpass"
             />
           </div>
         </div>

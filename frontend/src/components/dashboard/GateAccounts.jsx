@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import ConfirmDialog from "../common/ConfirmDialog";
+import PasswordVisibilityToggle from "../common/PasswordVisibilityToggle";
 import { api } from "../../api";
 import toast, { formatApiError } from "../../lib/toast";
 import userAddIcon from "../../assets/user-add.png";
@@ -398,8 +399,10 @@ export default function GateAccounts() {
 
               <label className="gate-account-field gate-account-field-wide">
                 <RequiredLabelText className="gate-account-label">Password</RequiredLabelText>
-                <div className="gate-account-password-wrap">
+                <div className="valo-password-field gate-account-password-wrap">
                   <input
+                    id="gate-account-password"
+                    className="valo-password-input"
                     name="password"
                     type={showPassword ? "text" : "password"}
                     value={gateForm.password}
@@ -408,13 +411,11 @@ export default function GateAccounts() {
                     required
                     placeholder="Create a strong password"
                   />
-                  <button
-                    type="button"
-                    className="gate-account-password-toggle"
-                    onClick={() => setShowPassword((current) => !current)}
-                  >
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
+                  <PasswordVisibilityToggle
+                    shown={showPassword}
+                    onToggle={() => setShowPassword((current) => !current)}
+                    controls="gate-account-password"
+                  />
                 </div>
               </label>
             </div>
@@ -569,37 +570,44 @@ export default function GateAccounts() {
               <label htmlFor="gate-temp-password" style={fieldLabelStyle}>
                 <RequiredLabelText>Temporary Password</RequiredLabelText>
               </label>
-              <input
-                id="gate-temp-password"
-                type={resetModal.showPassword ? "text" : "password"}
-                value={resetModal.temporaryPassword}
-                onChange={(event) => setResetModal((current) => ({ ...current, temporaryPassword: event.target.value }))}
-                placeholder="Enter temporary password"
-                autoFocus
-                style={fieldInputStyle}
-                required
-              />
+              <div className="valo-password-field">
+                <input
+                  id="gate-temp-password"
+                  className="valo-password-input"
+                  type={resetModal.showPassword ? "text" : "password"}
+                  value={resetModal.temporaryPassword}
+                  onChange={(event) => setResetModal((current) => ({ ...current, temporaryPassword: event.target.value }))}
+                  placeholder="Enter temporary password"
+                  autoFocus
+                  style={fieldInputWithToggleStyle}
+                  required
+                />
+                <PasswordVisibilityToggle
+                  shown={resetModal.showPassword}
+                  onToggle={() => setResetModal((current) => ({ ...current, showPassword: !current.showPassword }))}
+                  controls="gate-temp-password"
+                />
+              </div>
               <label htmlFor="gate-confirm-temp-password" style={fieldLabelStyle}>
                 <RequiredLabelText>Confirm Temporary Password</RequiredLabelText>
               </label>
-              <input
-                id="gate-confirm-temp-password"
-                type={resetModal.showPassword ? "text" : "password"}
-                value={resetModal.confirmTemporaryPassword}
-                onChange={(event) => setResetModal((current) => ({ ...current, confirmTemporaryPassword: event.target.value }))}
-                placeholder="Confirm temporary password"
-                style={fieldInputStyle}
-                required
-              />
-              <label style={checkboxLabelStyle}>
+              <div className="valo-password-field">
                 <input
-                  type="checkbox"
-                  checked={resetModal.showPassword}
-                  onChange={(event) => setResetModal((current) => ({ ...current, showPassword: event.target.checked }))}
-                  style={{ margin: 0 }}
+                  id="gate-confirm-temp-password"
+                  className="valo-password-input"
+                  type={resetModal.showPassword ? "text" : "password"}
+                  value={resetModal.confirmTemporaryPassword}
+                  onChange={(event) => setResetModal((current) => ({ ...current, confirmTemporaryPassword: event.target.value }))}
+                  placeholder="Confirm temporary password"
+                  style={fieldInputWithToggleStyle}
+                  required
                 />
-                Show password
-              </label>
+                <PasswordVisibilityToggle
+                  shown={resetModal.showPassword}
+                  onToggle={() => setResetModal((current) => ({ ...current, showPassword: !current.showPassword }))}
+                  controls="gate-confirm-temp-password"
+                />
+              </div>
               <div style={helperTextStyle}>
                 Use a strong temporary password so the gate operator can log in once and immediately replace it.
               </div>
@@ -899,21 +907,15 @@ const fieldInputStyle = {
   outline: "none",
 };
 
+const fieldInputWithToggleStyle = {
+  ...fieldInputStyle,
+  paddingRight: 52,
+};
+
 const helperTextStyle = {
   color: "#64748b",
   fontSize: 13,
   lineHeight: 1.5,
-};
-
-const checkboxLabelStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifySelf: "start",
-  gap: 8,
-  color: "#334155",
-  fontSize: 13,
-  fontWeight: 600,
-  marginTop: 2,
 };
 
 const actionsStyle = {
