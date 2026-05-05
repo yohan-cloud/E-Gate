@@ -1,10 +1,10 @@
 export const FALLBACK_VENUES = [
-  { id: null, name: "Function Hall", city: "Manila", address: "", max_capacity: 50, is_active: true },
-  { id: null, name: "Barangay Hall", city: "Manila", address: "Barangay 663-A Covered Court", max_capacity: 25, is_active: true },
-  { id: null, name: "Sacred Heart", city: "Manila", address: "", max_capacity: 50, is_active: true },
-  { id: null, name: "Hospicio Quadrangle", city: "Manila", address: "", max_capacity: 300, is_active: true },
-  { id: null, name: "St. Joseph Hall", city: "Manila", address: "", max_capacity: 50, is_active: true },
-  { id: null, name: "Court", city: "Manila", address: "", max_capacity: 300, is_active: true },
+  { id: null, name: "Function Hall", city: "Barangay 663-A", address: "", max_capacity: 50, is_active: true },
+  { id: null, name: "Barangay Hall", city: "Barangay 663-A", address: "Covered Court", max_capacity: 25, is_active: true },
+  { id: null, name: "Sacred Heart", city: "Barangay 663-A", address: "", max_capacity: 50, is_active: true },
+  { id: null, name: "Hospicio Quadrangle", city: "Barangay 663-A", address: "", max_capacity: 300, is_active: true },
+  { id: null, name: "St. Joseph Hall", city: "Barangay 663-A", address: "", max_capacity: 50, is_active: true },
+  { id: null, name: "Court", city: "Barangay 663-A", address: "", max_capacity: 300, is_active: true },
 ];
 
 export const TBD_VENUE_VALUE = "__TBD__";

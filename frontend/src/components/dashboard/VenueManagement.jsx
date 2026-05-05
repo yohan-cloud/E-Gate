@@ -8,7 +8,7 @@ import addLocationIcon from "../../assets/add-location.png";
 
 const EMPTY_FORM = {
   name: "",
-  city: "Manila",
+  city: "Barangay 663-A",
   address: "",
   max_capacity: "",
 };
@@ -158,22 +158,22 @@ export default function VenueManagement() {
             />
           </div>
           <div className="form-group">
-            <RequiredLabel htmlFor="venue-city">City</RequiredLabel>
+            <RequiredLabel htmlFor="venue-city">Barangay / Area</RequiredLabel>
             <input
               id="venue-city"
               value={form.city}
               onChange={(e) => setForm({ ...form, city: e.target.value })}
-              placeholder="e.g., Manila"
+              placeholder="e.g., Barangay 663-A"
               required
             />
           </div>
           <div className="form-group">
-            <label htmlFor="venue-address">Address / Area</label>
+            <label htmlFor="venue-address">Specific Location / Landmark</label>
             <input
               id="venue-address"
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
-              placeholder="e.g., Barangay 663-A Covered Court"
+              placeholder="e.g., Covered Court beside Barangay Hall"
             />
           </div>
           <div className="form-group">
@@ -215,7 +215,7 @@ export default function VenueManagement() {
               <thead>
                 <tr>
                   <th>Venue</th>
-                  <th>Location</th>
+                  <th>Barangay Location</th>
                   <th>Max Capacity</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -225,7 +225,7 @@ export default function VenueManagement() {
                 {venues.map((venue) => (
                   <tr key={venue.id}>
                     <td data-label="Venue">{venue.name}</td>
-                    <td data-label="Location">{venueLocationLabel(venue) || "No location details"}</td>
+                    <td data-label="Barangay Location">{venueLocationLabel(venue) || "No location details"}</td>
                     <td data-label="Max Capacity">{venue.max_capacity}</td>
                     <td data-label="Status">
                       <span className={`venue-status ${venue.is_active ? "active" : "inactive"}`}>
