@@ -158,17 +158,7 @@ export default function VenueManagement() {
             />
           </div>
           <div className="form-group">
-            <RequiredLabel htmlFor="venue-city">Barangay / Area</RequiredLabel>
-            <input
-              id="venue-city"
-              value={form.city}
-              onChange={(e) => setForm({ ...form, city: e.target.value })}
-              placeholder="e.g., Barangay 663-A"
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="venue-address">Specific Location / Landmark</label>
+            <label htmlFor="venue-address">Landmark / Area</label>
             <input
               id="venue-address"
               value={form.address}
