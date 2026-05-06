@@ -11,6 +11,10 @@ export default function ProfileCard() {
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
   const [showFaceEnroll, setShowFaceEnroll] = useState(false);
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [detailsForm, setDetailsForm] = useState({});
+  const [detailsSaving, setDetailsSaving] = useState(false);
+  const [detailsMessage, setDetailsMessage] = useState("");
   const photoInputRef = useRef(null);
 
   const refreshProfile = async () => {
@@ -97,6 +101,52 @@ export default function ProfileCard() {
       setTimeout(() => setCopied(false), 1500);
     } catch {
       setCopied(false);
+    }
+  };
+
+  const startEditingDetails = () => {
+    setDetailsForm({
+      first_name: profile?.user?.first_name || "",
+      last_name: profile?.user?.last_name || "",
+      email: profile?.user?.email || "",
+      phone_number: profile?.phone_number || "",
+      address: profile?.address || "",
+      gender: profile?.gender || "unspecified",
+      voter_status: profile?.voter_status || "unspecified",
+    });
+    setDetailsMessage("");
+    setIsEditingDetails(true);
+  };
+
+  const updateDetailsForm = (field, value) => {
+    setDetailsForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const saveDetails = async (event) => {
+    event.preventDefault();
+    setDetailsSaving(true);
+    setDetailsMessage("");
+    try {
+      const response = await api.patch("/residents/profile/", detailsForm);
+      const nextProfile = response?.data || {};
+      setProfile(nextProfile);
+      try {
+        const userRaw = localStorage.getItem("user");
+        const user = userRaw ? JSON.parse(userRaw) : {};
+        localStorage.setItem("user", JSON.stringify({ ...user, ...(nextProfile.user || {}), profile: nextProfile }));
+      } catch {
+        // Profile save already succeeded; local storage can refresh on next load.
+      }
+      setIsEditingDetails(false);
+      setDetailsMessage("Details updated.");
+    } catch (error) {
+      const apiError = error?.response?.data;
+      const message = typeof apiError === "string"
+        ? apiError
+        : apiError?.error || apiError?.detail || firstFieldError(apiError) || "Failed to update details.";
+      setDetailsMessage(message);
+    } finally {
+      setDetailsSaving(false);
     }
   };
 
@@ -237,13 +287,22 @@ export default function ProfileCard() {
         </div>
         <div className="resident-profile-main">
           <div className="resident-profile-header">
-            <div className="resident-profile-name">{displayName}</div>
-            {verificationBadge}
-            {typeof daysToExpiry === "number" && (
-              <span style={pill(daysToExpiry <= 7 ? "#fee2e2" : "#dcfce7", daysToExpiry <= 7 ? "#991b1b" : "#065f46")}>
-                {daysToExpiry >= 0 ? `${daysToExpiry} day${daysToExpiry === 1 ? "" : "s"} left` : "Expired"}
-              </span>
-            )}
+            <div className="resident-profile-title-group">
+              <div className="resident-profile-name">{displayName}</div>
+              <div className="resident-profile-badges">
+                {verificationBadge}
+                {typeof daysToExpiry === "number" && (
+                  <span style={pill(daysToExpiry <= 7 ? "#fee2e2" : "#dcfce7", daysToExpiry <= 7 ? "#991b1b" : "#065f46")}>
+                    {daysToExpiry >= 0 ? `${daysToExpiry} day${daysToExpiry === 1 ? "" : "s"} left` : "Expired"}
+                  </span>
+                )}
+              </div>
+            </div>
+            {!isEditingDetails ? (
+              <button type="button" className="resident-profile-edit-button" onClick={startEditingDetails}>
+                Edit Details
+              </button>
+            ) : null}
           </div>
           <div className="resident-profile-id-row">
             <div className="resident-profile-id-block">
@@ -254,7 +313,47 @@ export default function ProfileCard() {
               {copied ? "Copied" : "Copy"}
             </button>
           </div>
-          <div className="resident-profile-details-grid">
+          {isEditingDetails ? (
+            <form className="resident-profile-edit-form" onSubmit={saveDetails}>
+              <EditField label="First Name" value={detailsForm.first_name} onChange={(value) => updateDetailsForm("first_name", value)} />
+              <EditField label="Last Name" value={detailsForm.last_name} onChange={(value) => updateDetailsForm("last_name", value)} />
+              <EditField label="Email" type="email" value={detailsForm.email} onChange={(value) => updateDetailsForm("email", value)} />
+              <EditField label="Phone" value={detailsForm.phone_number} onChange={(value) => updateDetailsForm("phone_number", value)} />
+              <label className="resident-profile-edit-field resident-profile-edit-field-wide">
+                <span>Address</span>
+                <input value={detailsForm.address || ""} onChange={(e) => updateDetailsForm("address", e.target.value)} required />
+              </label>
+              <label className="resident-profile-edit-field">
+                <span>Gender</span>
+                <select value={detailsForm.gender || "unspecified"} onChange={(e) => updateDetailsForm("gender", e.target.value)}>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                  <option value="unspecified">Unspecified</option>
+                </select>
+              </label>
+              <label className="resident-profile-edit-field">
+                <span>Voter Status</span>
+                <select value={detailsForm.voter_status || "unspecified"} onChange={(e) => updateDetailsForm("voter_status", e.target.value)}>
+                  <option value="registered_voter">Registered Voter</option>
+                  <option value="not_yet_voter">Not Yet Voter</option>
+                  <option value="unspecified">Unspecified</option>
+                </select>
+              </label>
+              <InfoRow label="Status" value={residentCategoryLabel} />
+              <InfoRow label="Birthdate" value={formattedBirthdate} />
+              <InfoRow label="Expiry" value={formattedExpiryDate} />
+              <div className="resident-profile-edit-actions">
+                <button type="submit" className="btn-primary" disabled={detailsSaving}>
+                  {detailsSaving ? "Saving..." : "Save Details"}
+                </button>
+                <button type="button" onClick={() => { setIsEditingDetails(false); setDetailsMessage(""); }} disabled={detailsSaving}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : null}
+          <div className={`resident-profile-details-grid ${isEditingDetails ? "resident-profile-details-grid-hidden" : ""}`}>
             <InfoRow label="Email" value={profile.user?.email || "—"} />
             <InfoRow label="Phone" value={profile.phone_number || "—"} />
             <InfoRow label="Address" value={profile.address || "—"} />
@@ -264,6 +363,11 @@ export default function ProfileCard() {
             <InfoRow label="Birthdate" value={formattedBirthdate} />
             <InfoRow label="Expiry" value={formattedExpiryDate} />
           </div>
+          {detailsMessage ? (
+            <div className={`resident-profile-details-message ${detailsMessage === "Details updated." ? "success" : "error"}`}>
+              {detailsMessage}
+            </div>
+          ) : null}
           <div className="resident-profile-actions">
             <button onClick={downloadQr} disabled={!qrDataUrl}>Download QR</button>
             <button onClick={() => window.print()}>Print ID</button>
@@ -415,6 +519,24 @@ function InfoRow({ label, value }) {
       <div className="resident-profile-field-value">{value || "—"}</div>
     </div>
   );
+}
+
+function EditField({ label, value, onChange, type = "text" }) {
+  return (
+    <label className="resident-profile-edit-field">
+      <span>{label}</span>
+      <input type={type} value={value || ""} onChange={(event) => onChange(event.target.value)} />
+    </label>
+  );
+}
+
+function firstFieldError(payload) {
+  if (!payload || typeof payload !== "object") return "";
+  const firstKey = Object.keys(payload)[0];
+  const value = payload[firstKey];
+  if (Array.isArray(value)) return value.join(", ");
+  if (typeof value === "string") return value;
+  return "";
 }
 
 function GovernmentField({ label, value }) {

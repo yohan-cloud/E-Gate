@@ -8,6 +8,7 @@ from residents.serializers import (
     ResidentProfileSerializer,
     ResidentIDSerializer,
     AdminResidentUpdateSerializer,
+    ResidentSelfUpdateSerializer,
     VerificationRequestSerializer,
 )
 from django.db import models
@@ -172,12 +173,49 @@ def login_resident(request):
 
 
 # Resident profile
-@api_view(['GET'])
+@api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated, IsResidentUserRole])
 def resident_profile(request):
     user = request.user
     if not hasattr(user, 'profile'):
         return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'PATCH':
+        profile = user.profile
+        before = {
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "address": profile.address,
+            "phone_number": profile.phone_number,
+            "gender": profile.gender,
+            "voter_status": profile.voter_status,
+        }
+        serializer = ResidentSelfUpdateSerializer(profile, data=request.data, partial=True, context={"user": user})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        profile.refresh_from_db()
+        user.refresh_from_db()
+        after = {
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "address": profile.address,
+            "phone_number": profile.phone_number,
+            "gender": profile.gender,
+            "voter_status": profile.voter_status,
+        }
+        changed_fields = [field for field, value in before.items() if after.get(field) != value]
+        audit_log(
+            request,
+            actor=user,
+            action="resident_self_update",
+            target_type="resident",
+            target_id=user.id,
+            target_label=_resident_label(profile),
+            metadata={"changed_fields": changed_fields},
+        )
+
     serializer = ResidentProfileSerializer(
         user.profile,
         context={'request': request, 'reveal_sensitive': True},

@@ -261,6 +261,69 @@ class AdminResidentUpdateSerializer(serializers.Serializer):
         return instance
 
 
+class ResidentSelfUpdateSerializer(serializers.Serializer):
+    first_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
+    last_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    address = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    phone_number = serializers.CharField(required=False, allow_blank=True)
+    gender = serializers.ChoiceField(
+        required=False,
+        allow_blank=True,
+        choices=[
+            ("male", "Male"),
+            ("female", "Female"),
+            ("other", "Other"),
+            ("unspecified", "Unspecified"),
+        ],
+    )
+    voter_status = serializers.ChoiceField(
+        required=False,
+        allow_blank=True,
+        choices=ResidentProfile.VoterStatus.choices,
+    )
+
+    def validate_address(self, value):
+        value = (value or "").strip()
+        if value and len(value) < 5:
+            raise serializers.ValidationError("Address must be at least 5 characters.")
+        return value
+
+    def validate_phone_number(self, value):
+        value = (value or "").strip()
+        if not value:
+            return value
+        digits = re.sub(r"\D", "", value)
+        if len(digits) < 10 or len(digits) > 15:
+            raise serializers.ValidationError("Phone number must be 10-15 digits.")
+        user = self.context.get("user")
+        qs = ResidentProfile.objects.filter(phone_number=digits)
+        if user:
+            qs = qs.exclude(user=user)
+        if qs.exists():
+            raise serializers.ValidationError("Phone number already in use.")
+        return digits
+
+    def update(self, instance, validated_data):
+        user = getattr(instance, "user", None)
+        if user:
+            user.first_name = validated_data.get("first_name", user.first_name).strip()
+            user.last_name = validated_data.get("last_name", user.last_name).strip()
+            user.email = validated_data.get("email", user.email).strip()
+            user.save(update_fields=["first_name", "last_name", "email"])
+
+        if "address" in validated_data:
+            instance.address = validated_data.get("address") or instance.address
+        if "phone_number" in validated_data:
+            instance.phone_number = validated_data.get("phone_number") or instance.phone_number
+        if "gender" in validated_data:
+            instance.gender = validated_data.get("gender") or ResidentProfile.Gender.UNSPECIFIED
+        if "voter_status" in validated_data:
+            instance.voter_status = validated_data.get("voter_status") or ResidentProfile.VoterStatus.UNSPECIFIED
+        instance.save(update_fields=["address", "phone_number", "gender", "voter_status"])
+        return instance
+
+
 class VerificationRequestSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     reviewed_by = UserSerializer(read_only=True)
