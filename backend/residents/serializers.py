@@ -266,6 +266,7 @@ class ResidentSelfUpdateSerializer(serializers.Serializer):
     last_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
     email = serializers.EmailField(required=False, allow_blank=True)
     address = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    birthdate = serializers.DateField(required=False)
     phone_number = serializers.CharField(required=False, allow_blank=True)
     gender = serializers.ChoiceField(
         required=False,
@@ -314,13 +315,15 @@ class ResidentSelfUpdateSerializer(serializers.Serializer):
 
         if "address" in validated_data:
             instance.address = validated_data.get("address") or instance.address
+        if "birthdate" in validated_data:
+            instance.birthdate = validated_data.get("birthdate") or instance.birthdate
         if "phone_number" in validated_data:
             instance.phone_number = validated_data.get("phone_number") or instance.phone_number
         if "gender" in validated_data:
             instance.gender = validated_data.get("gender") or ResidentProfile.Gender.UNSPECIFIED
         if "voter_status" in validated_data:
             instance.voter_status = validated_data.get("voter_status") or ResidentProfile.VoterStatus.UNSPECIFIED
-        instance.save(update_fields=["address", "phone_number", "gender", "voter_status"])
+        instance.save(update_fields=["address", "birthdate", "phone_number", "gender", "voter_status"])
         return instance
 
 

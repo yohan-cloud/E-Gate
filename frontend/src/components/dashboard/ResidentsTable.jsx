@@ -533,7 +533,7 @@ export default function ResidentsTable() {
             const isEditing = editingId === r.user?.id;
             const revealed = revealedById[r.user?.id];
             const displayRow = revealed || r;
-            const age = calcAge(r.birthdate);
+            const age = calcAge(isEditing ? form.birthdate : r.birthdate);
             const isVerified = Boolean(r.is_verified);
             const isExpired = isExpiredResident(r.expiry_date);
             const isDeactivated = Boolean(r.is_deactivated);
@@ -624,6 +624,16 @@ export default function ResidentsTable() {
                             </select>
                           ) : (
                             GENDER_LABEL[r.gender] || "Unspecified"
+                          )
+                        }
+                      />
+                      <Info
+                        label="Birthdate"
+                        value={
+                          isEditing ? (
+                            <input type="date" value={form.birthdate || ""} onChange={(e) => setForm({ ...form, birthdate: e.target.value })} />
+                          ) : (
+                            displayRow.birthdate || "N/A"
                           )
                         }
                       />

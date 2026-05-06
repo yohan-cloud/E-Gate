@@ -111,6 +111,7 @@ export default function ProfileCard() {
       email: profile?.user?.email || "",
       phone_number: profile?.phone_number || "",
       address: profile?.address || "",
+      birthdate: profile?.birthdate || "",
       gender: profile?.gender || "unspecified",
       voter_status: profile?.voter_status || "unspecified",
     });
@@ -323,6 +324,7 @@ export default function ProfileCard() {
                 <span>Address</span>
                 <input value={detailsForm.address || ""} onChange={(e) => updateDetailsForm("address", e.target.value)} required />
               </label>
+              <EditField label="Birthdate" type="date" value={detailsForm.birthdate} onChange={(value) => updateDetailsForm("birthdate", value)} />
               <label className="resident-profile-edit-field">
                 <span>Gender</span>
                 <select value={detailsForm.gender || "unspecified"} onChange={(e) => updateDetailsForm("gender", e.target.value)}>
@@ -341,7 +343,6 @@ export default function ProfileCard() {
                 </select>
               </label>
               <InfoRow label="Status" value={residentCategoryLabel} />
-              <InfoRow label="Birthdate" value={formattedBirthdate} />
               <InfoRow label="Expiry" value={formattedExpiryDate} />
               <div className="resident-profile-edit-actions">
                 <button type="submit" className="btn-primary" disabled={detailsSaving}>
