@@ -5,6 +5,7 @@ import AttendanceTable from "./AttendanceTable";
 import RegistrantsList from "./RegistrantsList";
 import toast from "../../lib/toast";
 import ConfirmDialog from "../common/ConfirmDialog";
+import EventTypeIcon from "./EventTypeIcon";
 import { venueFullLabel } from "../../constants/venues";
 
 function getEventBucket(event) {
@@ -211,7 +212,9 @@ export default function DashboardHome() {
                             onClick={() => handleSelect(ev.id, false)}
                           >
                             <div className="event-accordion-main">
-                              <div className="event-accordion-icon">EVT</div>
+                              <div className="event-accordion-icon">
+                                <EventTypeIcon eventType={ev.event_type} />
+                              </div>
                               <div className="event-accordion-content">
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                   <div style={{ fontWeight: 700, fontSize: 17 }}>{ev.title}</div>

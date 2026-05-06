@@ -2122,13 +2122,66 @@ body {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: #dcfce7;
   display: grid;
   place-items: center;
-  color: #166534;
-  font-size: 12px;
-  font-weight: 700;
   flex-shrink: 0;
+}
+
+.event-type-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  place-items: center;
+  gap: 1px;
+  border-radius: 13px;
+  border: 1px solid rgba(22, 101, 52, 0.12);
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.event-type-icon svg {
+  width: 24px;
+  height: 24px;
+  margin-top: 6px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.event-type-icon span {
+  padding-bottom: 6px;
+}
+
+.event-type-icon[data-event-tone="governance"] {
+  background: #e0f2fe;
+  color: #075985;
+  border-color: rgba(7, 89, 133, 0.16);
+}
+
+.event-type-icon[data-event-tone="health"] {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: rgba(185, 28, 28, 0.16);
+}
+
+.event-type-icon[data-event-tone="community"] {
+  background: #dcfce7;
+  color: #166534;
+  border-color: rgba(22, 101, 52, 0.16);
+}
+
+.event-type-icon[data-event-tone="compliance"] {
+  background: #ede9fe;
+  color: #5b21b6;
+  border-color: rgba(91, 33, 182, 0.16);
 }
 
 .event-accordion-content {
@@ -3595,6 +3648,22 @@ tr:hover {
   .event-accordion-icon {
     width: 42px;
     height: 42px;
+  }
+
+  .event-type-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 0.53rem;
+  }
+
+  .event-type-icon svg {
+    width: 21px;
+    height: 21px;
+    margin-top: 5px;
+  }
+
+  .event-type-icon span {
+    padding-bottom: 5px;
   }
 
   .event-accordion-meta {
