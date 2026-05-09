@@ -223,6 +223,85 @@ button[disabled] {
   color: #fff;
 }
 
+@media print {
+  @page {
+    size: auto;
+    margin: 0;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-height: auto;
+    background: #ffffff !important;
+    overflow: visible !important;
+  }
+
+  body.printing-resident-id .app-wrapper,
+  body.printing-resident-id .resident-layout,
+  body.printing-resident-id .resident-main,
+  body.printing-resident-id .main-content,
+  body.printing-resident-id .resident-main-content,
+  body.printing-resident-id .resident-profile-shell {
+    display: block !important;
+    width: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  body.printing-resident-id .resident-sidebar,
+  body.printing-resident-id .resident-main-header,
+  body.printing-resident-id .resident-profile-shell > :not(.resident-id-print-card) {
+    display: none !important;
+  }
+
+  body.printing-resident-id .resident-id-print-card {
+    display: block !important;
+    width: 85.6mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  body.printing-resident-id .pvc-print {
+    display: block !important;
+    width: 85.6mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  body.printing-resident-id .pvc-print .id-card {
+    width: 85.6mm !important;
+    height: 54mm !important;
+    margin: 0 !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  body.printing-resident-id .pvc-print .page-break {
+    display: none !important;
+  }
+
+  body.printing-resident-id .pvc-print .pvc-card-back {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
+
+  body.printing-resident-id .no-print,
+  body.printing-resident-id .no-print * {
+    display: none !important;
+  }
+}
+
 input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
@@ -1342,6 +1421,153 @@ input[type="date"] { color-scheme: dark; }
   min-height: 44px;
   width: 100%;
   font-weight: 700;
+}
+
+.resident-account-access-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.resident-account-access-card p {
+  margin: 6px 0 0;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.resident-account-deactivate-button {
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid #fecaca;
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 800;
+}
+
+.resident-deactivate-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.resident-deactivate-modal {
+  width: min(100%, 480px);
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid #dbe4ee;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.24);
+}
+
+.resident-deactivate-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.resident-deactivate-head h3 {
+  margin: 6px 0 0;
+  font-size: 1.12rem;
+}
+
+.resident-deactivate-head button {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  font-weight: 800;
+}
+
+.resident-deactivate-eyebrow {
+  color: #b91c1c;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.resident-deactivate-copy {
+  margin: 0;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.resident-deactivate-field {
+  display: grid;
+  gap: 8px;
+}
+
+.resident-deactivate-field > span {
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.resident-deactivate-field > span > span {
+  color: #b91c1c;
+}
+
+.resident-deactivate-field em {
+  margin-left: 8px;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.resident-deactivate-field select,
+.resident-deactivate-field textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.resident-deactivate-field textarea {
+  resize: vertical;
+}
+
+.resident-deactivate-error {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #fecaca;
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 700;
+}
+
+.resident-deactivate-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.resident-deactivate-actions button {
+  min-height: 40px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+.resident-deactivate-actions button:first-child {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
 }
 
 .resident-events-grid {
@@ -2808,7 +3034,9 @@ input[type="date"] { color-scheme: dark; }
 :root[data-theme="dark"] .resident-profile-card,
 :root[data-theme="dark"] .resident-profile-photo-panel,
 :root[data-theme="dark"] .resident-profile-id-row,
-:root[data-theme="dark"] .resident-profile-info-row {
+:root[data-theme="dark"] .resident-profile-info-row,
+:root[data-theme="dark"] .resident-account-access-card,
+:root[data-theme="dark"] .resident-deactivate-modal {
   border-color: rgba(113, 113, 122, 0.42);
   background: rgba(24, 24, 27, 0.86);
 }
@@ -2816,6 +3044,9 @@ input[type="date"] { color-scheme: dark; }
 :root[data-theme="dark"] .resident-profile-name,
 :root[data-theme="dark"] .resident-profile-id-value,
 :root[data-theme="dark"] .resident-profile-field-value,
+:root[data-theme="dark"] .resident-deactivate-head h3,
+:root[data-theme="dark"] .resident-deactivate-field > span,
+:root[data-theme="dark"] .resident-deactivate-actions button:first-child,
 :root[data-theme="dark"] .resident-event-card-title {
   color: #ffffff !important;
 }
@@ -4509,6 +4740,15 @@ input[type="date"] { color-scheme: dark; }
   }
   .resident-profile-actions {
     gap: 8px;
+  }
+  .resident-account-access-card,
+  .resident-deactivate-actions {
+    align-items: stretch;
+  }
+  .resident-account-access-card > *,
+  .resident-account-deactivate-button,
+  .resident-deactivate-actions button {
+    width: 100%;
   }
   .gate-main-content {
     width: 100%;

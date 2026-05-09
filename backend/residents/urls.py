@@ -6,6 +6,7 @@ urlpatterns = [
     path('login/', views.login_resident, name='login_resident'),
     path('profile/', views.resident_profile, name='resident_profile'),
     path('change-password/', views.resident_change_password, name='resident_change_password'),
+    path('deactivate/', views.resident_self_deactivate, name='resident_self_deactivate'),
     path('profile/photo/', views.update_profile_photo, name='resident_profile_photo'),
     path('virtual-id/', views.resident_virtual_id, name='resident_virtual_id'),
     path('verification/', views.resident_verification_request, name='resident_verification_request'),

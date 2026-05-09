@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api } from "../../api";
+import { api, logoutStoredSession } from "../../api";
 import FaceEnroll from "./FaceEnroll";
+
+const DEACTIVATION_REASONS = [
+  "Moved out of barangay",
+  "Duplicate resident record",
+  "Temporarily restricted pending verification",
+  "Requested account deactivation",
+  "Other",
+];
 
 export default function ProfileCard() {
   const [profile, setProfile] = useState(null);
@@ -15,6 +23,13 @@ export default function ProfileCard() {
   const [detailsForm, setDetailsForm] = useState({});
   const [detailsSaving, setDetailsSaving] = useState(false);
   const [detailsMessage, setDetailsMessage] = useState("");
+  const [deactivateModal, setDeactivateModal] = useState({
+    open: false,
+    reason: "",
+    customReason: "",
+    error: "",
+  });
+  const [deactivating, setDeactivating] = useState(false);
   const photoInputRef = useRef(null);
 
   const refreshProfile = async () => {
@@ -161,6 +176,19 @@ export default function ProfileCard() {
     a.remove();
   };
 
+  const printId = () => {
+    document.body.classList.add("printing-resident-id");
+    const cleanup = () => {
+      document.body.classList.remove("printing-resident-id");
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    window.setTimeout(() => {
+      window.print();
+      window.setTimeout(cleanup, 1000);
+    }, 50);
+  };
+
   const onFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -202,6 +230,40 @@ export default function ProfileCard() {
       setUploadError(e?.response?.data?.error || "Failed to upload photo");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const closeDeactivateModal = () => {
+    if (deactivating) return;
+    setDeactivateModal({ open: false, reason: "", customReason: "", error: "" });
+  };
+
+  const submitDeactivation = async () => {
+    const reason = deactivateModal.reason.trim();
+    const customReason = deactivateModal.customReason.trim();
+    if (!reason) {
+      setDeactivateModal((current) => ({ ...current, error: "Please select a deactivation reason." }));
+      return;
+    }
+    if (reason === "Other" && !customReason) {
+      setDeactivateModal((current) => ({ ...current, error: "Please enter the custom deactivation reason." }));
+      return;
+    }
+
+    setDeactivating(true);
+    setDeactivateModal((current) => ({ ...current, error: "" }));
+    try {
+      await api.post("/residents/deactivate/", {
+        reason,
+        custom_reason: customReason,
+      });
+      await logoutStoredSession();
+      window.location.assign("/login");
+    } catch (error) {
+      const message = error?.response?.data?.error || error?.response?.data?.detail || "Failed to deactivate account.";
+      setDeactivateModal((current) => ({ ...current, error: message }));
+    } finally {
+      setDeactivating(false);
     }
   };
 
@@ -371,7 +433,7 @@ export default function ProfileCard() {
           ) : null}
           <div className="resident-profile-actions">
             <button onClick={downloadQr} disabled={!qrDataUrl}>Download QR</button>
-            <button onClick={() => window.print()}>Print ID</button>
+            <button onClick={printId}>Print ID</button>
           </div>
         </div>
       </div>
@@ -406,7 +468,7 @@ export default function ProfileCard() {
         )}
       </div>
 
-      <div className="card">
+      <div className="card resident-id-print-card">
         <h3 style={{ marginTop: 0 }} className="no-print">Barangay ID Card</h3>
         <div className="pvc-print">
           <div className="id-card pvc-card-face pvc-card-front" style={governmentFrontStyle}>
@@ -509,6 +571,83 @@ export default function ProfileCard() {
           </div>
         </div>
       </div>
+
+      <div className="card resident-account-access-card no-print">
+        <div>
+          <h3 style={{ margin: 0 }}>Account Access</h3>
+          <p>
+            Deactivating your account will stop login access until an admin reactivates it.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="resident-account-deactivate-button"
+          onClick={() => setDeactivateModal({ open: true, reason: "", customReason: "", error: "" })}
+        >
+          Deactivate Account
+        </button>
+      </div>
+
+      {deactivateModal.open ? (
+        <div className="resident-deactivate-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) closeDeactivateModal(); }}>
+          <div className="resident-deactivate-modal" role="dialog" aria-modal="true" aria-labelledby="resident-self-deactivate-title">
+            <div className="resident-deactivate-head">
+              <div>
+                <div className="resident-deactivate-eyebrow">Resident Access</div>
+                <h3 id="resident-self-deactivate-title">Deactivate Account</h3>
+              </div>
+              <button type="button" onClick={closeDeactivateModal} disabled={deactivating} aria-label="Close deactivate account dialog">
+                X
+              </button>
+            </div>
+            <p className="resident-deactivate-copy">
+              Choose the reason for deactivating your account. You will be logged out, and only an admin can reactivate your account.
+            </p>
+
+            <label className="resident-deactivate-field" htmlFor="resident-deactivate-reason">
+              <span><span aria-hidden="true">*</span> Reason <em>Required</em></span>
+              <select
+                id="resident-deactivate-reason"
+                value={deactivateModal.reason}
+                onChange={(e) => setDeactivateModal((current) => ({ ...current, reason: e.target.value, error: "" }))}
+                disabled={deactivating}
+              >
+                <option value="">Select reason</option>
+                {DEACTIVATION_REASONS.map((reason) => (
+                  <option key={reason} value={reason}>{reason}</option>
+                ))}
+              </select>
+            </label>
+
+            {deactivateModal.reason === "Other" ? (
+              <label className="resident-deactivate-field" htmlFor="resident-deactivate-custom-reason">
+                <span><span aria-hidden="true">*</span> Custom Reason <em>Required</em></span>
+                <textarea
+                  id="resident-deactivate-custom-reason"
+                  value={deactivateModal.customReason}
+                  onChange={(e) => setDeactivateModal((current) => ({ ...current, customReason: e.target.value, error: "" }))}
+                  rows={3}
+                  placeholder="Enter your reason"
+                  disabled={deactivating}
+                />
+              </label>
+            ) : null}
+
+            {deactivateModal.error ? (
+              <div className="resident-deactivate-error" role="alert">{deactivateModal.error}</div>
+            ) : null}
+
+            <div className="resident-deactivate-actions">
+              <button type="button" onClick={closeDeactivateModal} disabled={deactivating}>
+                Cancel
+              </button>
+              <button type="button" className="resident-account-deactivate-button" onClick={submitDeactivation} disabled={deactivating}>
+                {deactivating ? "Deactivating..." : "Confirm Deactivation"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -787,8 +926,8 @@ const backSubtitleStyle = {
 
 const backContentStyle = {
   display: "grid",
-  gridTemplateColumns: "1fr 28mm",
-  gap: "2.4mm",
+  gridTemplateColumns: "minmax(0, 1fr) 40mm",
+  gap: "2mm",
   padding: "2.8mm 3.2mm 3.2mm",
   alignItems: "center",
 };
@@ -833,11 +972,11 @@ const backQrColumnStyle = {
 };
 
 const qrQualityFrameStyle = {
-  width: "26.5mm",
-  height: "26.5mm",
+  width: "33.5mm",
+  height: "33.5mm",
   border: "0.3mm solid #cbd5e1",
   background: "#ffffff",
-  padding: "0.5mm",
+  padding: "0.7mm",
   display: "grid",
   placeItems: "center",
   boxSizing: "border-box",

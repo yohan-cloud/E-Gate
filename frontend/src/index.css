@@ -106,15 +106,15 @@ button:focus-visible {
     background: #fff !important;
   }
 
-  body * {
+  body:not(.printing-resident-id) * {
     visibility: hidden;
   }
 
-  .pvc-print, .pvc-print * {
+  body:not(.printing-resident-id) .pvc-print, body:not(.printing-resident-id) .pvc-print * {
     visibility: visible;
   }
 
-  .pvc-print {
+  body:not(.printing-resident-id) .pvc-print {
     position: absolute;
     left: 0;
     top: 0;
@@ -123,12 +123,12 @@ button:focus-visible {
     padding: 0 !important;
   }
 
-  .no-print {
+  body:not(.printing-resident-id) .no-print {
     display: none !important;
   }
 
-  .id-card,
-  .pvc-card-face {
+  body:not(.printing-resident-id) .id-card,
+  body:not(.printing-resident-id) .pvc-card-face {
     width: 85.6mm !important;
     height: 54mm !important;
     min-width: 85.6mm !important;
@@ -144,12 +144,12 @@ button:focus-visible {
     overflow: hidden !important;
   }
 
-  .pvc-card-front,
-  .pvc-card-back {
+  body:not(.printing-resident-id) .pvc-card-front,
+  body:not(.printing-resident-id) .pvc-card-back {
     display: block !important;
   }
 
-  .page-break {
+  body:not(.printing-resident-id) .page-break {
     display: block;
     height: 0;
     margin: 0;

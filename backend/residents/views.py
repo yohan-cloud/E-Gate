@@ -282,6 +282,53 @@ def resident_change_password(request):
     )
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsResidentUserRole])
+def resident_self_deactivate(request):
+    user = request.user
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+    if getattr(profile, "archived_at", None):
+        return Response({'error': 'Archived resident accounts cannot be self-deactivated.'}, status=status.HTTP_400_BAD_REQUEST)
+    if getattr(profile, "deactivated_at", None):
+        return Response({'message': 'Resident account is already deactivated.'}, status=status.HTTP_200_OK)
+
+    reason = (request.data.get("reason") or "").strip()
+    custom_reason = (request.data.get("custom_reason") or "").strip()
+    if not reason:
+        return Response({'error': 'Reason is required.'}, status=status.HTTP_400_BAD_REQUEST)
+    if reason == "Other":
+        reason = custom_reason
+    elif reason not in DEACTIVATION_REASON_OPTIONS:
+        return Response({'error': 'Invalid deactivation reason.'}, status=status.HTTP_400_BAD_REQUEST)
+    if not reason.strip():
+        return Response({'error': 'Reason is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    profile.deactivated_at = timezone.now()
+    profile.deactivated_by = user
+    profile.deactivation_reason = reason
+    profile.save(update_fields=["deactivated_at", "deactivated_by", "deactivation_reason"])
+    user.is_active = False
+    user.save(update_fields=["is_active"])
+
+    audit_log(
+        request,
+        actor=user,
+        action="resident_self_deactivate",
+        target_type="resident",
+        target_id=user.id,
+        target_label=_resident_label(profile),
+        metadata={
+            "barangay_id": str(profile.barangay_id),
+            "resident_user_id": user.id,
+            "resident_name": _resident_label(profile),
+            "reason": reason,
+        },
+    )
+    return Response({'message': 'Resident account deactivated. An admin must reactivate it before you can log in again.'}, status=status.HTTP_200_OK)
+
+
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated, IsResidentUserRole])
 def resident_verification_request(request):
