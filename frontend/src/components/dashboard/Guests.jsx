@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 import { api, fetchJson } from "../../api";
 import { DateTimeField } from "./PickerField";
@@ -128,6 +130,52 @@ function sortAppointments(a, b) {
   return String(a.title).localeCompare(String(b.title), undefined, { sensitivity: "base" });
 }
 
+function formatExportDateTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString();
+}
+
+function formatAppointmentExportRow(item) {
+  const statusMeta = getAppointmentStatusMeta(item);
+  const guest = item.raw || {};
+
+  return {
+    guestName: item.title || "",
+    contact: item.contact === "No contact number" ? "" : item.contact || "",
+    type: "Guest",
+    purpose: item.purpose || "",
+    organization: item.organization || "",
+    schedule: formatExportDateTime(item.schedule),
+    participants: guest.no_of_participants ?? 1,
+    gateStatus: getGateStatusMeta(guest.status),
+    checkIn: formatExportDateTime(guest.checked_in_at),
+    checkOut: formatExportDateTime(guest.checked_out_at),
+    status: statusMeta.label,
+    archived: item.isArchived ? "Yes" : "No",
+    archivedAt: formatExportDateTime(guest.archived_at),
+    notes: item.notes || "",
+  };
+}
+
+function escapeCsvCell(value) {
+  const text = String(value ?? "");
+  if (/[",\r\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+  return text;
+}
+
+function downloadBlob(blob, filename) {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 export default function Guests() {
   const [guests, setGuests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -143,6 +191,7 @@ export default function Guests() {
   const [modal, setModal] = useState({ open: false, mode: "create", type: "guest", item: null });
   const [actionMenuId, setActionMenuId] = useState(null);
   const [numericOnlyNotice, setNumericOnlyNotice] = useState({ contact: false, participants: false });
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -206,6 +255,124 @@ export default function Guests() {
       })
       .filter((item) => matchesSearch(item, search));
   }, [filter, search, unifiedAppointments]);
+
+  const filterLabel = FILTER_TABS.find((tab) => tab.value === filter)?.label || "Appointments";
+  const exportRows = useMemo(() => visibleAppointments.map(formatAppointmentExportRow), [visibleAppointments]);
+
+  const exportCsv = () => {
+    if (exportRows.length === 0) {
+      setError("No appointments to export.");
+      return;
+    }
+
+    const headers = [
+      "Guest Name",
+      "Contact Number",
+      "Type",
+      "Purpose",
+      "Organization",
+      "Schedule",
+      "Participants",
+      "Gate Status",
+      "Check In",
+      "Check Out",
+      "Status",
+      "Archived",
+      "Archived At",
+      "Notes",
+    ];
+    const keys = [
+      "guestName",
+      "contact",
+      "type",
+      "purpose",
+      "organization",
+      "schedule",
+      "participants",
+      "gateStatus",
+      "checkIn",
+      "checkOut",
+      "status",
+      "archived",
+      "archivedAt",
+      "notes",
+    ];
+    const csv = [
+      headers.map(escapeCsvCell).join(","),
+      ...exportRows.map((row) => keys.map((key) => escapeCsvCell(row[key])).join(",")),
+    ].join("\r\n");
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+    downloadBlob(blob, `guest_appointments_${filter}_${new Date().toISOString().slice(0, 10)}.csv`);
+    setError("");
+  };
+
+  const exportPdf = () => {
+    if (exportRows.length === 0) {
+      setError("No appointments to export.");
+      return;
+    }
+
+    setExportingPdf(true);
+    try {
+      const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "pt",
+        format: "a4",
+      });
+      const generatedAt = new Date().toLocaleString();
+
+      doc.setFontSize(16);
+      doc.text(`${filterLabel} Guest Appointments Report`, 40, 42);
+      doc.setFontSize(10);
+      doc.text(`Generated: ${generatedAt}`, 40, 60);
+      doc.text(`Total Records: ${exportRows.length}`, 40, 76);
+
+      autoTable(doc, {
+        startY: 92,
+        head: [[
+          "Guest",
+          "Contact",
+          "Purpose",
+          "Organization",
+          "Schedule",
+          "Participants",
+          "Gate Status",
+          "Check In",
+          "Check Out",
+          "Status",
+          "Archived",
+        ]],
+        body: exportRows.map((row) => [
+          row.guestName,
+          row.contact,
+          row.purpose,
+          row.organization,
+          row.schedule,
+          row.participants,
+          row.gateStatus,
+          row.checkIn,
+          row.checkOut,
+          row.status,
+          row.archived,
+        ]),
+        styles: {
+          fontSize: 8,
+          cellPadding: 4,
+          overflow: "linebreak",
+        },
+        headStyles: {
+          fillColor: [34, 139, 94],
+        },
+      });
+
+      doc.save(`guest_appointments_${filter}_${new Date().toISOString().slice(0, 10)}.pdf`);
+      setError("");
+    } catch {
+      setError("Failed to export PDF.");
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   const openCreateModal = () => {
     setGuestForm(DEFAULT_GUEST_FORM);
@@ -448,7 +615,25 @@ export default function Guests() {
             <h3 style={{ margin: 0 }}>Appointments</h3>
             <div style={{ color: "#4f6b5d", marginTop: 4 }}>Guest visits and appointment schedules</div>
           </div>
-          <button className="btn-primary" type="button" onClick={openCreateModal}>Create Appointment</button>
+          <div className="appointment-header-actions">
+            <button
+              type="button"
+              className="resident-action-button resident-action-neutral"
+              onClick={exportCsv}
+              disabled={loading || exportRows.length === 0}
+            >
+              Export CSV
+            </button>
+            <button
+              type="button"
+              className="resident-action-button resident-action-neutral"
+              onClick={exportPdf}
+              disabled={loading || exportingPdf || exportRows.length === 0}
+            >
+              {exportingPdf ? "Exporting PDF..." : "Export PDF"}
+            </button>
+            <button className="btn-primary" type="button" onClick={openCreateModal}>Create Appointment</button>
+          </div>
         </div>
 
         <div className="appointment-toolbar">

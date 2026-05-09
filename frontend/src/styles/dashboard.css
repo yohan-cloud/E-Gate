@@ -633,6 +633,14 @@ body {
   margin-bottom: 0;
 }
 
+.appointment-header-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .appointment-toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 340px);
@@ -2703,6 +2711,19 @@ tr:hover {
   min-height: 30px;
 }
 
+.resident-export-header {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.resident-export-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .resident-summary-line {
   display: flex;
   flex-wrap: wrap;
@@ -2829,6 +2850,19 @@ tr:hover {
 }
 
 @media (max-width: 640px) {
+  .resident-export-header {
+    width: 100%;
+    justify-items: stretch;
+  }
+
+  .resident-export-header > div:first-child {
+    text-align: left !important;
+  }
+
+  .resident-export-actions {
+    justify-content: flex-start;
+  }
+
   .resident-menu-wrap {
     position: relative;
     flex: 0 0 auto;
@@ -3681,6 +3715,11 @@ tr:hover {
 }
 
 @media (max-width: 640px) {
+  .appointment-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
   .appointment-toolbar {
     grid-template-columns: 1fr;
     align-items: stretch;

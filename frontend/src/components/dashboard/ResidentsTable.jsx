@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { api, fetchJson } from "../../api";
 import toast from "../../lib/toast";
 import ConfirmDialog from "../common/ConfirmDialog";
@@ -178,6 +180,55 @@ function truncateMiddle(value, start = 8, end = 4) {
   return `${text.slice(0, start)}...${text.slice(-end)}`;
 }
 
+function getResidentStatus(row) {
+  if (row.is_archived) return "Archived";
+  if (row.is_deactivated) return "Deactivated";
+  return "Active";
+}
+
+function formatResidentExportRow(row) {
+  const firstName = row.user?.first_name || "";
+  const lastName = row.user?.last_name || "";
+  const fullName = `${firstName} ${lastName}`.trim() || row.user?.username || "Resident";
+  const age = calcAge(row.birthdate);
+
+  return {
+    residentId: row.barangay_id || "",
+    name: fullName,
+    username: row.user?.username || "",
+    email: row.user?.email || "",
+    phone: row.phone_number || "",
+    age: age !== null ? age : "",
+    birthdate: row.birthdate || "",
+    gender: GENDER_LABEL[row.gender] || "Unspecified",
+    category: RESIDENT_CATEGORY_LABEL[row.resident_category] || "Resident",
+    voterStatus: VOTER_STATUS_LABEL[row.voter_status] || "Not Set",
+    verification: row.is_verified ? "Verified" : "Not Verified",
+    accountStatus: getResidentStatus(row),
+    deactivationReason: row.deactivation_reason || "",
+    deactivatedAt: row.deactivated_at ? new Date(row.deactivated_at).toLocaleString() : "",
+    expiryDate: row.expiry_date || "",
+    address: row.address || "",
+  };
+}
+
+function escapeCsvCell(value) {
+  const text = String(value ?? "");
+  if (/[",\r\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+  return text;
+}
+
+function downloadBlob(blob, filename) {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 export default function ResidentsTable() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -207,6 +258,7 @@ export default function ResidentsTable() {
     customReason: "",
   });
   const [actionMenuId, setActionMenuId] = useState(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -492,6 +544,125 @@ export default function ResidentsTable() {
   };
 
   const totalResidents = useMemo(() => rows.length, [rows]);
+  const filterLabel = filter === "deactivated" ? "Deactivated" : filter === "archived" ? "Archived" : "Active";
+  const exportRows = useMemo(() => rows.map(formatResidentExportRow), [rows]);
+
+  const exportCsv = () => {
+    if (exportRows.length === 0) {
+      toast.error("No residents to export");
+      return;
+    }
+
+    const headers = [
+      "Resident ID",
+      "Name",
+      "Username",
+      "Email",
+      "Phone",
+      "Age",
+      "Birthdate",
+      "Gender",
+      "Category",
+      "Voter Status",
+      "Verification",
+      "Account Status",
+      "Deactivation Reason",
+      "Deactivated At",
+      "Expiry Date",
+      "Address",
+    ];
+    const keys = [
+      "residentId",
+      "name",
+      "username",
+      "email",
+      "phone",
+      "age",
+      "birthdate",
+      "gender",
+      "category",
+      "voterStatus",
+      "verification",
+      "accountStatus",
+      "deactivationReason",
+      "deactivatedAt",
+      "expiryDate",
+      "address",
+    ];
+    const csv = [
+      headers.map(escapeCsvCell).join(","),
+      ...exportRows.map((row) => keys.map((key) => escapeCsvCell(row[key])).join(",")),
+    ].join("\r\n");
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+    downloadBlob(blob, `residents_${filter}_${new Date().toISOString().slice(0, 10)}.csv`);
+  };
+
+  const exportPdf = () => {
+    if (exportRows.length === 0) {
+      toast.error("No residents to export");
+      return;
+    }
+
+    setExportingPdf(true);
+    try {
+      const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "pt",
+        format: "a4",
+      });
+      const generatedAt = new Date().toLocaleString();
+
+      doc.setFontSize(16);
+      doc.text(`${filterLabel} Residents Report`, 40, 42);
+      doc.setFontSize(10);
+      doc.text(`Generated: ${generatedAt}`, 40, 60);
+      doc.text(`Total Records: ${exportRows.length}`, 40, 76);
+
+      autoTable(doc, {
+        startY: 92,
+        head: [[
+          "Resident ID",
+          "Name",
+          "Username",
+          "Age",
+          "Gender",
+          "Category",
+          "Voter Status",
+          "Verification",
+          "Status",
+          "Phone",
+          "Email",
+        ]],
+        body: exportRows.map((row) => [
+          row.residentId,
+          row.name,
+          row.username,
+          row.age,
+          row.gender,
+          row.category,
+          row.voterStatus,
+          row.verification,
+          row.accountStatus,
+          row.phone,
+          row.email,
+        ]),
+        styles: {
+          fontSize: 8,
+          cellPadding: 4,
+          overflow: "linebreak",
+        },
+        headStyles: {
+          fillColor: [34, 139, 94],
+        },
+      });
+
+      doc.save(`residents_${filter}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch {
+      toast.error("Failed to export PDF");
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   return (
     <div className="card residents-records-card" style={{ marginTop: 12 }}>
@@ -500,7 +671,27 @@ export default function ResidentsTable() {
           <h3 style={{ margin: 0 }}>Residents</h3>
           <div style={{ color: "#475569" }}>Manage all registered barangay residents</div>
         </div>
-        <div style={{ color: "#475569" }}>Total Residents: <b>{totalResidents}</b></div>
+        <div className="resident-export-header">
+          <div style={{ color: "#475569", textAlign: "right" }}>Total Residents: <b>{totalResidents}</b></div>
+          <div className="resident-export-actions">
+            <button
+              type="button"
+              className="resident-action-button resident-action-neutral"
+              onClick={exportCsv}
+              disabled={loading || exportRows.length === 0}
+            >
+              Export CSV
+            </button>
+            <button
+              type="button"
+              className="resident-action-button resident-action-neutral"
+              onClick={exportPdf}
+              disabled={loading || exportingPdf || exportRows.length === 0}
+            >
+              {exportingPdf ? "Exporting PDF..." : "Export PDF"}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div style={{ marginTop: 12, marginBottom: 12 }}>
