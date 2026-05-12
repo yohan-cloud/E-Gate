@@ -871,9 +871,89 @@ def view_event_registrants(request, event_id):
         EventRegistration.objects
         .select_related('resident', 'resident__profile', 'event')
         .filter(event=event)
+        .order_by('resident__username', 'registered_at', 'id')
     )
     serializer = EventRegistrationSerializer(registrations, many=True)
     return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsAdminUserRole])
+def admin_add_event_registrant(request, event_id):
+    resident_id = request.data.get("resident_id")
+    barangay_id = (request.data.get("barangay_id") or "").strip()
+    username = (request.data.get("username") or "").strip()
+
+    try:
+        event = Event.objects.select_related('created_by').get(id=event_id)
+    except Event.DoesNotExist:
+        return Response({"error": "Event not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if event.archived_at:
+        return Response({"error": "Event is archived.", "result_code": "event_archived"}, status=status.HTTP_400_BAD_REQUEST)
+    if event.status in {"completed", "cancelled"}:
+        return Response({"error": "Residents can only be added to active or upcoming events."}, status=status.HTTP_400_BAD_REQUEST)
+
+    profile_qs = ResidentProfile.objects.select_related("user").filter(
+        user__is_resident=True,
+        archived_at__isnull=True,
+        deactivated_at__isnull=True,
+    )
+    if resident_id:
+        profile = profile_qs.filter(user_id=resident_id).first()
+    elif barangay_id:
+        profile = profile_qs.filter(barangay_id=barangay_id).first()
+    elif username:
+        profile = profile_qs.filter(user__username=username).first()
+    else:
+        return Response({"error": "Resident is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not profile:
+        return Response({"error": "Active resident not found."}, status=status.HTTP_404_NOT_FOUND)
+    if not profile.is_verified:
+        return Response({"error": "Resident must be verified before being added to an event."}, status=status.HTTP_403_FORBIDDEN)
+
+    audience_error = _validate_event_audience(event, profile)
+    if audience_error:
+        return audience_error
+
+    resident = profile.user
+    if EventRegistration.objects.filter(event=event, resident=resident).exists():
+        return Response({"error": "Resident is already registered for this event."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        with transaction.atomic():
+            evt = Event.objects.select_for_update().get(id=event.id)
+            if evt.capacity is not None:
+                current = EventRegistration.objects.filter(event=evt).count()
+                if current >= evt.capacity:
+                    return Response({"error": "Event is at full capacity."}, status=status.HTTP_403_FORBIDDEN)
+            registration, created = EventRegistration.objects.get_or_create(event=evt, resident=resident)
+            if not created:
+                return Response({"error": "Resident is already registered for this event."}, status=status.HTTP_400_BAD_REQUEST)
+    except IntegrityError:
+        return Response({"error": "Resident is already registered for this event."}, status=status.HTTP_400_BAD_REQUEST)
+
+    _emit(
+        "registration.changed",
+        "events.EventRegistration",
+        registration.id,
+        {"action": "admin_add", "event_id": event.id, "resident_id": resident.id, "admin_id": request.user.id},
+    )
+    audit_log(
+        request,
+        action="event_registration_add",
+        target_type="event_registration",
+        target_id=registration.id,
+        target_label=f"{resident.username} - {event.title}",
+        metadata={
+            "event_id": event.id,
+            "resident_user_id": resident.id,
+            "resident_name": resident.username,
+        },
+    )
+    serializer = EventRegistrationSerializer(registration, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 # Admin: Mark attendance (via registration_id or barangay_id/username + event_id)
@@ -1354,13 +1434,30 @@ class EventAttendanceByEventView(generics.ListAPIView):
 
     def get_queryset(self):
         event_id = self.kwargs.get('id')
-        return (
+        qs = (
             EventAttendance.objects.select_related(
                 'registration', 'registration__resident', 'registration__event', 'verified_by'
             )
             .filter(registration__event_id=event_id)
-            .order_by('-checked_in_at')
         )
+        q = (self.request.query_params.get("q") or "").strip()
+        if q:
+            qs = qs.filter(
+                Q(registration__resident__username__icontains=q)
+                | Q(registration__resident__first_name__icontains=q)
+                | Q(registration__resident__last_name__icontains=q)
+                | Q(registration__resident__profile__barangay_id__icontains=q)
+            )
+        ordering = (self.request.query_params.get("ordering") or "resident_asc").strip()
+        ordering_map = {
+            "resident_asc": ("registration__resident__username", "checked_in_at", "id"),
+            "resident_desc": ("-registration__resident__username", "checked_in_at", "id"),
+            "time_asc": ("checked_in_at", "id"),
+            "time_desc": ("-checked_in_at", "-id"),
+            "verifier_asc": ("verified_by__username", "registration__resident__username", "id"),
+            "verifier_desc": ("-verified_by__username", "registration__resident__username", "id"),
+        }
+        return qs.order_by(*ordering_map.get(ordering, ordering_map["resident_asc"]))
 
 
 # Paginated list of all events

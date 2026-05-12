@@ -7,16 +7,28 @@ import toast from "../../lib/toast";
 export default function AttendanceTable({ eventId }) {
   const [attendance, setAttendance] = useState([]);
   const [eventTitle, setEventTitle] = useState("");
-  const [sortBy, setSortBy] = useState("time_desc");
+  const [sortBy, setSortBy] = useState("resident_asc");
+  const [search, setSearch] = useState("");
+  const [searchDebounced, setSearchDebounced] = useState("");
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [hasPrev, setHasPrev] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => setSearchDebounced(search.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
     if (!eventId) return;
+    const params = new URLSearchParams({
+      page: String(page),
+      ordering: sortBy,
+    });
+    if (searchDebounced) params.set("q", searchDebounced);
     api
-      .get(`/events/${eventId}/attendance/?page=${page}`)
+      .get(`/events/${eventId}/attendance/?${params.toString()}`)
       .then((res) => {
         const data = res.data || {};
         setAttendance(data.results || []);
@@ -24,7 +36,11 @@ export default function AttendanceTable({ eventId }) {
         setHasPrev(!!data.previous);
       })
       .catch((err) => console.error(err));
-  }, [eventId, page]);
+  }, [eventId, page, searchDebounced, sortBy]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [eventId, searchDebounced, sortBy]);
 
   useEffect(() => {
     if (!eventId) return;
@@ -83,7 +99,12 @@ export default function AttendanceTable({ eventId }) {
     let nextPage = 1;
 
     while (nextPage) {
-      const res = await api.get(`/events/${eventId}/attendance/?page=${nextPage}`);
+      const params = new URLSearchParams({
+        page: String(nextPage),
+        ordering: sortBy,
+      });
+      if (searchDebounced) params.set("q", searchDebounced);
+      const res = await api.get(`/events/${eventId}/attendance/?${params.toString()}`);
       const data = res.data || {};
       rows.push(...(data.results || []));
       nextPage = data.next ? nextPage + 1 : null;
@@ -154,23 +175,43 @@ export default function AttendanceTable({ eventId }) {
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <span style={{ opacity: 0.8 }}>Total: {attendance.length}</span>
-        <div>
-          <label style={{ marginRight: 6 }}>Sort by:</label>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-            <option value="time_desc">Time: Newest first</option>
-            <option value="time_asc">Time: Oldest first</option>
-            <option value="resident_asc">Resident: A to Z</option>
-            <option value="resident_desc">Resident: Z to A</option>
-            <option value="verifier_asc">Verifier: A to Z</option>
-            <option value="verifier_desc">Verifier: Z to A</option>
-          </select>
-          <button onClick={() => setPage((p) => (p > 1 && hasPrev ? p - 1 : p))} disabled={!hasPrev || currentPage === 1} style={{ marginLeft: 10 }}>
-            Prev
-          </button>
-          <span style={{ margin: "0 6px" }}>Page {currentPage}</span>
-          <button onClick={() => setPage((p) => (hasNext ? p + 1 : p))} disabled={!hasNext}>
-            Next
-          </button>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 1fr) auto", gap: 10, alignItems: "end" }}>
+          <div>
+            <label className="sr-only" htmlFor={`attendance-search-${eventId}`}>Search attendance by name</label>
+            <input
+              id={`attendance-search-${eventId}`}
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search resident name"
+              style={{ width: "100%", padding: "9px 10px", borderRadius: 8, border: "1px solid #bbdfc8", background: "#fff" }}
+            />
+          </div>
+          <div>
+            <label htmlFor={`attendance-sort-${eventId}`} style={{ display: "block", marginBottom: 4 }}>Sort by:</label>
+            <select
+              id={`attendance-sort-${eventId}`}
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              style={{ minWidth: 190, padding: "9px 10px", borderRadius: 8, border: "1px solid #bbdfc8", background: "#fff" }}
+            >
+              <option value="resident_asc">Resident: A to Z</option>
+              <option value="resident_desc">Resident: Z to A</option>
+              <option value="time_desc">Time: Newest first</option>
+              <option value="time_asc">Time: Oldest first</option>
+              <option value="verifier_asc">Verifier: A to Z</option>
+              <option value="verifier_desc">Verifier: Z to A</option>
+            </select>
+          </div>
+          <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6 }}>
+            <button onClick={() => setPage((p) => (p > 1 && hasPrev ? p - 1 : p))} disabled={!hasPrev || currentPage === 1}>
+              Prev
+            </button>
+            <span>Page {currentPage}</span>
+            <button onClick={() => setPage((p) => (hasNext ? p + 1 : p))} disabled={!hasNext}>
+              Next
+            </button>
+          </div>
         </div>
       </div>
       <table className="attendance-table">
@@ -182,13 +223,19 @@ export default function AttendanceTable({ eventId }) {
           </tr>
         </thead>
         <tbody>
-          {paged.map((a) => (
-            <tr key={a.id}>
-              <td>{a.resident_username}</td>
-              <td>{new Date(a.checked_in_at).toLocaleString()}</td>
-              <td>{a.verified_by}</td>
+          {paged.length === 0 ? (
+            <tr>
+              <td colSpan={3}>No attendance records match your search.</td>
             </tr>
-          ))}
+          ) : (
+            paged.map((a) => (
+              <tr key={a.id}>
+                <td>{a.resident_username}</td>
+                <td>{new Date(a.checked_in_at).toLocaleString()}</td>
+                <td>{a.verified_by}</td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
