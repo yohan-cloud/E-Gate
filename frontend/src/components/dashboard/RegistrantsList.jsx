@@ -13,6 +13,7 @@ export default function RegistrantsList({ eventId }) {
   const [residentResults, setResidentResults] = useState([]);
   const [residentSearchLoading, setResidentSearchLoading] = useState(false);
   const [addingResidentId, setAddingResidentId] = useState(null);
+  const [unregisteringId, setUnregisteringId] = useState(null);
 
   const load = useCallback(() => {
     if (!eventId) return;
@@ -114,6 +115,24 @@ export default function RegistrantsList({ eventId }) {
       toast.error(msg);
     } finally {
       setAddingResidentId(null);
+    }
+  };
+
+  const unregisterResident = async (registration) => {
+    if (!registration?.id) return;
+    const residentName = registration.resident_username || "this resident";
+    const confirmed = window.confirm(`Unregister ${residentName} from this event?`);
+    if (!confirmed) return;
+    try {
+      setUnregisteringId(registration.id);
+      await api.delete(`/events/${eventId}/registrants/${registration.id}/unregister/`);
+      toast.success("Resident unregistered from event");
+      load();
+    } catch (e) {
+      const msg = e?.response?.data?.error || e?.response?.data?.message || "Failed to unregister resident";
+      toast.error(msg);
+    } finally {
+      setUnregisteringId(null);
     }
   };
 
@@ -242,6 +261,7 @@ export default function RegistrantsList({ eventId }) {
                 <th>Resident</th>
                 <th>Registered At</th>
                 <th>Checked In?</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -262,6 +282,16 @@ export default function RegistrantsList({ eventId }) {
                     ) : (
                       <button onClick={() => mark(r.id)} style={{ padding: "4px 10px" }}>Mark</button>
                     )}
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => unregisterResident(r)}
+                      disabled={r.attendance_confirmed || unregisteringId === r.id}
+                      title={r.attendance_confirmed ? "Already checked in; cannot unregister" : "Unregister resident from this event"}
+                      style={{ padding: "4px 10px" }}
+                    >
+                      {unregisteringId === r.id ? "Removing..." : "Unregister"}
+                    </button>
                   </td>
                 </tr>
               ))}

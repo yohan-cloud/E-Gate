@@ -956,6 +956,57 @@ def admin_add_event_registrant(request, event_id):
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+@api_view(['POST', 'DELETE'])
+@permission_classes([IsAuthenticated, IsAdminUserRole])
+def admin_unregister_event_registrant(request, event_id, registration_id):
+    try:
+        event = Event.objects.get(id=event_id)
+    except Event.DoesNotExist:
+        return Response({"error": "Event not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if event.archived_at:
+        return Response({"error": "Event is archived.", "result_code": "event_archived"}, status=status.HTTP_400_BAD_REQUEST)
+
+    registration = (
+        EventRegistration.objects
+        .select_related("resident", "event")
+        .filter(id=registration_id, event=event)
+        .first()
+    )
+    if not registration:
+        return Response({"error": "Registration not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if hasattr(registration, "attendance"):
+        return Response({"error": "Already checked in; cannot unregister."}, status=status.HTTP_403_FORBIDDEN)
+
+    resident = registration.resident
+    reg_id = registration.id
+    resident_id = resident.id if resident else None
+    resident_name = resident.username if resident else "Unknown resident"
+    event_title = event.title
+    registration.delete()
+
+    _emit(
+        "registration.changed",
+        "events.EventRegistration",
+        reg_id,
+        {"action": "admin_unregister", "event_id": event.id, "resident_id": resident_id, "admin_id": request.user.id},
+    )
+    audit_log(
+        request,
+        action="event_registration_unregister",
+        target_type="event_registration",
+        target_id=reg_id,
+        target_label=f"{resident_name} - {event_title}",
+        metadata={
+            "event_id": event.id,
+            "resident_user_id": resident_id,
+            "resident_name": resident_name,
+        },
+    )
+    return Response({"message": "Resident unregistered from event."}, status=status.HTTP_200_OK)
+
+
 # Admin: Mark attendance (via registration_id or barangay_id/username + event_id)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsAdminOrGateOperatorRole])

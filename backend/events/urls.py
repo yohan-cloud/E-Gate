@@ -36,6 +36,7 @@ urlpatterns = [
     # Admin: View registrants & mark attendance
     path('<int:event_id>/registrants/', views.view_event_registrants, name='view_event_registrants'),
     path('<int:event_id>/registrants/add/', views.admin_add_event_registrant, name='admin_add_event_registrant'),
+    path('<int:event_id>/registrants/<int:registration_id>/unregister/', views.admin_unregister_event_registrant, name='admin_unregister_event_registrant'),
     path('attendance/mark/', views.mark_attendance, name='mark_attendance'),
     path('attendance/detect-face/', views.detect_face_presence, name='detect_face_presence'),
     path('attendance/mark-face/', views.mark_attendance_face, name='mark_attendance_face'),
