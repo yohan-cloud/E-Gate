@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
+import ConfirmDialog from "../common/ConfirmDialog";
 import toast from "../../lib/toast";
 
 export default function RegistrantsList({ eventId }) {
@@ -14,6 +15,7 @@ export default function RegistrantsList({ eventId }) {
   const [residentSearchLoading, setResidentSearchLoading] = useState(false);
   const [addingResidentId, setAddingResidentId] = useState(null);
   const [unregisteringId, setUnregisteringId] = useState(null);
+  const [unregisterTarget, setUnregisterTarget] = useState(null);
 
   const load = useCallback(() => {
     if (!eventId) return;
@@ -118,15 +120,14 @@ export default function RegistrantsList({ eventId }) {
     }
   };
 
-  const unregisterResident = async (registration) => {
+  const unregisterResident = async () => {
+    const registration = unregisterTarget;
     if (!registration?.id) return;
-    const residentName = registration.resident_username || "this resident";
-    const confirmed = window.confirm(`Unregister ${residentName} from this event?`);
-    if (!confirmed) return;
     try {
       setUnregisteringId(registration.id);
       await api.delete(`/events/${eventId}/registrants/${registration.id}/unregister/`);
       toast.success("Resident unregistered from event");
+      setUnregisterTarget(null);
       load();
     } catch (e) {
       const msg = e?.response?.data?.error || e?.response?.data?.message || "Failed to unregister resident";
@@ -285,7 +286,7 @@ export default function RegistrantsList({ eventId }) {
                   </td>
                   <td>
                     <button
-                      onClick={() => unregisterResident(r)}
+                      onClick={() => setUnregisterTarget(r)}
                       disabled={r.attendance_confirmed || unregisteringId === r.id}
                       title={r.attendance_confirmed ? "Already checked in; cannot unregister" : "Unregister resident from this event"}
                       style={{ padding: "4px 10px" }}
@@ -299,6 +300,18 @@ export default function RegistrantsList({ eventId }) {
           </table>
         </div>
       )}
+      <ConfirmDialog
+        open={Boolean(unregisterTarget)}
+        title="Unregister Resident"
+        message={`Unregister ${unregisterTarget?.resident_username || "this resident"} from this event?`}
+        confirmLabel="Unregister"
+        tone="danger"
+        busy={Boolean(unregisteringId)}
+        onCancel={() => {
+          if (!unregisteringId) setUnregisterTarget(null);
+        }}
+        onConfirm={unregisterResident}
+      />
     </div>
   );
 }
