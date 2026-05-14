@@ -195,6 +195,26 @@ export default function BrowseEvents({ isVerified = false, onRequestVerification
     return { dateLabel, timeLabel: `${startTime} until ${endTime}` };
   };
 
+  const getEffectiveStatus = (event, now = new Date()) => {
+    const statusValue = event.status || "upcoming";
+    if (statusValue === "cancelled") return "cancelled";
+    if (statusValue === "completed") return "completed";
+
+    const startDate = event.date ? new Date(event.date) : null;
+    const endDate = event.end_date ? new Date(event.end_date) : null;
+    const startTime = startDate && !Number.isNaN(startDate.getTime()) ? startDate.getTime() : null;
+    const endTime = endDate && !Number.isNaN(endDate.getTime()) ? endDate.getTime() : null;
+
+    if (endTime !== null && endTime < now.getTime()) return "completed";
+    if (endTime === null && startTime !== null && startTime < now.getTime()) return "completed";
+    return statusValue;
+  };
+
+  const formatStatusLabel = (value) =>
+    String(value || "upcoming")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+
   return (
     <div style={{ width: "100%", textAlign: "left" }}>
       <div style={{ marginBottom: 12 }}>
@@ -300,12 +320,8 @@ export default function BrowseEvents({ isVerified = false, onRequestVerification
         {formattedEvents.map((e) => {
           const registered = my.has(e.id);
           const now = new Date();
-          const startDate = e.date ? new Date(e.date) : null;
-          const endDate = e.end_date ? new Date(e.end_date) : null;
-          const isEnded =
-            !startDate ||
-            (endDate && !Number.isNaN(endDate.getTime()) ? endDate < now : startDate < now) ||
-            ["completed", "cancelled"].includes(e.status);
+          const effectiveStatus = getEffectiveStatus(e, now);
+          const isEnded = ["completed", "cancelled"].includes(effectiveStatus);
           const { dateLabel, timeLabel } = formatSchedule(e.date, e.end_date);
           const capacity = e.capacity || 0;
           const registeredCount = e.registrations_count || 0;
@@ -341,7 +357,7 @@ export default function BrowseEvents({ isVerified = false, onRequestVerification
                     <span className="resident-event-chip" style={{ background: "#dbeafe", color: "#1d4ed8", padding: "2px 8px", borderRadius: 999, fontSize: 12 }}>Registered</span>
                   )}
                   <span className="resident-event-chip" style={{ background: "#f1f5f9", color: "#475569", padding: "2px 8px", borderRadius: 999, fontSize: 12, textTransform: "capitalize" }}>
-                    {e.status || "upcoming"}
+                    {formatStatusLabel(effectiveStatus)}
                   </span>
                 </div>
                 <div className="resident-event-card-description" style={{ color: "#475569", marginBottom: 8, fontSize: 14, lineHeight: 1.45, minHeight: 40 }}>{e.description || "No description provided."}</div>
